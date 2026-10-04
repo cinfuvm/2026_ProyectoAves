@@ -1,0 +1,16 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/release/v2.12.0/C4_Context.puml
+
+title Bitacora de Aves Mobile - Contexto actual
+
+Person(usuario, "Observador de aves", "Registra y consulta sus observaciones en el dispositivo.")
+System(mobile, "Bitacora de Aves Mobile", "Aplicacion Flutter para catalogo de muestra y bitacora local.")
+System_Ext(wikipedia, "Wikipedia en espanol", "API de resumen y contenido de muestra; no es el backend del producto.")
+System_Ext(so, "Servicios del dispositivo", "Camara, galeria y almacenamiento privado del sistema operativo.")
+
+Rel(usuario, mobile, "Registra fotos, busca y administra su coleccion")
+Rel(mobile, wikipedia, "Consulta resumenes e imagenes del catalogo de muestra", "HTTPS / REST")
+Rel(mobile, so, "Selecciona imagenes y accede a almacenamiento local", "Plugins Flutter")
+
+SHOW_LEGEND()
+@enduml

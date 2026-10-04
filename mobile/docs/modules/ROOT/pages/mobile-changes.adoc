@@ -1,0 +1,48 @@
+= Registro de cambios mobile
+:description: Cambios funcionales y documentales de la aplicacion mobile Bitacora de Aves.
+:toc:
+:toclevels: 2
+
+Este registro resume los cambios de la solucion mobile y su documentacion que se encuentran en el repositorio. Para el alcance vigente, estados de implementacion y criterios de aceptacion, consultar el xref:mobile-prd.adoc[PRD] y el xref:mobile-uat.adoc[plan UAT].
+
+== Funcionalidad de la aplicacion
+
+=== Interfaz y navegacion
+
+* Se organizo la experiencia en Inicio, Buscar, Coleccion y Perfil.
+* Se incorporaron los temas claro y oscuro y un estilo visual consistente para tarjetas y controles.
+* Se agregaron filtros de Coleccion en una fila horizontal. El filtro de tipo y el filtro de categoria se combinan; las fotos propias sin correspondencia con las categorias de muestra se presentan como sin clasificar.
+* Wikipedia se mantiene como fuente del catalogo de demostracion y no se ofrece como categoria de la coleccion.
+
+=== Catalogo y coleccion local
+
+* Se mantuvo el catalogo de demostracion consultado desde Wikipedia, con busqueda y filtros por categorias de muestra.
+* Se puede guardar y quitar un ave del catalogo desde la coleccion. La imagen se conserva como archivo privado de la app y los metadatos persisten en el dispositivo.
+* El estado de guardado se recupera despues de cerrar y volver a abrir la aplicacion.
+* Las observaciones propias pueden quitarse de la coleccion; al quitarlas, tambien se elimina su imagen local.
+* Coleccion presenta estados de carga, vacio, error y reintento para evitar que los fallos de lectura se confundan con una lista sin datos.
+
+=== Registro de observaciones y reportes
+
+* La seleccion de una foto propia desde camara o galeria abre un formulario para ingresar ave, lugar, fecha y comentario.
+* El guardado copia el archivo seleccionado al almacenamiento privado en vez de cargar toda la imagen en memoria. Se muestra progreso durante la operacion.
+* Los controladores del formulario quedan asociados al ciclo de vida del dialogo para evitar errores al cerrarlo.
+* Los motivos de reporte se guardan localmente. El prototipo no los envia al backend ni a un equipo de moderacion.
+
+=== Fiabilidad de interaccion
+
+* Los mensajes de resultado comprueban que el widget siga montado y que exista un `ScaffoldMessenger` antes de mostrarse.
+* Los errores de red, persistencia y archivo se comunican como errores; no se presentan como guardados exitosos.
+* La coleccion local utiliza `shared_preferences` para metadatos y `path_provider` para localizar los directorios de imagenes.
+
+== Documentacion y build del sitio
+
+* Se agrego el componente Antora mobile con PRD, arquitectura C4, plan UAT y este registro de cambios.
+* Los diagramas C4 se mantienen como fuentes PlantUML en `modules/ROOT/partials/`; el build genera SVG localmente con PlantUML y Java.
+* Se agregaron un playbook Antora local, dependencias npm fijadas y un lockfile para producir el sitio HTML.
+* El contenido generado en `_build/`, las dependencias instaladas y los SVG producidos por el script de build no son fuentes y se excluyen de Git.
+* En VS Code se puede leer cada `.adoc` con la extension AsciiDoc. El sitio completo se compila con `npm ci` y `npm run build` desde `docs/`.
+
+== Limites confirmados
+
+Los cambios no conectan la app a una API propia ni implementan usuarios, sincronizacion, feed de fotos comunitarias, moderacion remota, comentarios o popularidad basada en vistas. El catalogo de Wikipedia sigue siendo un servicio de muestra y no la fuente de contribuciones de la comunidad. Consultar xref:mobile-architecture.adoc[Arquitectura mobile] para limites de datos y privacidad.

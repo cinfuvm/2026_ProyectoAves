@@ -1,0 +1,300 @@
+= Plan de pruebas y UAT - Mobile
+:description: Plan manual de pruebas de aceptacion para el prototipo Flutter Bitacora de Aves.
+:toc:
+:toclevels: 3
+
+== 1. Objetivo
+
+Verificar manualmente que la app mobile cumple los criterios de aceptacion definidos en xref:mobile-prd.adoc[PRD mobile], especialmente el registro y persistencia local de observaciones propias. UAT es una prueba funcional/de contrato con evidencia y seguimiento de defectos; no reemplaza pruebas unitarias, analisis estatico ni validacion de seguridad.
+
+== 2. Alcance
+
+=== Incluido
+
+* Inicio, navegacion y estados de carga/error del catalogo de demostracion.
+* Busqueda, categoria de muestra, guardado y eliminacion de aves de catalogo.
+* Seleccion de imagen, formulario de observacion propia, persistencia y eliminacion.
+* Filtros combinados de tipo y categoria en Coleccion.
+* Registro local de reportes y mensajes que describen correctamente su estado.
+* Manejo de cancelacion, permisos, red y fallos de almacenamiento.
+
+=== Excluido / no aceptable como disponible hoy
+
+* Registro/login de usuarios, feed de aportes de otros usuarios y sincronizacion remota.
+* Subida de fotos al backend, API propia, moderacion desde dashboard o notificaciones de estado.
+* Popularidad basada en vistas, comentarios, chat y seguimiento de perfiles.
+* Certificacion iOS: ejecutar estos casos en iOS solo despues de configurar y validar ese target.
+
+== 3. Estrategia
+
+* Tipo: aceptacion manual funcional en dispositivo/emulador.
+* Ambiente primario: Android emulator o dispositivo Android con la misma version de la app candidata.
+* Ambiente adicional recomendado: dispositivo Android fisico y, cuando este configurado, dispositivo iOS.
+* Ejecucion: por un integrante mobile y una persona representante de producto/gestion.
+* Evidencia: captura o video sin datos sensibles, version/build, dispositivo/OS, fecha, resultado y defectos relacionados.
+* Regla de aislamiento: usar datos de prueba y no borrar datos reales de usuarios.
+
+== 4. Preparacion y datos de prueba
+
+. Instalar el build candidato limpio y registrar version, commit, dispositivo y OS.
+. Disponer de conectividad para los casos del catalogo y habilitar la opcion de desactivarla.
+. Preparar una imagen valida en galeria y, si el emulador lo permite, camara virtual.
+. Preparar estos datos: `Chucao`, lugar `Parque de prueba`, fecha de hoy y comentario `Observacion UAT`.
+. Para filtros, usar nombres que correspondan a catalogo y un nombre no incluido, por ejemplo `Ave de prueba sin catalogo`.
+. Acordar antes de ejecutar cualquier caso destructivo si se puede borrar o reiniciar los datos locales de prueba.
+
+== 5. Criterios de entrada y salida
+
+=== Entrada
+
+* Build identificable disponible y arranque correcto.
+* Casos de prueba revisados por el equipo mobile y gestion.
+* Dispositivo con permisos/almacenamiento disponibles; datos de prueba preparados.
+* Para casos de red, servicio externo accesible o desconectable de forma controlada.
+
+=== Salida
+
+* Todos los casos P0 ejecutados; todo fallo bloqueante debe tener issue y responsable.
+* Ningun defecto critico/alto abierto que impida registrar, conservar, consultar o quitar observaciones locales.
+* Evidencia adjunta a los resultados; regresiones verificadas despues de corregir issues.
+* Limitaciones conocidas (sin backend, sync, login y moderacion remota) aceptadas y comunicadas.
+
+== 6. Casos de aceptacion
+
+Estados sugeridos: `No ejecutado`, `Aprobado`, `Fallido`, `Bloqueado`. Registrar el resultado y la evidencia por cada ejecucion; no marcar como aprobado por inferencia.
+
+[[uat-01]]
+=== UAT-01 - Arranque y navegacion
+
+*Prioridad:* P0
+
+*Precondiciones:* app instalada.
+
+. Abrir la app.
+. Navegar por Inicio, Buscar, Coleccion y Perfil.
+. Alternar tema claro/oscuro y volver a Coleccion.
+
+*Esperado:* las cuatro secciones se abren, la navegacion sigue respondiendo, el tema cambia y no aparece una pantalla roja ni error de runtime.
+
+*Resultado/evidencia:* pendiente de ejecucion.
+
+[[uat-02]]
+=== UAT-02 - Estado inicial y coleccion vacia
+
+*Prioridad:* P1
+
+*Precondiciones:* almacenamiento de prueba sin registros o conjunto vacio.
+
+. Abrir Coleccion.
+
+*Esperado:* termina el indicador de carga; aparece el estado vacio; no hay tarjetas ni error de parseo.
+
+*Resultado/evidencia:* pendiente de ejecucion.
+
+[[uat-03]]
+=== UAT-03 - Catalogo y perdida de conexion
+
+*Prioridad:* P1
+
+*Precondiciones:* conectividad disponible.
+
+. Abrir Inicio y esperar la carga del catalogo.
+. Desactivar la red y usar Reintentar desde el estado de error (si el servicio deja de responder).
+. Restaurar la red y reintentar.
+
+*Esperado:* con red, se muestran las fichas disponibles. Sin red, la app comunica el fallo y ofrece reintento sin cerrarse. Una respuesta externa invalida tampoco produce exito falso.
+
+*Resultado/evidencia:* pendiente de ejecucion.
+
+[[uat-04]]
+=== UAT-04 - Buscar y filtrar especies de muestra
+
+*Prioridad:* P1
+
+*Precondiciones:* catalogo cargado.
+
+. Abrir Buscar y escribir un nombre comun conocido.
+. Repetir con parte del nombre cientifico o descripcion.
+. Elegir una categoria y luego `Todas`.
+. Buscar un texto sin coincidencias.
+
+*Esperado:* los resultados coinciden con texto y categoria; limpiar busqueda restaura resultados; sin coincidencias aparece estado vacio. Las categorias se identifican como filtros del catalogo de muestra, no como taxonomia definitiva del backend.
+
+*Resultado/evidencia:* pendiente de ejecucion.
+
+[[uat-05]]
+=== UAT-05 - Guardar y quitar ave del catalogo
+
+*Prioridad:* P1
+
+*Precondiciones:* catalogo cargado y espacio local disponible.
+
+. Guardar una especie.
+. Confirmar que aparece en Coleccion y que cambia el estado del boton del catalogo.
+. Cerrar y abrir la app.
+. Quitar la especie desde Coleccion o desde su ficha guardada.
+
+*Esperado:* se conserva tras reinicio y se quita de la lista y del catalogo guardado; se informa el resultado. Si falla borrar el archivo despues de actualizar los metadatos, el mensaje debe indicar el exito parcial.
+
+*Resultado/evidencia:* pendiente de ejecucion.
+
+[[uat-06]]
+=== UAT-06 - Registrar observacion propia desde galeria
+
+*Prioridad:* P0
+
+*Precondiciones:* imagen valida accesible en la galeria.
+
+. Desde Inicio, tocar Agregar foto y elegir galeria.
+. Seleccionar una imagen.
+. Completar nombre, lugar, fecha y comentario; tocar Guardar foto.
+
+*Esperado:* se muestra progreso durante el guardado; al finalizar aparece el registro con imagen y metadatos en Coleccion y una confirmacion. No hay congelamiento prolongado ni pantalla roja.
+
+*Resultado/evidencia:* pendiente de ejecucion.
+
+[[uat-07]]
+=== UAT-07 - Persistencia y eliminacion de observacion propia
+
+*Prioridad:* P0
+
+*Precondiciones:* ejecutar UAT-06.
+
+. Cerrar y volver a abrir la app.
+. Abrir Coleccion y comprobar imagen y metadatos.
+. Quitar el registro.
+. Reiniciar la app y verificar que no reaparece.
+
+*Esperado:* el registro persiste entre sesiones; al quitarlo se actualizan datos y archivo local; no queda una tarjeta huerfana.
+
+*Resultado/evidencia:* pendiente de ejecucion.
+
+[[uat-08]]
+=== UAT-08 - Filtros combinados de Coleccion
+
+*Prioridad:* P1
+
+*Precondiciones:* disponer de al menos una especie guardada y una observacion propia de especie reconocida por el catalogo; preparar tambien un nombre no catalogado.
+
+. En Coleccion, escoger `Mis avistamientos` y `Bosque`.
+. Cambiar solo el tipo a `Todo`, conservando la categoria.
+. Escoger `Aves guardadas` y una categoria sin registros.
+. Filtrar la observacion de nombre no catalogado por `Sin clasificar`.
+
+*Esperado:* ambos filtros se aplican simultaneamente; modificar uno conserva el otro. No hay resultados ajenos a los criterios y se informa claramente cuando no hay coincidencias. Un nombre no catalogado queda bajo `Sin clasificar`; las categorias actuales son una aproximacion basada en el catalogo de muestra.
+
+*Resultado/evidencia:* pendiente de ejecucion.
+
+[[uat-09]]
+=== UAT-09 - Reporte local, no envio remoto
+
+*Prioridad:* P1
+
+*Precondiciones:* disponer de una ficha o registro visible.
+
+. Abrir Reportar.
+. Seleccionar un motivo y guardar el reporte.
+. Abrir Perfil y revisar el contador.
+. Reiniciar la app y comprobar que el contador persiste.
+
+*Esperado:* el reporte se conserva localmente y la interfaz aclara que aun no se envia a moderacion. No se afirma que gestion/backend lo recibio.
+
+*Resultado/evidencia:* pendiente de ejecucion.
+
+[[uat-10]]
+=== UAT-10 - Cancelacion y permisos de imagen
+
+*Prioridad:* P1
+
+*Precondiciones:* posibilidad de cancelar el selector y controlar permisos del dispositivo.
+
+. Abrir selector y cancelar.
+. Repetir denegando permiso de camara o galeria.
+. Seleccionar imagen y cancelar el formulario de datos.
+
+*Esperado:* la operacion cancelada no crea registro ni archivo persistente incompleto; un permiso denegado produce un mensaje comprensible y permite continuar usando las otras secciones.
+
+*Resultado/evidencia:* pendiente de ejecucion.
+
+[[uat-11]]
+=== UAT-11 - Fallo de almacenamiento y archivo ausente
+
+*Prioridad:* P1
+
+*Precondiciones:* entorno controlado que permita provocar espacio insuficiente, archivo inaccesible o ruta local ausente.
+
+. Intentar guardar un registro cuando el sistema no permita completar la escritura.
+. Si se prueba una ruta ausente, abrir una tarjeta cuyo archivo de prueba se haya retirado de forma controlada.
+
+*Esperado:* no se comunica guardado exitoso cuando la persistencia falla; el usuario recibe un error accionable. Una imagen ausente muestra su placeholder y mantiene los metadatos, salvo que el caso pruebe deliberadamente eliminar el registro.
+
+*Resultado/evidencia:* pendiente de ejecucion.
+
+[[uat-12]]
+=== UAT-12 - Verificacion de limites del prototipo
+
+*Prioridad:* P1
+
+*Precondiciones:* build candidato.
+
+. Confirmar que no se solicita login ni se presenta sincronizacion de registros.
+. Guardar una observacion propia y revisar que se muestra en el mismo dispositivo.
+. Crear un reporte y revisar el mensaje de no envio a moderacion.
+. Comprobar que el catalogo se identifica como contenido de demostracion/fuente Wikipedia.
+
+*Esperado:* la app no presenta funcionalidades de backend aun no integradas como disponibles. El comportamiento local queda explicado en interfaz/documentacion.
+
+*Resultado/evidencia:* pendiente de ejecucion.
+
+== 7. Registro de ejecucion
+
+Copiar esta tabla para cada build/ciclo UAT. Adjuntar capturas/videos con nombres que incluyan ID de caso, fecha y build; ocultar informacion personal.
+
+[cols="1,1,1,1,2,2",options="header"]
+|===
+|Caso |Estado |Ejecutor |Fecha |Build/dispositivo |Issue/evidencia
+
+|UAT-01..UAT-12
+|No ejecutado
+|Pendiente
+|Pendiente
+|Build y dispositivo por registrar
+|Pendiente
+
+|===
+
+== 8. Gestion de defectos
+
+Para cada caso fallido:
+
+. Registrar los pasos exactos, resultado esperado/real, build, dispositivo/OS y evidencia.
+. Crear o vincular un GitHub Issue segun el proceso del equipo de gestion; no duplicar un issue existente.
+. Clasificar prioridad con gestion y asignar el equipo responsable.
+. Repetir el caso fallido y sus regresiones relacionadas despues del arreglo.
+. Conservar evidencia del resultado final y cerrar solo con confirmacion del responsable de aceptacion.
+
+== 9. Aprobacion
+
+[cols="1,2,2",options="header"]
+|===
+|Rol |Nombre |Aprobacion/fecha
+
+|Representante producto/gestion
+|Pendiente de asignacion
+|Pendiente
+
+|Lider tecnico mobile
+|Maximiliano (segun asignacion del proyecto)
+|Pendiente
+
+|Backend (para alcance de integracion futura)
+|Jose Luis (segun asignacion del proyecto)
+|Pendiente y fuera de aceptacion del prototipo local
+
+|===
+
+La aprobacion UAT aplica al build y alcance identificados, no a funcionalidades excluidas ni a versiones futuras.
+
+== Referencia metodologica
+
+Estructura basada en la guia de https://elixircl.github.io/elixir-fullstack/swe/uat.html[User Acceptance Testing (UAT)] del equipo.

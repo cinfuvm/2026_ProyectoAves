@@ -1,0 +1,23 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/release/v2.12.0/C4_Container.puml
+
+title Bitacora de Aves Mobile - Contenedores actuales
+
+Person(usuario, "Observador de aves")
+System_Ext(wikipedia, "Wikipedia en espanol", "API HTTPS de resumen y origen de imagenes del catalogo de demostracion.")
+System_Ext(so, "Camara y galeria del dispositivo", "Selector nativo de imagenes.")
+
+System_Boundary(mobile, "Aplicacion mobile Bitacora de Aves") {
+  Container(app, "Aplicacion Flutter", "Flutter / Dart", "UI, navegacion, formularios, filtros y coordinacion de operaciones.")
+  ContainerDb(preferencias, "Preferencias locales", "shared_preferences / JSON", "Metadatos de aves guardadas, observaciones propias y reportes locales.")
+  Container(archivos, "Archivos privados de imagen", "Directorio de documentos", "Copias locales de imagenes seleccionadas o guardadas.")
+}
+
+Rel(usuario, app, "Usa")
+Rel(app, wikipedia, "Obtiene el catalogo de muestra", "HTTPS / REST")
+Rel(app, so, "Abre camara/galeria", "image_picker")
+Rel(app, preferencias, "Lee/escribe colecciones y reportes", "shared_preferences")
+Rel(app, archivos, "Copia, muestra y elimina imagenes", "path_provider / dart:io")
+
+SHOW_LEGEND()
+@enduml

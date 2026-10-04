@@ -1,0 +1,75 @@
+= Arquitectura mobile
+:description: Arquitectura C4 en PlantUML de la aplicacion Flutter Bitacora de Aves.
+:toc:
+:toclevels: 2
+
+== Alcance y estado
+
+Este documento modela la implementacion mobile del prototipo, no una arquitectura desplegada completa. La app Flutter consulta el catalogo de demostracion en Wikipedia y persiste la coleccion y los reportes en el dispositivo. No se observa conexion a la API propia del proyecto, autenticacion, backend de imagenes ni dashboard.
+
+El usuario del producto objetivo aportara la mayor parte de las imagenes. En el prototipo, las imagenes de observaciones propias se seleccionan desde camara/galeria y se guardan solo localmente. El catalogo de Wikipedia es una dependencia secundaria de muestra; no es la fuente arquitectonica de las futuras contribuciones comunitarias.
+
+== C4 - Contexto
+
+image::mobile-c4-context.svg[Diagrama C4 de contexto de Bitacora de Aves Mobile]
+
+== C4 - Contenedores mobile
+
+image::mobile-c4-containers.svg[Diagrama C4 de contenedores de Bitacora de Aves Mobile]
+
+== Limites y responsabilidades
+
+[cols="1,3",options="header"]
+|===
+|Elemento |Responsabilidad actual
+
+|Aplicacion Flutter
+|Presenta Inicio, Buscar, Coleccion y Perfil; administra interacciones, formularios y estado de pantalla.
+
+|Wikipedia en espanol
+|Provee los resumenes e imagenes del catalogo de demostracion. No almacena observaciones de usuarios ni reportes del proyecto.
+
+|Almacenamiento local
+|Conserva en el mismo dispositivo metadatos JSON y archivos de imagen. No sincroniza ni constituye un respaldo.
+
+|Camara/galeria
+|Permite seleccionar una imagen mediante el plugin de plataforma. El usuario confirma los metadatos antes de guardar el registro.
+
+|Backend y dashboard
+|No estan conectados en esta version. La autenticacion, publicacion comunitaria y moderacion remota son integraciones futuras, no contenedores implementados.
+
+|===
+
+== Datos y persistencia
+
+* Los metadatos de catalogo guardado se serializan bajo la clave local `fotos_guardadas_wikipedia_v1`.
+* Los avistamientos propios se serializan bajo `avistamientos_propios_v1`; sus imagenes se copian a un subdirectorio `avistamientos` del directorio de documentos.
+* Los reportes se serializan bajo `reportes_fotos_pendientes_v1`. Su persistencia local no significa que un moderador los haya recibido.
+* Las fotos guardadas del catalogo se copian al directorio privado `coleccion_aves`.
+* Borrar los datos de la app o desinstalarla puede eliminar estos datos locales; no hay restauracion de servidor.
+
+== Consideraciones de seguridad y privacidad
+
+* La app debe pedir acceso a camara/galeria a traves de las APIs de plataforma y respetar la decision del usuario.
+* Los archivos locales son privados al sandbox de la aplicacion; no se afirma que esten cifrados.
+* No cargar fotos de usuarios a servicios externos hasta que exista un contrato de backend, consentimiento y politica de privacidad aprobados.
+* Los enlaces del catalogo abren la pagina fuente en navegador externo; los derechos de imagen dependen de cada recurso.
+* No incluir datos personales, tokens ni contenido sensible en logs o en la documentacion.
+
+== Evolucion propuesta y contratos pendientes
+
+Cuando el backend este disponible, el equipo debe definir antes de integrar:
+
+. Identidad y autorizacion del usuario.
+. Modelo de observacion, identificador estable y estrategia para borrado/edicion.
+. Carga de imagenes, formatos y tamanos permitidos, almacenamiento y URL de acceso.
+. Operacion offline: cola de subida, reintentos, conflictos y estados pendientes.
+. Taxonomia de categorias y validacion de especie/lugar.
+. Contrato de envio de reportes y consulta de su estado por dashboard/moderacion.
+. Migracion de registros locales existentes y tratamiento de fallos parciales.
+
+La arquitectura objetivo debe actualizarse como una version nueva de este documento cuando esos contratos esten aprobados. No se deben representar endpoints, colas o bases de datos futuras como elementos ya desplegados.
+
+== Reproduccion de diagramas
+
+Las fuentes PlantUML se mantienen en `modules/ROOT/partials/` y usan C4-PlantUML 2.12.0. Para generar los SVG y el sitio HTML completo, desde el directorio `docs/` ejecuta `npm ci` una vez y luego `npm run build`. La compilacion renderiza los diagramas con Java local y descarga la interfaz Antora y la libreria C4 fijada a una version; el codigo de los diagramas no se envia a un servicio de renderizado externo.

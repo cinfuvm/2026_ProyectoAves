@@ -1,0 +1,228 @@
+= PRD - Aplicacion mobile Bitacora de Aves
+:description: Requisitos de producto, alcance y criterios de aceptacion para la solucion mobile Flutter.
+:toc:
+:toclevels: 3
+
+== 1. Resumen de la solucion
+
+Bitacora de Aves Mobile es una aplicacion Flutter para que una persona registre encuentros con aves, guarde imagenes y consulte sus registros desde una interfaz movil. El valor principal de la version objetivo es facilitar que la comunidad aporte observaciones e imagenes, y que esas contribuciones puedan integrarse posteriormente con un backend y herramientas de gestion.
+
+El repositorio implementa un *prototipo mobile local*. Permite guardar fotos y sus datos en el dispositivo y explorar un catalogo de demostracion consultado desde Wikipedia. No hay actualmente cuentas, feed remoto de aportes comunitarios, API propia, sincronizacion entre dispositivos, envio de reportes a moderacion ni conteo de popularidad. El catalogo de Wikipedia es una fuente de demostracion y no debe confundirse con la fuente objetivo del contenido comunitario.
+
+=== Problema y oportunidad
+
+Las observaciones de aves suelen quedar dispersas entre fotografias y notas. Una bitacora movil puede asociar una imagen con especie, lugar, fecha y comentario, y ofrecer una forma sencilla de revisar el historial. A futuro, la contribucion comunitaria necesita servicios de backend y procesos de moderacion para ser compartida de forma segura.
+
+=== Usuarios y actores
+
+* *Observador/a de aves:* registra y consulta sus observaciones, explora especies y administra su coleccion local.
+* *Equipo de gestion y moderacion:* requiere reportes utilizables y trazables; el prototipo solo almacena reportes localmente y no satisface el flujo remoto.
+* *Backend:* futuro proveedor de identidad, API, almacenamiento compartido y reglas de negocio.
+* *Dashboard:* futura herramienta web para gestion y moderacion; fuera del alcance de esta solucion mobile.
+
+=== Objetivos de producto
+
+. Permitir registrar una observacion propia con fotografia y datos contextuales.
+. Mantener los registros propios accesibles despues de reiniciar la aplicacion.
+. Permitir explorar y filtrar los registros de la coleccion.
+. Facilitar descubrimiento de especies con un catalogo de muestra mientras se define el contrato de datos definitivo.
+. Preparar una arquitectura mobile que pueda integrarse con la API y los procesos de moderacion del proyecto.
+
+=== Fuera de alcance del prototipo actual
+
+* Autenticacion, perfiles persistentes en servidor y permisos por rol.
+* Publicacion o consulta de fotos aportadas por otros usuarios.
+* Sincronizacion, copias de seguridad o migracion de registros entre dispositivos.
+* Envio de reportes o moderacion desde un dashboard.
+* Conteo de vistas, ranking de popularidad, comentarios, chat o seguimiento de perfiles.
+* Categorias definitivas administradas por el backend.
+
+== 2. Requisitos funcionales
+
+Los estados indican la implementacion observada en el repositorio al redactar este documento: *Implementado local* significa que la funcion opera en el dispositivo; *Demostracion externa* indica una dependencia de Wikipedia; *Pendiente de integracion* no debe presentarse como funcion ya disponible.
+
+[cols="1,3,2,1",options="header"]
+|===
+|ID |Requisito |Estado |Prioridad
+
+|MOB-FR-01
+|La app presenta navegacion entre Inicio, Buscar, Coleccion y Perfil.
+|Implementado local
+|Alta
+
+|MOB-FR-02
+|La app muestra especies de un catalogo de demostracion con imagen, descripcion y enlace fuente.
+|Demostracion externa: Wikipedia en espanol
+|Media
+
+|MOB-FR-03
+|La persona puede buscar especies de demostracion por nombre comun, nombre cientifico o descripcion, y filtrar por las categorias de muestra.
+|Implementado sobre catalogo de demostracion
+|Media
+
+|MOB-FR-04
+|La persona puede guardar y quitar una especie del catalogo en su coleccion local.
+|Implementado local
+|Media
+
+|MOB-FR-05
+|La persona puede seleccionar una imagen de camara o galeria y registrar nombre del ave, lugar, fecha y comentario.
+|Implementado local; sujeto a disponibilidad de permisos y plataforma
+|Alta
+
+|MOB-FR-06
+|La app conserva las imagenes y metadatos de los registros propios localmente y los vuelve a cargar al iniciar.
+|Implementado local; sin sincronizacion
+|Alta
+
+|MOB-FR-07
+|La persona puede filtrar la coleccion por tipo de registro y categoria; los filtros se aplican en conjunto.
+|Implementado local
+|Media
+
+|MOB-FR-08
+|La persona puede quitar un registro propio o un ave guardada de la coleccion local.
+|Implementado local
+|Alta
+
+|MOB-FR-09
+|La persona puede reportar una imagen seleccionando uno o mas motivos y, opcionalmente, detallar Otro.
+|Solo persistencia local; no se envia a moderacion
+|Baja
+
+|MOB-FR-10
+|La app puede publicar observaciones propias y obtener aportes de otros usuarios mediante el backend acordado.
+|Pendiente de integracion; requiere contrato y API
+|Alta para producto objetivo
+
+|MOB-FR-11
+|La app puede enviar reportes al servicio de moderacion y presentar su estado.
+|Pendiente de integracion
+|Media
+
+|===
+
+=== Requisitos de experiencia y accesibilidad
+
+* Las acciones de guardar, quitar y reportar deben informar claramente el resultado.
+* Las operaciones de guardado deben indicar progreso y no bloquear la interaccion sin explicacion.
+* Los errores de permisos, almacenamiento o red deben ofrecer mensajes comprensibles y no simular exito.
+* Los filtros deben ser distinguibles visualmente, mantener su seleccion durante la sesion y poder combinarse.
+* La interfaz debe adaptarse a temas claro y oscuro, y a anchos de pantalla habituales.
+* La imagen no debe ser la unica fuente de informacion: nombre, lugar, fecha y comentario deben seguir disponibles como texto.
+
+== 3. Restricciones y dependencias
+
+=== Restricciones tecnicas actuales
+
+* Aplicacion desarrollada en Flutter y Dart; manifiesto con minimo de SDK Dart `^3.13.4`.
+* Paquetes principales: `image_picker`, `http`, `url_launcher`, `path_provider` y `shared_preferences`.
+* La coleccion se guarda en preferencias locales y las imagenes en directorios de documentos de la app.
+* La consulta del catalogo depende de conectividad y de la API de resumen de Wikipedia en espanol.
+* El README identifica Android como plataforma actualmente configurada; Android e iOS son objetivo de entrega, pero iOS necesita validacion especifica antes de declararse soportado.
+* No hay servicio de API propio conectado ni almacenamiento remoto.
+
+=== Dependencias y acuerdos entre equipos
+
+* Backend debe acordar autenticacion, contratos, validacion, limites de carga, almacenamiento de imagenes y errores de API.
+* Dashboard y gestion deben acordar motivos, estados y trazabilidad de reportes/moderacion.
+* El equipo mobile debe convertir esos contratos acordados en requisitos y pruebas antes de integrar.
+* DevOps mantiene la publicacion de documentacion HTML; mobile mantiene sus fuentes AsciiDoc y diagramas.
+* El catalogo de Wikipedia contiene informacion e imagenes de terceros; cada pagina fuente tiene sus propias condiciones y creditos. No debe asumirse que todo el contenido permite la misma reutilizacion.
+
+== 4. Criterios de aceptacion
+
+La version prototipo mobile se acepta cuando se cumplen los criterios `MOB-AC-*`. Los requisitos que necesitan servidor se aceptan solo en una entrega posterior una vez aprobados los contratos de integracion.
+
+[cols="1,3,2",options="header"]
+|===
+|ID |Criterio verificable |Casos UAT
+
+|MOB-AC-01
+|La app inicia y permite navegar por sus cuatro secciones sin errores de runtime.
+|xref:mobile-uat.adoc#uat-01[UAT-01], xref:mobile-uat.adoc#uat-02[UAT-02]
+
+|MOB-AC-02
+|Con conectividad, el catalogo de muestra carga especies; una falla de red ofrece reintento y no cierra la app.
+|xref:mobile-uat.adoc#uat-03[UAT-03]
+
+|MOB-AC-03
+|La busqueda y el filtro por categoria de muestra reducen los resultados correctamente.
+|xref:mobile-uat.adoc#uat-04[UAT-04]
+
+|MOB-AC-04
+|Un ave del catalogo guardada aparece en Coleccion, sobrevive al reinicio y puede quitarse.
+|xref:mobile-uat.adoc#uat-05[UAT-05]
+
+|MOB-AC-05
+|Un registro propio con imagen, nombre, lugar, fecha y comentario aparece en Coleccion, sobrevive al reinicio y puede quitarse.
+|xref:mobile-uat.adoc#uat-06[UAT-06], xref:mobile-uat.adoc#uat-07[UAT-07]
+
+|MOB-AC-06
+|Los filtros Tipo y Categoria se combinan y muestran solo los registros coincidentes.
+|xref:mobile-uat.adoc#uat-08[UAT-08]
+
+|MOB-AC-07
+|Un reporte seleccionado se conserva localmente, e informa que aun no se envio a moderacion.
+|xref:mobile-uat.adoc#uat-09[UAT-09]
+
+|MOB-AC-08
+|Cancelar la seleccion, denegar permisos o cancelar formularios no crea registros parciales ni produce una pantalla de error.
+|xref:mobile-uat.adoc#uat-10[UAT-10]
+
+|MOB-AC-09
+|En caso de error de almacenamiento, la app comunica el fallo sin indicar que el registro se guardo correctamente.
+|xref:mobile-uat.adoc#uat-11[UAT-11]
+
+|MOB-AC-10
+|Catalogo, reportes remotos, cuentas y sincronizacion permanecen identificados como no disponibles mientras no exista integracion backend.
+|Revision de alcance; xref:mobile-uat.adoc#uat-12[UAT-12]
+
+|===
+
+== 5. Flujo principal de registro
+
+. La persona toca *Agregar foto*.
+. Selecciona camara o galeria y elige una imagen.
+. Completa nombre del ave, lugar, fecha y comentario; puede cancelar sin guardar.
+. La app copia la imagen a almacenamiento privado y guarda los metadatos localmente.
+. La app muestra el nuevo registro en Coleccion y confirma el guardado.
+. La persona puede filtrar o quitar ese registro.
+
+La implementacion del almacenamiento local y sus limites se muestra en xref:mobile-architecture.adoc[Arquitectura mobile]. Los pasos de aceptacion se describen en xref:mobile-uat.adoc[Plan de pruebas y UAT].
+
+== 6. Recursos de UX
+
+La interfaz del prototipo contiene una barra de navegacion inferior, tarjetas de imagen y formularios de registro/reporte. Los filtros de Coleccion presentan los controles *Mostrar* y *Categoria* en paralelo; las opciones pueden desplazarse horizontalmente en dispositivos estrechos. La implementacion actual sirve como referencia funcional, no como sistema visual definitivo.
+
+No se incluye un enlace a un prototipo externo aprobado. Si el equipo adopta un diseno/wireframe oficial, agregarlo aqui y registrar su version para mantener trazabilidad entre diseno, implementacion y UAT.
+
+== 7. Casos borde y riesgos
+
+* Permiso de camara/galeria denegado o cancelacion del selector.
+* Android finaliza la actividad mientras el selector nativo esta abierto; la recuperacion de datos perdidos debe revisarse en dispositivo.
+* Archivo grande, extension inesperada, archivo inaccesible o espacio insuficiente.
+* La app se cierra durante la copia o antes de persistir los metadatos.
+* Una ruta local deja de existir; la interfaz debe mostrar estado de imagen faltante y conservar informacion textual util.
+* Wikipedia no responde, limita solicitudes, devuelve formato inesperado o un articulo sin miniatura.
+* El nombre de especie escrito por una persona no coincide con el catalogo de muestra y queda como `Sin clasificar`.
+* Datos locales corruptos o version futura del esquema requieren manejo explicito; no borrar datos automaticamente.
+* Quitar una entrada y fallar al borrar el archivo debe distinguir el exito parcial del borrado completo.
+* Dos operaciones de guardado simultaneas no deben crear estados inconsistentes.
+* Escalado de fuente, teclado visible, pantalla pequena y tema oscuro pueden provocar overflow.
+
+== 8. Dependencias de negocio
+
+* Gestion valida alcance, prioridad y definicion de listo.
+* Liderazgo mobile indicado: Maximiliano.
+* Backend confirma identidad, contratos y politicas antes de implementar aportes remotos.
+* Gestion/moderacion confirma taxonomia de categorias, reportes y proceso de atencion.
+* DevOps publica el sitio HTML de Antora desde las fuentes versionadas.
+
+== 9. Trazabilidad de implementacion
+
+La pantalla y el estado de los flujos se implementan actualmente en `lib/screens/home_screen.dart`; el arranque y tema se configuran en `lib/main.dart`. La informacion de estado de producto debe actualizarse cuando se integren servicios o cambien las capacidades mobile.
+
+== Referencia metodologica
+
+Estructura basada en la guia de https://elixircl.github.io/elixir-fullstack/swe/prd.html[Product Requirements Document (PRD)] del equipo.

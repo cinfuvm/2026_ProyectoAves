@@ -1,0 +1,8 @@
+* Bitacora de Aves - Mobile
+** xref:index.adoc[Inicio]
+** Producto
+*** xref:mobile-prd.adoc[PRD mobile]
+*** xref:mobile-uat.adoc[Plan de pruebas y UAT]
+*** xref:mobile-changes.adoc[Registro de cambios]
+** Arquitectura
+*** xref:mobile-architecture.adoc[Arquitectura mobile]

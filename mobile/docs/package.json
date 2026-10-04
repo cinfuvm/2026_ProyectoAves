@@ -1,0 +1,13 @@
+{
+  "name": "bitacora-aves-mobile-docs",
+  "private": true,
+  "scripts": {
+    "render:diagrams": "node scripts/render-diagrams.mjs",
+    "build": "npm run render:diagrams && antora antora-playbook.yml"
+  },
+  "devDependencies": {
+    "@antora/cli": "3.2.1",
+    "@antora/site-generator-default": "3.2.1",
+    "plantuml-cli": "1.2026.8"
+  }
+}

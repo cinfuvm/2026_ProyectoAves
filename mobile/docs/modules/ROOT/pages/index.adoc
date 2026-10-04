@@ -1,0 +1,25 @@
+= Bitacora de Aves - Mobile
+:description: Documentacion del producto, arquitectura y aceptacion de la aplicacion movil Bitacora de Aves.
+
+Bitacora de Aves es una aplicacion Flutter para registrar observaciones de aves y conservar una coleccion personal en el dispositivo.
+
+Esta documentacion describe *la solucion mobile y su estado en el prototipo del repositorio*. No afirma que exista una API propia, sincronizacion de usuarios ni moderacion remota: esos servicios requieren integracion con los equipos backend y dashboard.
+
+El componente sigue la estructura Antora recomendada por https://github.com/NinjasCL/antora-docs-bootstrap[antora-docs-bootstrap]. El PRD y el plan UAT toman como referencia las guias de https://elixircl.github.io/elixir-fullstack/swe/prd.html[PRD] y https://elixircl.github.io/elixir-fullstack/swe/uat.html[UAT] del equipo.
+
+== Documentos
+
+* xref:mobile-prd.adoc[PRD mobile]: alcance, actores, requisitos, restricciones y criterios de aceptacion.
+* xref:mobile-architecture.adoc[Arquitectura mobile]: diagramas C4 en PlantUML y limites de integracion.
+* xref:mobile-uat.adoc[Plan de pruebas y UAT]: casos manuales, datos, evidencia y registro de resultados.
+* xref:mobile-changes.adoc[Registro de cambios]: resumen funcional y documental de los cambios mobile.
+
+== Compilacion
+
+Este directorio es un componente Antora con su playbook local. Desde `docs/`, ejecuta `npm ci` para instalar las herramientas y `npm run build` para generar el sitio HTML en `docs/_build/site/`. La compilacion incluye los diagramas C4 renderizados como SVG localmente.
+
+Tambien puedes abrir los archivos `.adoc` en VS Code y usar el comando `AsciiDoc: Open Preview` para leer cada documento.
+
+== Responsabilidad
+
+La documentacion de esta carpeta cubre solo mobile. El liderazgo tecnico mobile indicado para el proyecto es Maximiliano. El equipo mobile debe validar los requisitos y criterios con gestion, y acordar contratos de API con backend antes de presentar las funciones de red como disponibles.

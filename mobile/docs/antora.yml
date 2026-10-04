@@ -1,0 +1,5 @@
+name: bitacora-mobile
+title: Bitacora de Aves - Mobile
+version: '0.1'
+nav:
+  - modules/ROOT/nav.adoc
