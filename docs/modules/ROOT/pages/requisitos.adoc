@@ -1,0 +1,69 @@
+= Requisitos funcionales
+
+== Cuentas y acceso
+
+[cols="1,6"]
+|===
+|ID |Requisito
+
+|RF-01 |Registro de usuarios.
+|RF-02 |Inicio y cierre de sesión (móvil y dashboard).
+|RF-03 |Roles: usuario, moderador, administrador, con acceso al dashboard solo para los dos últimos.
+|RF-04 |Edición de perfil básico (supuesto).
+|===
+
+== Catálogo de aves
+
+[cols="1,6"]
+|===
+|ID |Requisito
+
+|RF-05 |CRUD completo de aves (administrador).
+|RF-06 |Buscador de aves por nombre y por categoría, vía API REST.
+|RF-07 |Ficha de ave con datos del proyecto base "Aves de Chile" y fotos de avistamientos.
+|===
+
+== Bitácora de avistamientos
+
+[cols="1,6"]
+|===
+|ID |Requisito
+
+|RF-08 |Registrar avistamiento con Lugar, Fecha, Comentario y Fotografía.
+|RF-09 |Editar y eliminar los propios avistamientos.
+|RF-10 |Ver la bitácora personal.
+|RF-11 |Ver fotos subidas por otros usuarios, filtradas por ave o categoría.
+|RF-12 |Agregar fotos de otros usuarios a una colección personal.
+|===
+
+== Moderación y popularidad
+
+[cols="1,6"]
+|===
+|ID |Requisito
+
+|RF-13 |Reportar una foto que no corresponde a un ave.
+|RF-14 |Cola de reportes para moderadores, con acciones de aprobar o retirar la foto.
+|RF-15 |Sección "Aves populares" con las más vistas por los usuarios.
+|===
+
+== Dashboard web y landing
+
+[cols="1,6"]
+|===
+|ID |Requisito
+
+|RF-16 |Gestión de usuarios (ver, editar, suspender).
+|RF-17 |Gestión de aves y de colecciones personales de avistamiento.
+|RF-18 |Landing page que invite a instalar la app móvil.
+|===
+
+== API y documentación
+
+[cols="1,6"]
+|===
+|ID |Requisito
+
+|RF-19 |API REST documentada con OpenAPI, que sirva al dashboard y a la app móvil.
+|RF-20 |Colección Bruno con las pruebas de los endpoints.
+|===
