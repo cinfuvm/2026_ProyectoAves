@@ -1,0 +1,7 @@
+= Bitácora de Aves
+
+Sistema de administración de datos de aves y bitácora de avistamientos por usuario, con panel web de administración y aplicación móvil.
+
+== Contenido
+
+* xref:requisitos.adoc[Requisitos funcionales]
