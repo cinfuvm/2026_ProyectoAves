@@ -10,6 +10,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'perfil_screen.dart';
+
 abstract final class _ColoresAves {
   static const morado = Color(0xFF5B2D91);
   static const violeta = Color(0xFF8B5CC7);
@@ -1455,37 +1457,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _construirPerfil() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.person_outline_rounded,
-              size: 52,
-              color: _ColoresAves.violeta,
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Perfil en preparación',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Reportes guardados en este dispositivo: '
-              '${_reportesFotos.length}',
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Los reportes aún no se envían al equipo de moderación.',
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
+    return PerfilScreen(reportesGuardados: _reportesFotos.length);
   }
 }
 
