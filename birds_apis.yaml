@@ -1,0 +1,458 @@
+openapi: 3.0.3
+
+info:
+  title: Birds API
+  version: 1.0.0
+  description: |
+    Contrato REST del proyecto de observatorio de aves.
+
+    Autentica usuarios, consulta fotografías por categoría, sube avistamientos
+    y registra reportes de moderación.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://127.0.0.1
+    description: Servidor local de desarrollo (UML)
+
+tags:
+  - name: API users
+    description: Registro e inicio de sesión.
+  - name: API fotos
+    description: Consulta, carga y reporte de fotografías de avistamientos.
+
+paths:
+  /user/signin:
+    post:
+      tags:
+        - API users
+      summary: Crear usuario
+      description: Registra un usuario nuevo.
+      operationId: signin
+      security: []
+      requestBody:
+        $ref: '#/components/requestBodies/CrearUsuario'
+      responses:
+        '201':
+          description: Usuario creado. Se devuelve la sesión inicial.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaSesion'
+        '400':
+          $ref: '#/components/responses/ValidacionFallida'
+        '409':
+          description: El nombre de usuario ya existe.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: usuario_duplicado
+                message: El usuario 'ana' ya está registrado.
+        '422':
+          $ref: '#/components/responses/ValidacionFallida'
+
+  /user/login:
+    post:
+      tags:
+        - API users
+      summary: Iniciar sesión
+      description: |
+        Autentica a un usuario registrado y devuelve el token de sesión.
+        Operación pública: no requiere cabecera `Authorization`.
+      operationId: login
+      security: []
+      requestBody:
+        $ref: '#/components/requestBodies/LogIn'
+      responses:
+        '200':
+          description: Credenciales válidas. El token de sesión viaja en el cuerpo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaSesion'
+              examples:
+                tokenPlano:
+                  summary: Token en la raíz
+                  value:
+                    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+                    user: anaruiz.aves
+                tokenAnidado:
+                  summary: Token dentro de `data`
+                  value:
+                    data:
+                      token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+                      user: anaruiz.aves
+        '400':
+          $ref: '#/components/responses/ValidacionFallida'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+
+  /images:
+    get:
+      tags:
+        - API fotos
+      summary: Filtrar fotos
+      description: Devuelve las fotografías de una categoría taxonómica.
+      operationId: filtrarFotos
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Categoria'
+        - $ref: '#/components/parameters/Pagina'
+        - $ref: '#/components/parameters/PorPagina'
+      responses:
+        '200':
+          description: Fotografías de la categoría consultada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginaImagenes'
+        '400':
+          $ref: '#/components/responses/ValidacionFallida'
+        '404':
+          description: La categoría no existe en el catálogo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags:
+        - API fotos
+      summary: Subir fotos
+      description: Sube una fotografía de avistamiento.
+      operationId: subirFoto
+      security:
+        - bearerAuth: []
+      requestBody:
+        $ref: '#/components/requestBodies/SubirFoto'
+      responses:
+        '201':
+          description: Fotografía subida.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Imagen'
+        '400':
+          $ref: '#/components/responses/ValidacionFallida'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '413':
+          description: El archivo supera el tamaño máximo permitido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags:
+        - API fotos
+      summary: Reportar foto
+      description: Abre un reporte de moderación.
+      operationId: reportarFoto
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ImagenId'
+      requestBody:
+        $ref: '#/components/requestBodies/ReporteFoto'
+      responses:
+        '200':
+          description: Reporte registrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReporteModeracion'
+        '400':
+          $ref: '#/components/responses/ValidacionFallida'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '404':
+          description: La fotografía reportada no existe.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Sesion:
+      type: object
+      description: Datos mínimos de una sesión autenticada.
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: Token JWT de sesión.
+        user:
+          type: string
+          description: Identificador público del usuario.
+        expires_in:
+          type: integer
+          format: int32
+          description: Tiempo de validez del token en segundos.
+
+    RespuestaSesion:
+      oneOf:
+        - $ref: '#/components/schemas/Sesion'
+        - type: object
+          description: Variante con los datos de sesión anidados en `data`.
+          required:
+            - data
+          properties:
+            data:
+              $ref: '#/components/schemas/Sesion'
+
+    LogIn:
+      type: object
+      description: Credenciales de acceso.
+      required:
+        - user
+        - password
+      properties:
+        user:
+          type: string
+          example: anaruiz.aves
+        password:
+          type: string
+          format: password
+
+    CrearUsuario:
+      type: object
+      description: Datos de registro de un usuario nuevo.
+      required:
+        - user
+        - password
+        - confirm_pasword
+      properties:
+        user:
+          type: string
+          minLength: 3
+        password:
+          type: string
+          format: password
+          minLength: 8
+        confirm_pasword:
+          type: string
+          format: password
+          minLength: 8
+
+    Imagen:
+      type: object
+      description: Fotografía de avistamiento disponible en el catálogo.
+      required:
+        - url
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+          format: uri
+        categoria:
+          type: string
+        subida_en:
+          type: string
+          format: date-time
+
+    PaginaImagenes:
+      type: object
+      description: Página de fotografías filtradas por categoría.
+      required:
+        - urls
+        - paginado
+      properties:
+        urls:
+          type: array
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/Imagen'
+              - type: string
+                format: uri
+        paginado:
+          oneOf:
+            - type: object
+              description: Metadatos de paginación como objeto.
+              required:
+                - pagina
+                - total
+              properties:
+                pagina:
+                  type: integer
+                  minimum: 0
+                total:
+                  type: integer
+                  minimum: 0
+            - type: string
+              description: Metadatos de paginación como `pagina/total`.
+              pattern: '^\d+/\d+$'
+
+    ReporteFoto:
+      type: object
+      description: Datos para reportar una fotografía.
+      required:
+        - motivo
+      properties:
+        motivo:
+          $ref: '#/components/schemas/MotivoReporte'
+        detalle:
+          type: string
+          maxLength: 500
+
+    ReporteModeracion:
+      type: object
+      description: Reporte registrado por moderación.
+      required:
+        - id
+        - avistamiento_id
+        - motivo
+        - estado
+      properties:
+        id:
+          type: string
+        avistamiento_id:
+          type: string
+        ave_id:
+          type: string
+          nullable: true
+        motivo:
+          $ref: '#/components/schemas/MotivoReporte'
+        detalle:
+          type: string
+          nullable: true
+        estado:
+          $ref: '#/components/schemas/EstadoReporte'
+        creado_en:
+          type: string
+          format: date-time
+        foto_url:
+          type: string
+          format: uri
+          nullable: true
+
+    MotivoReporte:
+      type: string
+      description: Motivo permitido para reportar una fotografía.
+      enum:
+        - no_es_ave
+        - imagen_enganosa
+        - contenido_ofensivo
+        - derechos_autor
+        - otro
+
+    EstadoReporte:
+      type: string
+      description: Estado actual del reporte en moderación.
+      enum:
+        - recibido
+        - en_revision
+        - resuelto
+        - descartado
+
+    Error:
+      type: object
+      description: Error devuelto por la API.
+      required:
+        - error
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+
+  parameters:
+    Categoria:
+      name: categoria
+      in: query
+      required: true
+      description: Categoría taxonómica a consultar.
+      schema:
+        type: string
+      example: bosque
+
+    ImagenId:
+      name: id
+      in: query
+      required: true
+      description: Identificador de la fotografía.
+      schema:
+        type: string
+
+    Pagina:
+      name: pagina
+      in: query
+      required: false
+      description: Número de página, empezando en 0.
+      schema:
+        type: integer
+        default: 0
+
+    PorPagina:
+      name: por_pagina
+      in: query
+      required: false
+      description: Cantidad de resultados por página.
+      schema:
+        type: integer
+        default: 20
+
+  requestBodies:
+    LogIn:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/LogIn'
+
+    CrearUsuario:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CrearUsuario'
+
+    SubirFoto:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            description: Archivo de imagen y categoría del avistamiento.
+            required:
+              - file
+            properties:
+              file:
+                type: string
+                format: binary
+              categoria:
+                type: string
+
+    ReporteFoto:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ReporteFoto'
+
+  responses:
+    NoAutorizado:
+      description: Token ausente, vencido o inválido.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ValidacionFallida:
+      description: Solicitud incorrecta.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
