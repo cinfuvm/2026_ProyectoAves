@@ -1,0 +1,231 @@
+defmodule ProyectoAvesWeb.AdminLive.Aves.Index do
+  use ProyectoAvesWeb, :live_view
+  alias Phoenix.LiveView.JS
+
+  @impl true
+  def mount(_params, _session, socket) do
+    aves_mock = [
+      %{id: 1, nombre_comun: "Zorzal", nombre_cientifico: "Turdus falcklandii", familia: "Turdidae"},
+      %{id: 2, nombre_comun: "Loica", nombre_cientifico: "Leistes loyca", familia: "Icteridae"},
+      %{id: 3, nombre_comun: "Cóndor Andino", nombre_cientifico: "Vultur gryphus", familia: "Cathartidae"}
+    ]
+
+    {:ok, assign(socket, :aves, aves_mock)}
+  end
+
+  @impl true
+  def handle_params(params, _url, socket) do
+    {:noreply, apply_action(socket, socket.assigns.live_action, params)}
+  end
+
+  defp apply_action(socket, :edit, %{"id" => id}) do
+    ave_mock = Enum.find(socket.assigns.aves, fn a -> to_string(a.id) == id end) || %{}
+
+    socket
+    |> assign(:page_title, "Editar Ave")
+    |> assign(:ave, ave_mock)
+  end
+
+  defp apply_action(socket, :new, _params) do
+    socket
+    |> assign(:page_title, "Registrar Ave")
+    |> assign(:ave, %{})
+  end
+
+  defp apply_action(socket, :index, _params) do
+    socket
+    |> assign(:page_title, "Gestión de Aves")
+    |> assign(:ave, nil)
+  end
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <div class="min-h-screen bg-slate-950 text-white">
+      <div class="flex">
+
+        <aside class="hidden min-h-screen w-64 border-r border-slate-800 bg-slate-900 lg:block">
+          <div class="p-6">
+            <h1 class="text-xl font-bold">Proyecto Aves</h1>
+            <p class="mt-1 text-sm text-slate-400">Administración</p>
+          </div>
+
+          <nav class="space-y-2 px-4">
+            <.nav_item label="Dashboard" />
+            <.nav_item label="Aves" active />
+            <.nav_item label="Usuarios" />
+          </nav>
+        </aside>
+
+        <main class="flex-1">
+          <header class="border-b border-slate-800 bg-slate-900 px-6 py-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-2xl font-semibold">Gestión de Aves</h2>
+                <p class="text-sm text-slate-400">
+                  Administración del catálogo de especies
+                </p>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <div class="text-right">
+                  <p class="text-sm font-medium">Administrador</p>
+                  <p class="text-xs text-slate-400">admin@aves.cl</p>
+                </div>
+
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 font-bold">
+                  A
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <section class="p-6">
+            <div class="rounded-xl border border-slate-800 bg-slate-900">
+              <div class="flex items-center justify-between border-b border-slate-800 p-5">
+                <div>
+                  <h3 class="font-semibold">Catálogo de Especies</h3>
+                  <p class="text-sm text-slate-400">
+                    Listado completo de aves registradas en el sistema
+                  </p>
+                </div>
+
+                <.link patch={~p"/admin/aves/new"} class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium hover:bg-indigo-500 transition">
+                  Registrar nueva ave
+                </.link>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                  <thead class="border-b border-slate-800 text-slate-400">
+                    <tr>
+                      <th class="px-5 py-4">Nombre Común</th>
+                      <th class="px-5 py-4">Nombre Científico</th>
+                      <th class="px-5 py-4">Familia</th>
+                      <th class="px-5 py-4 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    <%= for ave <- @aves do %>
+                      <tr class="border-b border-slate-800/70 hover:bg-slate-800/40" id={"ave-#{ave.id}"}>
+                        <td class="px-5 py-4 font-medium"><%= ave.nombre_comun %></td>
+                        <td class="px-5 py-4 text-slate-400 italic"><%= ave.nombre_cientifico %></td>
+                        <td class="px-5 py-4"><%= ave.familia %></td>
+                        <td class="px-5 py-4 text-right space-x-3">
+                          <.link patch={~p"/admin/aves/#{ave.id}/edit"} class="text-indigo-400 hover:text-indigo-300">
+                            Editar
+                          </.link>
+                          <.link phx-click={JS.push("delete", value: %{id: ave.id})} data-confirm="¿Estás seguro de que deseas eliminar este registro?" class="text-red-400 hover:text-red-300">
+                            Eliminar
+                          </.link>
+                        </td>
+                      </tr>
+                    <% end %>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <%= if @live_action in [:new, :edit] do %>
+      <.modal id="ave-modal" show on_cancel={JS.patch(~p"/admin/aves")}>
+        <.live_component
+          module={ProyectoAvesWeb.AdminLive.Aves.FormComponent}
+          id={Map.get(@ave, :id, :new)}
+          title={@page_title}
+          action={@live_action}
+          ave={@ave}
+          patch={~p"/admin/aves"}
+        />
+      </.modal>
+    <% end %>
+    """
+  end
+
+  @impl true
+  def handle_event("delete", %{"id" => id}, socket) do
+    aves_actualizadas = Enum.reject(socket.assigns.aves, fn a -> to_string(a.id) == id end)
+    {:noreply, assign(socket, :aves, aves_actualizadas)}
+  end
+
+  @impl true
+  def handle_info({ProyectoAvesWeb.AdminLive.Aves.FormComponent, {:saved, ave}}, socket) do
+    aves = Enum.reject(socket.assigns.aves, &(&1.id == ave.id))
+    {:noreply, assign(socket, :aves, [ave | aves])}
+  end
+
+  attr :label, :string, required: true
+  attr :active, :boolean, default: false
+
+  defp nav_item(assigns) do
+    ~H"""
+    <a href="#" class={["block rounded-lg px-4 py-3 text-sm font-medium transition", @active && "bg-indigo-600 text-white", !@active && "text-slate-400 hover:bg-slate-800 hover:text-white"]}>
+      <%= @label %>
+    </a>
+    """
+  end
+end
+
+defmodule ProyectoAvesWeb.AdminLive.Aves.FormComponent do
+  use ProyectoAvesWeb, :live_component
+  alias Phoenix.LiveView.JS
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <div class="bg-slate-900 p-6 rounded-xl text-white">
+      <h2 class="text-xl font-bold mb-6"><%= @title %></h2>
+
+      <.simple_form
+        for={@form}
+        id="ave-form"
+        phx-target={@myself}
+        phx-submit="save"
+      >
+        <div class="space-y-4">
+          <.input field={@form[:nombre_comun]} type="text" label="Nombre Común" class="bg-slate-800 border-slate-700 text-white" />
+          <.input field={@form[:nombre_cientifico]} type="text" label="Nombre Científico" class="bg-slate-800 border-slate-700 text-white" />
+          <.input field={@form[:familia]} type="text" label="Familia" class="bg-slate-800 border-slate-700 text-white" />
+        </div>
+
+        <:actions>
+          <.button phx-disable-with="Guardando..." class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg mt-4">
+            Guardar Ave
+          </.button>
+        </:actions>
+      </.simple_form>
+    </div>
+    """
+  end
+
+  @impl true
+  def update(%{ave: ave} = assigns, socket) do
+    form = to_form(ave, as: "ave")
+
+    {:ok,
+     socket
+     |> assign(assigns)
+     |> assign(:form, form)}
+  end
+
+  @impl true
+  def handle_event("save", %{"ave" => ave_params}, socket) do
+    nuevo_ave = Map.merge(socket.assigns.ave, %{
+      id: Map.get(socket.assigns.ave, :id, System.unique_integer([:positive])),
+      nombre_comun: ave_params["nombre_comun"],
+      nombre_cientifico: ave_params["nombre_cientifico"],
+      familia: ave_params["familia"]
+    })
+
+    send(self(), {__MODULE__, {:saved, nuevo_ave}})
+
+    {:noreply,
+     socket
+     |> put_flash(:info, "Registro guardado correctamente")
+     |> push_patch(to: socket.assigns.patch)}
+  end
+end
