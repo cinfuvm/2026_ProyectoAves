@@ -14,11 +14,11 @@
 
     RF-02: Inicio y cierre de sesión (móvil y dashboard).
     RF-03: Roles: usuario, moderador, administrador, con acceso al dashboard solo para los dos últimos.
+    RF-05: CRUD completo de aves (administrador).
     RF-16: Gestión de usuarios (ver, editar, suspender).
 
 * ❌ Requisitos por Completar
 
-    RF-05: CRUD completo de aves (administrador).
     RF-14: Cola de reportes para moderadores, con acciones de aprobar o retirar la foto.
     RF-17: Gestión de aves y de colecciones personales de avistamiento.
     RF-18: Landing page que invite a instalar la app móvil.
