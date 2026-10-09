@@ -11,9 +11,15 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../models/categoria_ave.dart';
+import '../models/foto_publica.dart';
+import '../services/auth_service.dart';
+import '../services/fotos_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/aparicion_diferida.dart';
+import '../widgets/texto_expandible.dart';
 import '../widgets/visor_foto.dart';
+import 'explorar_screen.dart';
 import 'perfil_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -26,9 +32,14 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const _claveColeccion = 'fotos_guardadas_wikipedia_v1';
+  static const _claveColeccion = 'aves_guardadas_catalogo_v1';
+  static const _claveColeccionAnterior = 'fotos_guardadas_wikipedia_v1';
   static const _claveAvistamientos = 'avistamientos_propios_v1';
   static const _claveReportes = 'reportes_fotos_pendientes_v1';
+  static const _claveSubidasPendientes = 'subidas_bff_pendientes_v1';
+  static const _urlBaseAves = 'https://uvm.neocities.org/aves/';
+  static const _urlBaseDatosAves = '${_urlBaseAves}fixtures/';
+  static const _solicitudesCatalogoPorLote = 12;
   static const _motivosReporte = [
     'La foto no muestra un ave',
     'Contenido inapropiado',
@@ -42,9 +53,12 @@ class _HomeScreenState extends State<HomeScreen> {
   final PageController _controladorPaginas = PageController();
   final ImagePicker _selectorImagen = ImagePicker();
   final TextEditingController _controladorBusqueda = TextEditingController();
+  final FotosService _fotosServicio = FotosService();
   List<_FotoGuardada> _fotosGuardadas = [];
   List<_AvistamientoPropio> _avistamientosPropios = [];
   List<_ReporteFoto> _reportesFotos = [];
+  List<_AveCatalogo> _avesCargadas = [];
+  int _fichasCargadas = 0;
   final Set<String> _avesGuardandose = {};
   bool _cargandoColeccion = true;
   bool _guardandoAvistamiento = false;
@@ -53,47 +67,12 @@ class _HomeScreenState extends State<HomeScreen> {
   String _categoriaSeleccionada = 'Todas';
   String _filtroTipoColeccion = 'Todo';
   String _filtroCategoriaColeccion = 'Todas';
-  late Future<List<_AveWikipedia>> _aves;
+  late Future<List<_AveCatalogo>> _aves;
 
-  static const List<String> _categorias = [
-    'Todas',
-    'Bosque',
-    'Rapaces',
-    'Humedal',
-    'Pradera',
-    'Picaflores',
-  ];
-  static const List<String> _categoriasColeccion = [
-    ..._categorias,
-    'Sin clasificar',
-  ];
   static const List<String> _tiposColeccion = [
     'Todo',
     'Aves guardadas',
     'Mis avistamientos',
-  ];
-
-  static const List<({String nombre, String pagina, String categoria})>
-  _catalogo = [
-    (nombre: 'Chucao', pagina: 'Chucao', categoria: 'Bosque'),
-    (nombre: 'Cóndor andino', pagina: 'Cóndor_andino', categoria: 'Rapaces'),
-    (nombre: 'Loica común', pagina: 'Sturnella_loyca', categoria: 'Pradera'),
-    (
-      nombre: 'Flamenco chileno',
-      pagina: 'Flamenco_austral',
-      categoria: 'Humedal',
-    ),
-    (
-      nombre: 'Carpintero negro',
-      pagina: 'Campephilus_magellanicus',
-      categoria: 'Bosque',
-    ),
-    (
-      nombre: 'Picaflor gigante',
-      pagina: 'Patagona_gigas',
-      categoria: 'Picaflores',
-    ),
-    (nombre: 'Chincol', pagina: 'Zonotrichia_capensis', categoria: 'Pradera'),
   ];
 
   @override
@@ -103,6 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _cargarColeccion();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _recuperarImagenPerdida();
+      _reintentarSubidasPendientes();
     });
   }
 
@@ -120,76 +100,182 @@ class _HomeScreenState extends State<HomeScreen> {
     messenger.showSnackBar(SnackBar(content: Text(mensaje)));
   }
 
-  Future<List<_AveWikipedia>> _cargarAves() async {
-    final respuestas = await Future.wait(
-      _catalogo.map((ave) async {
-        final uri = Uri.https(
-          'es.wikipedia.org',
-          '/api/rest_v1/page/summary/${ave.pagina}',
+  Future<List<_AveCatalogo>> _cargarAves() async {
+    final uriIndice = Uri.parse('${_urlBaseDatosAves}index.json');
+    final respuestaIndice = await http
+        .get(uriIndice)
+        .timeout(const Duration(seconds: 15));
+    if (respuestaIndice.statusCode != HttpStatus.ok) {
+      throw HttpException(
+        'Aves de Chile respondió con estado ${respuestaIndice.statusCode}.',
+        uri: uriIndice,
+      );
+    }
+
+    final jsonIndice = jsonDecode(utf8.decode(respuestaIndice.bodyBytes));
+    if (jsonIndice is! List<dynamic>) {
+      throw const FormatException(
+        'El índice de Aves de Chile no tiene un formato válido.',
+      );
+    }
+
+    final indice = jsonIndice.map((entrada) {
+      if (entrada is! Map<String, dynamic>) {
+        throw const FormatException(
+          'El índice contiene una ficha de ave no válida.',
         );
-        final respuesta = await http
-            .get(uri)
-            .timeout(const Duration(seconds: 15));
+      }
+      return _EntradaCatalogo.fromJson(entrada);
+    }).toList();
 
-        if (respuesta.statusCode != HttpStatus.ok) {
-          throw HttpException(
-            'Wikipedia respondió con estado ${respuesta.statusCode}.',
-            uri: uri,
-          );
-        }
-
-        final datos = jsonDecode(utf8.decode(respuesta.bodyBytes));
-        if (datos is! Map<String, dynamic>) {
-          throw const FormatException('Respuesta inesperada de Wikipedia.');
-        }
-
-        final miniatura = datos['thumbnail'];
-        final contenido = datos['content_urls'];
-        final imagen = miniatura is Map<String, dynamic>
-            ? miniatura['source'] as String?
-            : null;
-        final pagina = contenido is Map<String, dynamic>
-            ? contenido['desktop']
-            : null;
-        final enlace = pagina is Map<String, dynamic>
-            ? pagina['page'] as String?
-            : null;
-
-        if (imagen == null || enlace == null) {
-          throw FormatException(
-            'El artículo ${ave.nombre} no tiene imagen o enlace disponible.',
-          );
-        }
-
-        return _AveWikipedia(
-          nombre: ave.nombre,
-          categoria: ave.categoria,
-          nombreCientifico: datos['title'] as String? ?? ave.pagina,
-          descripcion: datos['extract'] as String? ?? '',
-          urlImagen: imagen,
-          urlArticulo: enlace,
-        );
-      }),
-    );
-
-    // La entrada escalonada se desactiva tras la primera aparición del catálogo.
+    final aves = indice.map((entrada) {
+      final base = Uri.parse(_urlBaseAves);
+      final urlFicha = base.replace(
+        path: '${base.path}bird.html',
+        queryParameters: {'id': entrada.uid},
+      );
+      return _AveCatalogo(
+        uid: entrada.uid,
+        nombre: entrada.nombre,
+        categoria: '',
+        nombreCientifico: entrada.nombreCientifico,
+        descripcion: '',
+        palabrasClave: entrada.palabrasClave,
+        urlImagen: _urlImagenAve(entrada.uid, entrada.miniatura),
+        urlImagenCompleta: _urlImagenAve(entrada.uid, entrada.imagen),
+        urlFicha: urlFicha.toString(),
+      );
+    }).toList();
     if (mounted) {
-      Future.delayed(const Duration(milliseconds: 1400), () {
-        if (mounted) {
-          setState(() {
-            _entradaCatalogoPendiente = false;
-          });
-        }
+      setState(() {
+        _avesCargadas = aves;
+        _fichasCargadas = 0;
       });
     }
 
-    return respuestas;
+    for (
+      var inicio = 0;
+      inicio < indice.length;
+      inicio += _solicitudesCatalogoPorLote
+    ) {
+      final fin = (inicio + _solicitudesCatalogoPorLote).clamp(
+        0,
+        indice.length,
+      );
+      final lote = indice.sublist(inicio, fin);
+      final fichas = await Future.wait(lote.map(_cargarFichaAve));
+      for (final ficha in fichas) {
+        final indiceAve = aves.indexWhere((ave) => ave.uid == ficha.uid);
+        if (indiceAve >= 0) aves[indiceAve] = ficha;
+      }
+      if (mounted) {
+        setState(() {
+          _avesCargadas = List<_AveCatalogo>.of(aves);
+          _fichasCargadas = fin;
+        });
+      }
+    }
+
+    if (mounted) {
+      Future<void>.delayed(const Duration(milliseconds: 1400)).then((_) {
+        if (!mounted) return;
+        setState(() {
+          _entradaCatalogoPendiente = false;
+        });
+      });
+    }
+
+    return aves;
+  }
+
+  Future<_AveCatalogo> _cargarFichaAve(_EntradaCatalogo entrada) async {
+    final uriFicha = Uri.parse(_urlBaseDatosAves).resolve(entrada.uriDatos);
+    final respuesta = await http
+        .get(uriFicha)
+        .timeout(const Duration(seconds: 15));
+    if (respuesta.statusCode != HttpStatus.ok) {
+      throw HttpException(
+        'La ficha de ${entrada.nombre} respondió con estado '
+        '${respuesta.statusCode}.',
+        uri: uriFicha,
+      );
+    }
+
+    final jsonFicha = jsonDecode(utf8.decode(respuesta.bodyBytes));
+    if (jsonFicha is! Map<String, dynamic>) {
+      throw FormatException('La ficha de ${entrada.nombre} no es válida.');
+    }
+    final nombres = jsonFicha['names'];
+    final acercaDe = jsonFicha['about'];
+    final informacion = jsonFicha['info'];
+    final multimedia = jsonFicha['media'];
+    if (nombres is! Map<String, dynamic> ||
+        acercaDe is! Map<String, dynamic> ||
+        informacion is! Map<String, dynamic> ||
+        multimedia is! Map<String, dynamic>) {
+      throw FormatException(
+        'La ficha de ${entrada.nombre} no contiene sus datos requeridos.',
+      );
+    }
+
+    final nombre = nombres['es'];
+    final nombreCientifico = nombres['la'];
+    final categoria = informacion['order'];
+    final imagenCompleta = multimedia['image'];
+    if (nombre is! String ||
+        nombre.trim().isEmpty ||
+        nombreCientifico is! String ||
+        nombreCientifico.trim().isEmpty ||
+        categoria is! String ||
+        categoria.trim().isEmpty ||
+        imagenCompleta is! String ||
+        !_esNombreArchivoAves(imagenCompleta)) {
+      throw FormatException(
+        'La ficha de ${entrada.nombre} contiene datos incompletos.',
+      );
+    }
+
+    final descripcion = acercaDe['description'];
+    final imagenMiniatura = multimedia['thumb'];
+    final miniatura =
+        imagenMiniatura is String && _esNombreArchivoAves(imagenMiniatura)
+        ? imagenMiniatura
+        : entrada.miniatura;
+    final uriBase = Uri.parse(_urlBaseAves);
+    final urlFicha = uriBase.replace(
+      path: '${uriBase.path}bird.html',
+      queryParameters: {'id': entrada.uid},
+    );
+
+    return _AveCatalogo(
+      uid: entrada.uid,
+      nombre: nombre.trim(),
+      categoria: categoriaGeneralAves(categoria),
+      nombreCientifico: nombreCientifico.trim(),
+      descripcion: descripcion is String ? descripcion.trim() : '',
+      palabrasClave: entrada.palabrasClave,
+      urlImagen: _urlImagenAve(entrada.uid, miniatura),
+      urlImagenCompleta: _urlImagenAve(entrada.uid, imagenCompleta),
+      urlFicha: urlFicha.toString(),
+    );
+  }
+
+  String _urlImagenAve(String uid, String nombreArchivo) {
+    return Uri.parse(_urlBaseDatosAves)
+        .resolve('$uid/$nombreArchivo')
+        .toString();
+  }
+
+  bool _esNombreArchivoAves(String nombreArchivo) {
+    return RegExp(r'^[a-zA-Z0-9._-]+$').hasMatch(nombreArchivo);
   }
 
   Future<void> _cargarColeccion() async {
     try {
       final preferencias = await SharedPreferences.getInstance();
-      final guardadasJson = preferencias.getString(_claveColeccion);
+      final guardadasJson =
+          preferencias.getString(_claveColeccion) ??
+          preferencias.getString(_claveColeccionAnterior);
       final avistamientosJson = preferencias.getString(_claveAvistamientos);
       final reportesJson = preferencias.getString(_claveReportes);
       final fotos = <_FotoGuardada>[];
@@ -265,18 +351,18 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Future<void> _guardarAve(_AveWikipedia ave) async {
-    if (_fotosGuardadas.any((foto) => foto.urlArticulo == ave.urlArticulo) ||
-        _avesGuardandose.contains(ave.urlArticulo)) {
+  Future<void> _guardarAve(_AveCatalogo ave) async {
+    if (_fotosGuardadas.any((foto) => foto.id == ave.uid) ||
+        _avesGuardandose.contains(ave.uid)) {
       return;
     }
 
     setState(() {
-      _avesGuardandose.add(ave.urlArticulo);
+      _avesGuardandose.add(ave.uid);
     });
 
     try {
-      final uriImagen = Uri.parse(ave.urlImagen);
+      final uriImagen = Uri.parse(ave.urlImagenCompleta);
       final respuesta = await http
           .get(uriImagen)
           .timeout(const Duration(seconds: 30));
@@ -289,7 +375,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (respuesta.bodyBytes.isEmpty ||
           !(respuesta.headers['content-type']?.startsWith('image/') ?? false)) {
         throw const FormatException(
-          'Wikipedia no devolvió un archivo de imagen válido.',
+          'Aves de Chile no devolvió un archivo de imagen válido.',
         );
       }
 
@@ -306,8 +392,7 @@ class _HomeScreenState extends State<HomeScreen> {
             caseSensitive: false,
           ).firstMatch(nombreArchivoFuente)?.group(0)?.toLowerCase() ??
           '.jpg';
-      final nombreSeguro = Uri.parse(ave.urlArticulo).pathSegments.last
-          .replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_');
+      final nombreSeguro = ave.uid.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_');
       final nombreArchivo =
           '${nombreSeguro}_${DateTime.now().microsecondsSinceEpoch}$extension';
       final rutaImagen =
@@ -322,8 +407,9 @@ class _HomeScreenState extends State<HomeScreen> {
         nombreCientifico: ave.nombreCientifico,
         descripcion: ave.descripcion,
         rutaImagen: rutaImagen,
-        urlImagen: ave.urlImagen,
-        urlArticulo: ave.urlArticulo,
+        urlImagen: ave.urlImagenCompleta,
+        id: ave.uid,
+        urlFicha: ave.urlFicha,
       );
       final nuevasFotos = [..._fotosGuardadas, fotoGuardada];
       final preferencias = await SharedPreferences.getInstance();
@@ -363,7 +449,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } finally {
       if (mounted) {
         setState(() {
-          _avesGuardandose.remove(ave.urlArticulo);
+          _avesGuardandose.remove(ave.uid);
         });
       }
     }
@@ -424,7 +510,7 @@ class _HomeScreenState extends State<HomeScreen> {
     var registroQuitado = false;
     try {
       final nuevasFotos = _fotosGuardadas
-          .where((guardada) => guardada.urlArticulo != foto.urlArticulo)
+          .where((guardada) => guardada.id != foto.id)
           .toList();
       final preferencias = await SharedPreferences.getInstance();
       final guardado = await preferencias.setString(
@@ -619,6 +705,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
       final avistamiento = _AvistamientoPropio(
         nombreAve: datos.nombreAve,
+        nombreCientifico: datos.nombreCientifico,
+        categoria: datos.categoria,
         lugar: datos.lugar,
         fecha: datos.fecha,
         comentario: datos.comentario,
@@ -639,6 +727,9 @@ class _HomeScreenState extends State<HomeScreen> {
         _avistamientosPropios = nuevosAvistamientos;
       });
       _mostrarMensaje('La foto y los datos se guardaron en tu bitácora.');
+      unawaited(
+        _subirAvistamientoAlBff(rutaImagen: rutaImagen, datos: datos),
+      );
     } on FileSystemException catch (error) {
       _mostrarErrorAvistamiento(
         'No se pudo guardar la imagen: ${error.message}',
@@ -682,6 +773,134 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _mostrarErrorAvistamiento(String mensaje) {
     _mostrarMensaje('No se pudo guardar la foto: $mensaje');
+  }
+
+  String _categoriaBff(String categoria) {
+    return switch (categoria) {
+      'Terrestres' => 'terrestres',
+      'Acuáticas' => 'acuaticas',
+      'Rapaces' => 'rapaces',
+      'Marinas' => 'marinas',
+      'Otras' => 'otras',
+      _ => 'otras',
+    };
+  }
+
+  Future<void> _subirAvistamientoAlBff({
+    required String rutaImagen,
+    required _DatosAvistamiento datos,
+  }) async {
+    final token = await AuthService().obtenerToken();
+    if (token == null) return;
+
+    final pendiente = <String, String>{
+      'rutaImagen': rutaImagen,
+      'categoria': _categoriaBff(datos.categoria),
+      'lugar': datos.lugar,
+      'fecha': datos.fecha.toIso8601String().split('T').first,
+      'comentario': datos.comentario,
+      'nombreAve': datos.nombreAve,
+    };
+
+    final exito = await _intentarSubida(pendiente);
+    if (exito) return;
+
+    final preferencias = await SharedPreferences.getInstance();
+    final actual = preferencias.getString(_claveSubidasPendientes);
+    final lista = <Map<String, String>>[];
+    if (actual != null) {
+      try {
+        final json = jsonDecode(actual);
+        if (json is List<dynamic>) {
+          for (final item in json) {
+            if (item is Map<String, dynamic>) {
+              lista.add(item.map((k, v) => MapEntry(k, v.toString())));
+            }
+          }
+        }
+      } on FormatException {
+        // cola corrupta: se descarta
+      }
+    }
+    lista.add(pendiente);
+    await preferencias.setString(
+      _claveSubidasPendientes,
+      jsonEncode(lista),
+    );
+    if (mounted) {
+      _mostrarMensaje(
+        'Sin conexión con el servidor: la foto se subirá cuando vuelva la conexión.',
+      );
+    }
+  }
+
+  Future<bool> _intentarSubida(Map<String, String> pendiente) async {
+    final ruta = pendiente['rutaImagen'];
+    if (ruta == null || !await File(ruta).exists()) return false;
+    try {
+      final bytes = await File(ruta).readAsBytes();
+      final nombreArchivo = ruta.split(Platform.pathSeparator).last;
+      final contentType = nombreArchivo.toLowerCase().endsWith('.png')
+          ? 'image/png'
+          : nombreArchivo.toLowerCase().endsWith('.webp')
+          ? 'image/webp'
+          : 'image/jpeg';
+      await _fotosServicio.subirFoto(
+        bytes: bytes,
+        nombreArchivo: nombreArchivo,
+        contentType: contentType,
+        categoria: pendiente['categoria'] ?? 'otras',
+        lugar: pendiente['lugar'],
+        fecha: pendiente['fecha'],
+        comentario: pendiente['comentario'],
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _reintentarSubidasPendientes() async {
+    final token = await AuthService().obtenerToken();
+    if (token == null) return;
+
+    final preferencias = await SharedPreferences.getInstance();
+    final actual = preferencias.getString(_claveSubidasPendientes);
+    if (actual == null) return;
+
+    final lista = <Map<String, String>>[];
+    try {
+      final json = jsonDecode(actual);
+      if (json is List<dynamic>) {
+        for (final item in json) {
+          if (item is Map<String, dynamic>) {
+            lista.add(item.map((k, v) => MapEntry(k, v.toString())));
+          }
+        }
+      }
+    } on FormatException {
+      await preferencias.remove(_claveSubidasPendientes);
+      return;
+    }
+    if (lista.isEmpty) return;
+
+    final restantes = <Map<String, String>>[];
+    for (final pendiente in lista) {
+      final exito = await _intentarSubida(pendiente);
+      if (!exito) restantes.add(pendiente);
+    }
+
+    if (restantes.isEmpty) {
+      await preferencias.remove(_claveSubidasPendientes);
+      if (mounted) {
+        _mostrarMensaje('Se subieron las fotos que estaban pendientes.');
+      }
+    } else {
+      await preferencias.setString(
+        _claveSubidasPendientes,
+        jsonEncode(restantes),
+      );
+    }
   }
 
   Future<_DatosReporte?> _solicitarMotivosReporte() async {
@@ -771,6 +990,7 @@ class _HomeScreenState extends State<HomeScreen> {
     required String nombre,
     required String referenciaImagen,
     required String origen,
+    String? idFotoRemota,
   }) async {
     final datos = await _solicitarMotivosReporte();
     if (!mounted || datos == null) return;
@@ -783,6 +1003,16 @@ class _HomeScreenState extends State<HomeScreen> {
       detalle: datos.detalle,
       fechaCreacion: DateTime.now().toIso8601String(),
     );
+
+    var enviadoAlServidor = false;
+    if (idFotoRemota != null) {
+      final exito = await _enviarReporteAlServidor(
+        idFoto: idFotoRemota,
+        motivos: datos.motivos,
+        detalle: datos.detalle,
+      );
+      enviadoAlServidor = exito;
+    }
 
     try {
       final nuevosReportes = [..._reportesFotos, nuevoReporte];
@@ -800,7 +1030,9 @@ class _HomeScreenState extends State<HomeScreen> {
         _reportesFotos = nuevosReportes;
       });
       _mostrarMensaje(
-        'Reporte guardado en este dispositivo. Aún no se envía a moderación.',
+        enviadoAlServidor
+            ? 'Reporte enviado a moderación.'
+            : 'Reporte guardado en este dispositivo. Se enviará cuando haya conexión con el servidor.',
       );
     } on PlatformException catch (error) {
       _mostrarErrorReporte(error.message ?? 'Error de almacenamiento local.');
@@ -813,12 +1045,34 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<bool> _enviarReporteAlServidor({
+    required String idFoto,
+    required List<String> motivos,
+    required String detalle,
+  }) async {
+    try {
+      for (final motivo in motivos) {
+        final codigo = motivosReporteContrato[motivo] ?? 'otro';
+        await _fotosServicio.reportarFoto(
+          id: idFoto,
+          motivo: codigo,
+          detalle: codigo == 'otro' || detalle.isNotEmpty
+              ? (detalle.isEmpty ? motivo : detalle)
+              : null,
+        );
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   void _mostrarErrorReporte(String mensaje) {
     _mostrarMensaje('No se pudo registrar el reporte: $mensaje');
   }
 
-  Future<void> _abrirArticulo(_AveWikipedia ave) async {
-    await _abrirEnlaceFuente(ave.urlArticulo);
+  Future<void> _abrirFicha(_AveCatalogo ave) async {
+    await _abrirEnlaceFuente(ave.urlFicha);
   }
 
   Future<void> _abrirEnlaceFuente(String url) async {
@@ -827,7 +1081,7 @@ class _HomeScreenState extends State<HomeScreen> {
       mode: LaunchMode.externalApplication,
     );
     if (!abierto) {
-      _mostrarMensaje('No se pudo abrir el artículo de Wikipedia.');
+      _mostrarMensaje('No se pudo abrir la ficha de Aves de Chile.');
     }
   }
 
@@ -840,15 +1094,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _construirCatalogo({required bool esBusqueda}) {
-    return FutureBuilder<List<_AveWikipedia>>(
+    return FutureBuilder<List<_AveCatalogo>>(
       future: _aves,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+        final aves = snapshot.data ?? _avesCargadas;
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            aves.isEmpty) {
           return const Center(
             child: CircularProgressIndicator(color: PaletaAves.morado),
           );
         }
-        if (snapshot.hasError) {
+        if (snapshot.hasError && aves.isEmpty) {
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(24),
@@ -862,7 +1118,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    'No se pudieron cargar las aves de Wikipedia. '
+                    'No se pudieron cargar las aves de Chile. '
                     'Revisa tu conexión e inténtalo de nuevo.',
                     textAlign: TextAlign.center,
                   ),
@@ -883,7 +1139,15 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         }
 
-        final aves = snapshot.data ?? const <_AveWikipedia>[];
+        final categorias = [
+          'Todas',
+          ...aves
+              .map((ave) => ave.categoria)
+              .where((categoria) => categoria.isNotEmpty)
+              .toSet()
+              .toList()
+            ..sort(),
+        ];
         final avesVisibles = esBusqueda
             ? aves.where((ave) {
                 final consulta = _consulta.toLowerCase().trim();
@@ -894,140 +1158,177 @@ class _HomeScreenState extends State<HomeScreen> {
                     consulta.isEmpty ||
                     ave.nombre.toLowerCase().contains(consulta) ||
                     ave.nombreCientifico.toLowerCase().contains(consulta) ||
-                    ave.descripcion.toLowerCase().contains(consulta);
+                    ave.descripcion.toLowerCase().contains(consulta) ||
+                    ave.palabrasClave.toLowerCase().contains(consulta);
                 return coincideCategoria && coincideTexto;
               }).toList()
             : aves;
 
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 96),
-          children: [
-            _construirEncabezado(esBusqueda: esBusqueda),
-            if (esBusqueda) ...[
-              const SizedBox(height: 16),
-              TextField(
-                controller: _controladorBusqueda,
-                onChanged: (valor) => setState(() => _consulta = valor),
-                decoration: InputDecoration(
-                  hintText: 'Nombre común o científico',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: AnimatedSwitcher(
-                    duration: duracion(context, 150),
-                    switchInCurve: Curves.easeOutCubic,
-                    transitionBuilder: (hijo, anim) =>
-                        FadeTransition(opacity: anim, child: hijo),
-                    child: _consulta.isEmpty
-                        ? const SizedBox.shrink(
-                            key: ValueKey<String>('sin-consulta'),
-                          )
-                        : IconButton(
-                            key: const ValueKey<String>('limpiar-consulta'),
-                            tooltip: 'Limpiar búsqueda',
-                            onPressed: () {
-                              _controladorBusqueda.clear();
-                              setState(() => _consulta = '');
-                            },
-                            icon: const Icon(Icons.close),
-                          ),
-                  ),
-                ),
+        final contenidoFijo = <Widget>[
+          _construirEncabezado(esBusqueda: esBusqueda),
+        ];
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          contenidoFijo.addAll([
+            Text('Cargando fichas: $_fichasCargadas de ${aves.length}'),
+            const SizedBox(height: 6),
+            LinearProgressIndicator(value: _fichasCargadas / aves.length),
+            const SizedBox(height: 12),
+          ]);
+        }
+        if (snapshot.hasError) {
+          contenidoFijo.addAll([
+            Text(
+              'No se completó la carga de todas las fichas. '
+              'Puedes reintentar.',
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _avesCargadas = [];
+                    _fichasCargadas = 0;
+                    _aves = _cargarAves();
+                    _entradaCatalogoPendiente = true;
+                  });
+                },
+                icon: const Icon(Icons.refresh),
+                label: const Text('Reintentar carga'),
               ),
-              const SizedBox(height: 14),
-              Text(
-                'Explorar por categoría',
-                style: Theme.of(context).textTheme.titleSmall
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 42,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _categorias.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(width: 8),
-                  itemBuilder: (context, index) {
-                    final categoria = _categorias[index];
-                    final marca = context.marca;
-                    return ChoiceChip(
-                      label: Text(categoria),
-                      selected: _categoriaSeleccionada == categoria,
-                      selectedColor: PaletaAves.morado,
-                      backgroundColor: marca.chipFondo,
-                      labelStyle: TextStyle(
-                        color: _categoriaSeleccionada == categoria
-                            ? Colors.white
-                            : marca.chipTexto,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      side: BorderSide(
-                        color: _categoriaSeleccionada == categoria
-                            ? PaletaAves.morado
-                            : marca.chipBorde,
-                      ),
-                      onSelected: (seleccionada) {
-                        if (seleccionada) {
-                          setState(() {
-                            _categoriaSeleccionada = categoria;
-                          });
-                        }
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
+            ),
+          ]);
+        }
+        if (esBusqueda) {
+          contenidoFijo.addAll([
             const SizedBox(height: 16),
-            if (avesVisibles.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(24),
-                child: Text(
-                  'No encontramos aves con esos filtros.',
-                  textAlign: TextAlign.center,
+            TextField(
+              controller: _controladorBusqueda,
+              onChanged: (valor) => setState(() => _consulta = valor),
+              decoration: InputDecoration(
+                hintText: 'Nombre común o científico',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: AnimatedSwitcher(
+                  duration: duracion(context, 150),
+                  switchInCurve: Curves.easeOutCubic,
+                  transitionBuilder: (hijo, anim) =>
+                      FadeTransition(opacity: anim, child: hijo),
+                  child: _consulta.isEmpty
+                      ? const SizedBox.shrink(
+                          key: ValueKey<String>('sin-consulta'),
+                        )
+                      : IconButton(
+                          key: const ValueKey<String>('limpiar-consulta'),
+                          tooltip: 'Limpiar búsqueda',
+                          onPressed: () {
+                            _controladorBusqueda.clear();
+                            setState(() => _consulta = '');
+                          },
+                          icon: const Icon(Icons.close),
+                        ),
                 ),
-              )
-            else
-              ...avesVisibles.asMap().entries.map((entrada) {
-                final ave = entrada.value;
-                return AparicionDiferida(
-                  indice: entrada.key,
-                  activa: _entradaCatalogoPendiente,
-                  child: _TarjetaAve(
-                    ave: ave,
-                    onAbrirArticulo: () => _abrirArticulo(ave),
-                    onReportar: () => _reportarFoto(
-                      nombre: ave.nombre,
-                      referenciaImagen: ave.urlImagen,
-                      origen: 'Wikipedia',
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'Explorar por categoría',
+              style: Theme.of(context).textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 42,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: categorias.length,
+                separatorBuilder: (context, index) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final categoria = categorias[index];
+                  final marca = context.marca;
+                  return ChoiceChip(
+                    label: Text(categoria),
+                    selected: _categoriaSeleccionada == categoria,
+                    selectedColor: PaletaAves.morado,
+                    backgroundColor: marca.chipFondo,
+                    labelStyle: TextStyle(
+                      color: _categoriaSeleccionada == categoria
+                          ? Colors.white
+                          : marca.chipTexto,
+                      fontWeight: FontWeight.w600,
                     ),
-                    guardada: _fotosGuardadas.any(
-                      (foto) => foto.urlArticulo == ave.urlArticulo,
+                    side: BorderSide(
+                      color: _categoriaSeleccionada == categoria
+                          ? PaletaAves.morado
+                          : marca.chipBorde,
                     ),
-                    guardando: _avesGuardandose.contains(ave.urlArticulo),
-                    onGuardar: () => _guardarAve(ave),
-                    onQuitar: () {
-                      final fotosGuardadas = _fotosGuardadas.where(
-                        (foto) => foto.urlArticulo == ave.urlArticulo,
-                      );
-                      if (fotosGuardadas.isNotEmpty) {
-                        final foto = fotosGuardadas.first;
-                        _quitarDeColeccion(foto).then((quitada) {
-                          if (!quitada || !mounted) return;
-                          setState(() {
-                            _fotosGuardadas = _fotosGuardadas
-                                .where(
-                                  (guardada) =>
-                                      guardada.urlArticulo != foto.urlArticulo,
-                                )
-                                .toList();
-                          });
+                    onSelected: (seleccionada) {
+                      if (seleccionada) {
+                        setState(() {
+                          _categoriaSeleccionada = categoria;
                         });
                       }
                     },
-                  ),
-                );
-              }),
-          ],
+                  );
+                },
+              ),
+            ),
+          ]);
+        }
+        contenidoFijo.add(const SizedBox(height: 16));
+        if (avesVisibles.isEmpty) {
+          contenidoFijo.add(
+            const Padding(
+              padding: EdgeInsets.all(24),
+              child: Text(
+                'No encontramos aves con esos filtros.',
+                textAlign: TextAlign.center,
+              ),
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 96),
+          itemCount: contenidoFijo.length + avesVisibles.length,
+          itemBuilder: (context, index) {
+            if (index < contenidoFijo.length) return contenidoFijo[index];
+
+            final indiceAve = index - contenidoFijo.length;
+            final ave = avesVisibles[indiceAve];
+            return AparicionDiferida(
+              key: ValueKey<String>(ave.uid),
+              indice: indiceAve,
+              activa: _entradaCatalogoPendiente,
+              child: _TarjetaAve(
+                ave: ave,
+                onAbrirFicha: () => _abrirFicha(ave),
+                onReportar: () => _reportarFoto(
+                  nombre: ave.nombre,
+                  referenciaImagen: ave.urlImagen,
+                  origen: 'Aves de Chile',
+                ),
+                guardada: _fotosGuardadas.any((foto) => foto.id == ave.uid),
+                guardando: _avesGuardandose.contains(ave.uid),
+                onGuardar: () => _guardarAve(ave),
+                onQuitar: () {
+                  final fotosGuardadas = _fotosGuardadas.where(
+                    (foto) => foto.id == ave.uid,
+                  );
+                  if (fotosGuardadas.isNotEmpty) {
+                    final foto = fotosGuardadas.first;
+                    _quitarDeColeccion(foto).then((quitada) {
+                      if (!quitada || !mounted) return;
+                      setState(() {
+                        _fotosGuardadas = _fotosGuardadas
+                            .where((guardada) => guardada.id != foto.id)
+                            .toList();
+                      });
+                    });
+                  }
+                },
+              ),
+            );
+          },
         );
       },
     );
@@ -1035,9 +1336,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _construirEncabezado({required bool esBusqueda}) {
     final marca = context.marca;
+    final esApaisada =
+        MediaQuery.orientationOf(context) == Orientation.landscape &&
+        MediaQuery.sizeOf(context).width >= 600;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(esApaisada ? 14 : 20),
       decoration: BoxDecoration(
         gradient: marca.cabeceraGradiente,
         borderRadius: BorderRadius.circular(24),
@@ -1049,52 +1353,105 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: 0,
-            top: 0,
-            bottom: 0,
-            child: Icon(
-              esBusqueda ? Icons.search_rounded : Icons.flutter_dash_rounded,
-              size: 76,
-              color: Colors.white.withValues(alpha: 0.16),
+      child: esApaisada
+          ? Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        esBusqueda ? 'Explora y descubre' : 'Aves de Chile',
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        esBusqueda
+                            ? 'Encuentra tu próxima ave favorita.'
+                            : 'Pequeños encuentros, grandes historias.',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.white.withValues(alpha: 0.92),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: 44,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: PaletaAves.amarillo,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Icon(
+                  esBusqueda
+                      ? Icons.search_rounded
+                      : Icons.flutter_dash_rounded,
+                  size: 48,
+                  color: Colors.white.withValues(alpha: 0.18),
+                ),
+              ],
+            )
+          : Stack(
+              children: [
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: Icon(
+                    esBusqueda
+                        ? Icons.search_rounded
+                        : Icons.flutter_dash_rounded,
+                    size: 76,
+                    color: Colors.white.withValues(alpha: 0.16),
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      esBusqueda ? 'Explora y descubre' : 'Aves de Chile',
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 30,
+                            height: 1.15,
+                            letterSpacing: -0.4,
+                          ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      esBusqueda
+                          ? 'Encuentra tu próxima ave favorita.'
+                          : 'Pequeños encuentros, grandes historias.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.92),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      width: 56,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: PaletaAves.amarillo,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                esBusqueda ? 'Explora y descubre' : 'Aves de Chile',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 30,
-                  height: 1.15,
-                  letterSpacing: -0.4,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                esBusqueda
-                    ? 'Encuentra tu próxima ave favorita.'
-                    : 'Pequeños encuentros, grandes historias.',
-                style: Theme.of(context).textTheme.bodyMedium
-                    ?.copyWith(color: Colors.white.withValues(alpha: 0.92)),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                width: 56,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: PaletaAves.amarillo,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 
@@ -1133,6 +1490,17 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
+    final categoriasDisponibles = <String>{
+      ..._avesCargadas.map((ave) => categoriaGeneralAves(ave.categoria)),
+      ..._fotosGuardadas.map((foto) => categoriaGeneralAves(foto.categoria)),
+      ..._avistamientosPropios.map(_categoriaAvistamiento),
+    }..removeWhere((categoria) => categoria.trim().isEmpty);
+    categoriasDisponibles.remove('Todas');
+    final categoriasColeccion = [
+      'Todas',
+      ...categoriasDisponibles.toList()..sort(),
+    ];
+
     final fotosVisibles = _filtroTipoColeccion == 'Mis avistamientos'
         ? const <_FotoGuardada>[]
         : _fotosGuardadas.where((foto) {
@@ -1142,7 +1510,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final avistamientosVisibles = _filtroTipoColeccion == 'Aves guardadas'
         ? const <_AvistamientoPropio>[]
         : _avistamientosPropios.where((avistamiento) {
-            final categoria = _categoriaAvistamiento(avistamiento.nombreAve);
+            final categoria = _categoriaAvistamiento(avistamiento);
             return _filtroCategoriaColeccion == 'Todas' ||
                 categoria == _filtroCategoriaColeccion;
           }).toList();
@@ -1178,7 +1546,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 icono: Icons.category_outlined,
                 etiqueta: 'Categoría',
                 seleccionado: _filtroCategoriaColeccion,
-                opciones: _categoriasColeccion,
+                opciones: categoriasColeccion,
                 onSeleccionar: (valor) {
                   setState(() {
                     _filtroCategoriaColeccion = valor;
@@ -1258,15 +1626,13 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ...fotosVisibles.map(
           (foto) => _TarjetaConSalida(
-            key: ValueKey<String>('guardada:${foto.urlArticulo}'),
+            key: ValueKey<String>('guardada:${foto.id}'),
             eliminar: () => _quitarDeColeccion(foto),
             alEliminar: () {
               if (!mounted) return;
               setState(() {
                 _fotosGuardadas = _fotosGuardadas
-                    .where(
-                      (guardada) => guardada.urlArticulo != foto.urlArticulo,
-                    )
+                    .where((guardada) => guardada.id != foto.id)
                     .toList();
               });
             },
@@ -1274,11 +1640,13 @@ class _HomeScreenState extends State<HomeScreen> {
               foto: foto,
               onQuitar: onQuitar,
               quitando: quitando,
-              onAbrirFuente: () => _abrirEnlaceFuente(foto.urlArticulo),
+              onAbrirFicha: foto.urlFicha == null
+                  ? null
+                  : () => _abrirEnlaceFuente(foto.urlFicha!),
               onReportar: () => _reportarFoto(
                 nombre: foto.nombre,
                 referenciaImagen: foto.urlImagen,
-                origen: 'Wikipedia guardada',
+                origen: 'Aves de Chile guardada',
               ),
             ),
           ),
@@ -1354,9 +1722,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  String _categoriaAvistamiento(String nombreAve) {
-    for (final ave in _catalogo) {
-      if (ave.nombre.toLowerCase() == nombreAve.trim().toLowerCase()) {
+  String _categoriaAvistamiento(_AvistamientoPropio avistamiento) {
+    final categoria = avistamiento.categoria.trim();
+    if (categoria.isNotEmpty) return categoriaGeneralAves(categoria);
+
+    final nombreAve = avistamiento.nombreAve.trim().toLowerCase();
+    final nombreCientifico = avistamiento.nombreCientifico.trim().toLowerCase();
+    for (final ave in _avesCargadas) {
+      if (ave.nombre.toLowerCase() == nombreAve ||
+          (nombreCientifico.isNotEmpty &&
+              ave.nombreCientifico.toLowerCase() == nombreCientifico)) {
         return ave.categoria;
       }
     }
@@ -1375,6 +1750,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final marca = context.marca;
     final esOscuro = Theme.of(context).brightness == Brightness.dark;
+    final anchoPantalla = MediaQuery.sizeOf(context).width;
+    final esApaisada =
+        MediaQuery.orientationOf(context) == Orientation.landscape;
+    final usaRail = anchoPantalla >= 600;
 
     return Scaffold(
       appBar: AppBar(
@@ -1411,6 +1790,13 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         actions: [
+          if (esApaisada && _indiceSeleccionado == 0)
+            IconButton(
+              onPressed: _mostrarOpcionesImagen,
+              tooltip: 'Agregar foto',
+              style: IconButton.styleFrom(foregroundColor: Colors.white),
+              icon: const Icon(Icons.add_a_photo_outlined),
+            ),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Material(
@@ -1448,20 +1834,69 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          DecoratedBox(
-            decoration: BoxDecoration(gradient: marca.fondoGradiente),
-            child: PageView.builder(
-              controller: _controladorPaginas,
-              itemCount: 4,
-              onPageChanged: _alCambiarPagina,
-              itemBuilder: (context, index) => switch (index) {
-                0 => _construirInicio(),
-                1 => _construirBusqueda(),
-                2 => _construirColeccion(),
-                _ => _construirPerfil(),
-              },
-              physics: const PageScrollPhysics(),
-            ),
+          Row(
+            children: [
+              if (usaRail)
+                DecoratedBox(
+                  decoration: BoxDecoration(gradient: marca.barraGradiente),
+                  child: NavigationRail(
+                    selectedIndex: _indiceSeleccionado,
+                    onDestinationSelected: _alTocarItem,
+                    backgroundColor: Colors.transparent,
+                    labelType: NavigationRailLabelType.all,
+                    scrollable: true,
+                    destinations: const <NavigationRailDestination>[
+                      NavigationRailDestination(
+                        icon: Icon(Icons.home_outlined),
+                        selectedIcon: Icon(Icons.home),
+                        label: Text('Inicio'),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.search),
+                        label: Text('Buscar'),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.explore_outlined),
+                        selectedIcon: Icon(Icons.explore),
+                        label: Text('Explorar'),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.library_books_outlined),
+                        selectedIcon: Icon(Icons.library_books),
+                        label: Text('Colección'),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.person_outline),
+                        selectedIcon: Icon(Icons.person),
+                        label: Text('Perfil'),
+                      ),
+                    ],
+                  ),
+                ),
+              Expanded(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(gradient: marca.fondoGradiente),
+                  child: PageView.builder(
+                    controller: _controladorPaginas,
+                    itemCount: 5,
+                    onPageChanged: _alCambiarPagina,
+                    itemBuilder: (context, index) => Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1100),
+                        child: switch (index) {
+                          0 => _construirInicio(),
+                          1 => _construirBusqueda(),
+                          2 => _construirExplorar(),
+                          3 => _construirColeccion(),
+                          _ => _construirPerfil(),
+                        },
+                      ),
+                    ),
+                    physics: const PageScrollPhysics(),
+                  ),
+                ),
+              ),
+            ],
           ),
           AnimatedSwitcher(
             duration: duracion(context, 200),
@@ -1521,7 +1956,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: hijo,
           ),
         ),
-        child: _indiceSeleccionado == 0
+        child: _indiceSeleccionado == 0 && !esApaisada
             ? KeyedSubtree(
                 key: const ValueKey<String>('fab-agregar-foto'),
                 child: FloatingActionButton.extended(
@@ -1538,26 +1973,160 @@ class _HomeScreenState extends State<HomeScreen> {
               )
             : null,
       ),
-      bottomNavigationBar: DecoratedBox(
-        decoration: BoxDecoration(gradient: marca.barraGradiente),
-        child: NavigationBar(
-          selectedIndex: _indiceSeleccionado,
-          onDestinationSelected: _alTocarItem,
-          destinations: const <NavigationDestination>[
-            NavigationDestination(icon: Icon(Icons.home), label: 'Inicio'),
-            NavigationDestination(icon: Icon(Icons.search), label: 'Buscar'),
-            NavigationDestination(
-              icon: Icon(Icons.library_books),
-              label: 'Colección',
+      bottomNavigationBar: usaRail
+          ? null
+          : DecoratedBox(
+              decoration: BoxDecoration(gradient: marca.barraGradiente),
+              child: NavigationBar(
+                selectedIndex: _indiceSeleccionado,
+                onDestinationSelected: _alTocarItem,
+                destinations: const <NavigationDestination>[
+                  NavigationDestination(
+                    icon: Icon(Icons.home),
+                    label: 'Inicio',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.search),
+                    label: 'Buscar',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.explore_outlined),
+                    selectedIcon: Icon(Icons.explore),
+                    label: 'Explorar',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.library_books),
+                    label: 'Colección',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.person_outline),
+                    label: 'Perfil',
+                  ),
+                ],
+              ),
             ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              label: 'Perfil',
-            ),
-          ],
-        ),
+    );
+  }
+
+  Widget _construirExplorar() {
+    return ExplorarScreen(
+      idsGuardados: _fotosGuardadas.map((foto) => foto.id).toSet(),
+      onGuardar: _guardarFotoComunidad,
+      onReportar: (foto) => _reportarFoto(
+        nombre: foto.autor ?? 'Observador',
+        referenciaImagen: foto.url,
+        origen: 'Explorar',
+        idFotoRemota: foto.id,
       ),
     );
+  }
+
+  Future<void> _guardarFotoComunidad(FotoPublica foto) async {
+    if (_fotosGuardadas.any((guardada) => guardada.id == foto.id) ||
+        _avesGuardandose.contains(foto.id)) {
+      return;
+    }
+
+    setState(() {
+      _avesGuardandose.add(foto.id);
+    });
+
+    try {
+      final uriImagen = Uri.parse(foto.url);
+      final respuesta = await http
+          .get(uriImagen)
+          .timeout(const Duration(seconds: 30));
+      if (respuesta.statusCode != HttpStatus.ok) {
+        throw HttpException(
+          'La descarga de la imagen falló (${respuesta.statusCode}).',
+          uri: uriImagen,
+        );
+      }
+      if (respuesta.bodyBytes.isEmpty ||
+          !(respuesta.headers['content-type']?.startsWith('image/') ??
+              false)) {
+        throw const FormatException(
+          'El servidor no devolvió un archivo de imagen válido.',
+        );
+      }
+
+      final directorioApp = await getApplicationDocumentsDirectory();
+      final directorioColeccion = Directory(
+        '${directorioApp.path}${Platform.pathSeparator}coleccion_aves',
+      );
+      await directorioColeccion.create(recursive: true);
+
+      final nombreArchivoFuente = uriImagen.pathSegments.isEmpty
+          ? 'foto.jpg'
+          : uriImagen.pathSegments.last;
+      final extension =
+          RegExp(
+            r'\.(jpg|jpeg|png|webp)$',
+            caseSensitive: false,
+          ).firstMatch(nombreArchivoFuente)?.group(0)?.toLowerCase() ??
+          '.jpg';
+      final nombreSeguro = foto.id.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_');
+      final nombreArchivo =
+          '${nombreSeguro}_${DateTime.now().microsecondsSinceEpoch}$extension';
+      final rutaImagen =
+          '${directorioColeccion.path}${Platform.pathSeparator}$nombreArchivo';
+      final archivoTemporal = File('$rutaImagen.tmp');
+      await archivoTemporal.writeAsBytes(respuesta.bodyBytes, flush: true);
+      await archivoTemporal.rename(rutaImagen);
+
+      final fotoGuardada = _FotoGuardada(
+        id: foto.id,
+        nombre: foto.autor ?? 'Observador',
+        categoria: foto.categoria,
+        nombreCientifico: foto.lugar ?? '',
+        descripcion: foto.comentario ?? '',
+        rutaImagen: rutaImagen,
+        urlImagen: foto.url,
+        urlFicha: null,
+        esDeComunidad: true,
+      );
+      final nuevasFotos = [..._fotosGuardadas, fotoGuardada];
+      final preferencias = await SharedPreferences.getInstance();
+      final guardado = await preferencias.setString(
+        _claveColeccion,
+        jsonEncode(nuevasFotos.map((foto) => foto.toJson()).toList()),
+      );
+      if (!guardado) {
+        throw StateError('No se pudieron guardar los datos de la colección.');
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _fotosGuardadas = nuevasFotos;
+      });
+      _mostrarMensaje('Foto de ${foto.autor ?? 'la comunidad'} guardada.');
+    } on TimeoutException catch (error) {
+      _mostrarErrorGuardar('La descarga tardó demasiado: $error');
+    } on http.ClientException catch (error) {
+      _mostrarErrorGuardar('No se pudo descargar la imagen: $error');
+    } on HttpException catch (error) {
+      _mostrarErrorGuardar(error.message);
+    } on FileSystemException catch (error) {
+      _mostrarErrorGuardar('No se pudo guardar el archivo: ${error.message}');
+    } on FormatException catch (error) {
+      _mostrarErrorGuardar(error.message);
+    } on PlatformException catch (error) {
+      _mostrarErrorGuardar(
+        error.message ?? 'No se pudo acceder al almacenamiento local.',
+      );
+    } on MissingPluginException catch (error) {
+      _mostrarErrorGuardar(
+        error.message ?? 'El almacenamiento local no está disponible.',
+      );
+    } on StateError catch (error) {
+      _mostrarErrorGuardar(error.message);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _avesGuardandose.remove(foto.id);
+        });
+      }
+    }
   }
 
   Widget _construirPerfil() {
@@ -1565,33 +2134,117 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _AveWikipedia {
-  const _AveWikipedia({
+class _EntradaCatalogo {
+  const _EntradaCatalogo({
+    required this.uid,
+    required this.uriDatos,
+    required this.nombre,
+    required this.nombreCientifico,
+    required this.palabrasClave,
+    required this.miniatura,
+    required this.imagen,
+  });
+
+  final String uid;
+  final String uriDatos;
+  final String nombre;
+  final String nombreCientifico;
+  final String palabrasClave;
+  final String miniatura;
+  final String imagen;
+
+  factory _EntradaCatalogo.fromJson(Map<String, dynamic> json) {
+    final uid = json['uid'];
+    final uriDatos = json['uri'];
+    final palabrasClave = json['keywords'];
+    final miniatura = json['thumb'];
+    final imagen = json['image'];
+    final nombres = json['names'];
+    if (uid is! String ||
+        !RegExp(r'^[a-zA-Z0-9-]+$').hasMatch(uid) ||
+        uriDatos is! String ||
+        palabrasClave is! String ||
+        miniatura is! String ||
+        imagen is! String ||
+        nombres is! Map<String, dynamic>) {
+      throw const FormatException(
+        'Una entrada del catálogo contiene campos inválidos.',
+      );
+    }
+
+    final referenciaDatos = Uri.parse(uriDatos);
+    final segmentosUri = referenciaDatos.pathSegments;
+    final nombre = nombres['es'];
+    final nombreCientifico = nombres['la'];
+    if (nombre is! String ||
+        nombre.trim().isEmpty ||
+        nombreCientifico is! String ||
+        nombreCientifico.trim().isEmpty ||
+        segmentosUri.length != 2 ||
+        segmentosUri.first != uid ||
+        segmentosUri.last != 'data.json' ||
+        referenciaDatos.hasScheme ||
+        referenciaDatos.hasAuthority ||
+        referenciaDatos.hasQuery ||
+        referenciaDatos.hasFragment ||
+        referenciaDatos.path.startsWith('/') ||
+        !_esNombreArchivoCatalogo(miniatura) ||
+        !_esNombreArchivoCatalogo(imagen)) {
+      throw FormatException('La entrada de catálogo "$uid" está incompleta.');
+    }
+
+    return _EntradaCatalogo(
+      uid: uid,
+      uriDatos: uriDatos,
+      nombre: nombre.trim(),
+      nombreCientifico: nombreCientifico.trim(),
+      palabrasClave: palabrasClave,
+      miniatura: miniatura,
+      imagen: imagen,
+    );
+  }
+
+  static bool _esNombreArchivoCatalogo(String valor) =>
+      RegExp(r'^[a-zA-Z0-9._-]+$').hasMatch(valor);
+}
+
+class _AveCatalogo {
+  const _AveCatalogo({
+    required this.uid,
     required this.nombre,
     required this.categoria,
     required this.nombreCientifico,
     required this.descripcion,
+    required this.palabrasClave,
     required this.urlImagen,
-    required this.urlArticulo,
+    required this.urlImagenCompleta,
+    required this.urlFicha,
   });
 
+  final String uid;
   final String nombre;
   final String categoria;
   final String nombreCientifico;
   final String descripcion;
+  final String palabrasClave;
   final String urlImagen;
-  final String urlArticulo;
+  final String urlImagenCompleta;
+  final String urlFicha;
 }
 
 class _DatosAvistamiento {
   const _DatosAvistamiento({
     required this.nombreAve,
+    required this.nombreCientifico,
+    required this.categoria,
     required this.lugar,
     required this.fecha,
     required this.comentario,
   });
 
   final String nombreAve;
+  final String nombreCientifico;
+  final String categoria;
   final String lugar;
   final DateTime fecha;
   final String comentario;
@@ -1611,13 +2264,16 @@ class _FormularioAvistamientoDialogState
     extends State<_FormularioAvistamientoDialog> {
   final _formularioKey = GlobalKey<FormState>();
   final _nombreAveController = TextEditingController();
+  final _nombreCientificoController = TextEditingController();
   final _lugarController = TextEditingController();
   final _comentarioController = TextEditingController();
   DateTime? _fechaSeleccionada;
+  String? _categoriaSeleccionada;
 
   @override
   void dispose() {
     _nombreAveController.dispose();
+    _nombreCientificoController.dispose();
     _lugarController.dispose();
     _comentarioController.dispose();
     super.dispose();
@@ -1645,6 +2301,8 @@ class _FormularioAvistamientoDialogState
       context,
       _DatosAvistamiento(
         nombreAve: _nombreAveController.text.trim(),
+        nombreCientifico: _nombreCientificoController.text.trim(),
+        categoria: _categoriaSeleccionada ?? '',
         lugar: _lugarController.text.trim(),
         fecha: _fechaSeleccionada!,
         comentario: _comentarioController.text.trim(),
@@ -1676,6 +2334,36 @@ class _FormularioAvistamientoDialogState
                   validator: (valor) => valor == null || valor.trim().isEmpty
                       ? 'Indica el nombre del ave o escribe "Ave sin identificar".'
                       : null,
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _nombreCientificoController,
+                  decoration: const InputDecoration(
+                    labelText: 'Nombre científico (opcional)',
+                    hintText: 'Ej. Nothoprocta perdicaria',
+                    prefixIcon: Icon(Icons.science_outlined),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                DropdownButtonFormField<String>(
+                  initialValue: _categoriaSeleccionada,
+                  onChanged: (categoria) {
+                    setState(() {
+                      _categoriaSeleccionada = categoria;
+                    });
+                  },
+                  decoration: const InputDecoration(
+                    labelText: 'Categoría (opcional)',
+                    prefixIcon: Icon(Icons.category_outlined),
+                  ),
+                  items: categoriasGeneralesAves
+                      .map(
+                        (categoria) => DropdownMenuItem<String>(
+                          value: categoria,
+                          child: Text(categoria),
+                        ),
+                      )
+                      .toList(),
                 ),
                 const SizedBox(height: 14),
                 TextFormField(
@@ -1844,6 +2532,8 @@ class _BotonReportar extends StatelessWidget {
 class _AvistamientoPropio {
   const _AvistamientoPropio({
     required this.nombreAve,
+    required this.nombreCientifico,
+    required this.categoria,
     required this.lugar,
     required this.fecha,
     required this.comentario,
@@ -1851,6 +2541,8 @@ class _AvistamientoPropio {
   });
 
   final String nombreAve;
+  final String nombreCientifico;
+  final String categoria;
   final String lugar;
   final DateTime fecha;
   final String comentario;
@@ -1865,8 +2557,15 @@ class _AvistamientoPropio {
       return dato;
     }
 
+    String valorOpcional(String clave) {
+      final dato = json[clave];
+      return dato is String ? dato : '';
+    }
+
     return _AvistamientoPropio(
       nombreAve: json['nombreAve'] as String? ?? 'Ave sin identificar',
+      nombreCientifico: valorOpcional('nombreCientifico'),
+      categoria: categoriaGeneralAves(valorOpcional('categoria')),
       lugar: valor('lugar'),
       fecha: DateTime.parse(valor('fecha')),
       comentario: valor('comentario'),
@@ -1876,6 +2575,8 @@ class _AvistamientoPropio {
 
   Map<String, String> toJson() => {
     'nombreAve': nombreAve,
+    'nombreCientifico': nombreCientifico,
+    'categoria': categoria,
     'lugar': lugar,
     'fecha': fecha.toIso8601String(),
     'comentario': comentario,
@@ -2053,6 +2754,32 @@ class _TarjetaAvistamientoPropio extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
+                if (avistamiento.nombreCientifico.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    avistamiento.nombreCientifico,
+                    style: GoogleFonts.fraunces(
+                      fontSize: 15,
+                      fontStyle: FontStyle.italic,
+                      color: marca.textoCientifico,
+                    ),
+                  ),
+                ],
+                if (avistamiento.categoria.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Chip(
+                    avatar: const Icon(
+                      Icons.category_outlined,
+                      size: 16,
+                      color: PaletaAves.morado,
+                    ),
+                    label: Text(avistamiento.categoria),
+                    visualDensity: VisualDensity.compact,
+                    side: BorderSide(color: marca.chipBorde),
+                    backgroundColor: marca.chipFondo,
+                    labelStyle: TextStyle(color: marca.chipTexto),
+                  ),
+                ],
                 const SizedBox(height: 10),
                 Row(
                   children: [
@@ -2083,9 +2810,9 @@ class _TarjetaAvistamientoPropio extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                Text(
-                  avistamiento.comentario,
-                  style: const TextStyle(height: 1.45),
+                TextoExpandible(
+                  texto: avistamiento.comentario,
+                  estilo: const TextStyle(height: 1.45),
                 ),
                 const SizedBox(height: 10),
                 Text(
@@ -2121,22 +2848,26 @@ class _TarjetaAvistamientoPropio extends StatelessWidget {
 
 class _FotoGuardada {
   const _FotoGuardada({
+    required this.id,
     required this.nombre,
     required this.categoria,
     required this.nombreCientifico,
     required this.descripcion,
     required this.rutaImagen,
     required this.urlImagen,
-    required this.urlArticulo,
+    required this.urlFicha,
+    this.esDeComunidad = false,
   });
 
+  final String id;
   final String nombre;
   final String categoria;
   final String nombreCientifico;
   final String descripcion;
   final String rutaImagen;
   final String urlImagen;
-  final String urlArticulo;
+  final String? urlFicha;
+  final bool esDeComunidad;
 
   factory _FotoGuardada.fromJson(Map<String, dynamic> json) {
     String valor(String clave) {
@@ -2147,25 +2878,36 @@ class _FotoGuardada {
       return dato;
     }
 
+    String valorOpcional(String clave) {
+      final dato = json[clave];
+      return dato is String ? dato : '';
+    }
+
+    final id = json['id'];
+    final urlFicha = json['urlFicha'];
     return _FotoGuardada(
+      id: id is String && id.isNotEmpty ? id : valor('urlArticulo'),
       nombre: valor('nombre'),
-      categoria: valor('categoria'),
-      nombreCientifico: valor('nombreCientifico'),
-      descripcion: valor('descripcion'),
+      categoria: categoriaGeneralAves(valorOpcional('categoria')),
+      nombreCientifico: valorOpcional('nombreCientifico'),
+      descripcion: valorOpcional('descripcion'),
       rutaImagen: valor('rutaImagen'),
       urlImagen: valor('urlImagen'),
-      urlArticulo: valor('urlArticulo'),
+      urlFicha: urlFicha is String && urlFicha.isNotEmpty ? urlFicha : null,
+      esDeComunidad: json['esDeComunidad'] == true,
     );
   }
 
-  Map<String, String> toJson() => {
+  Map<String, Object?> toJson() => {
+    'id': id,
     'nombre': nombre,
     'categoria': categoria,
     'nombreCientifico': nombreCientifico,
     'descripcion': descripcion,
     'rutaImagen': rutaImagen,
     'urlImagen': urlImagen,
-    'urlArticulo': urlArticulo,
+    'urlFicha': urlFicha,
+    if (esDeComunidad) 'esDeComunidad': true,
   };
 }
 
@@ -2174,20 +2916,20 @@ class _TarjetaFotoGuardada extends StatelessWidget {
     required this.foto,
     required this.onQuitar,
     required this.quitando,
-    required this.onAbrirFuente,
+    required this.onAbrirFicha,
     required this.onReportar,
   });
 
   final _FotoGuardada foto;
   final VoidCallback onQuitar;
   final bool quitando;
-  final VoidCallback onAbrirFuente;
+  final VoidCallback? onAbrirFicha;
   final VoidCallback onReportar;
 
   @override
   Widget build(BuildContext context) {
     final marca = context.marca;
-    final etiquetaHero = 'foto:${foto.urlArticulo}';
+    final etiquetaHero = 'foto:${foto.id}';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -2228,6 +2970,10 @@ class _TarjetaFotoGuardada extends StatelessWidget {
                     height: 220,
                     width: double.infinity,
                     fit: BoxFit.cover,
+                    cacheWidth:
+                        (MediaQuery.sizeOf(context).width *
+                                MediaQuery.devicePixelRatioOf(context))
+                            .round(),
                     errorBuilder: (context, error, stackTrace) => Container(
                       height: 220,
                       color: marca.placeholder,
@@ -2276,21 +3022,22 @@ class _TarjetaFotoGuardada extends StatelessWidget {
                   visualDensity: VisualDensity.compact,
                   padding: EdgeInsets.zero,
                 ),
-                Text(foto.descripcion),
+                TextoExpandible(texto: foto.descripcion),
                 Align(
                   alignment: Alignment.centerRight,
                   child: Wrap(
                     alignment: WrapAlignment.end,
                     spacing: 8,
                     children: [
-                      TextButton.icon(
-                        onPressed: onAbrirFuente,
-                        style: TextButton.styleFrom(
-                          foregroundColor: PaletaAves.morado,
+                      if (onAbrirFicha != null)
+                        TextButton.icon(
+                          onPressed: onAbrirFicha,
+                          style: TextButton.styleFrom(
+                            foregroundColor: PaletaAves.morado,
+                          ),
+                          icon: const Icon(Icons.open_in_new, size: 18),
+                          label: const Text('Aves de Chile'),
                         ),
-                        icon: const Icon(Icons.open_in_new, size: 18),
-                        label: const Text('Fuente'),
-                      ),
                       TextButton.icon(
                         onPressed: quitando ? null : onQuitar,
                         style: TextButton.styleFrom(
@@ -2311,7 +3058,7 @@ class _TarjetaFotoGuardada extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  'Imagen de Wikipedia guardada en este dispositivo.',
+                  'Imagen guardada en este dispositivo.',
                   style: Theme.of(context).textTheme.bodySmall
                       ?.copyWith(color: marca.textoSecundario),
                 ),
@@ -2327,7 +3074,7 @@ class _TarjetaFotoGuardada extends StatelessWidget {
 class _TarjetaAve extends StatelessWidget {
   const _TarjetaAve({
     required this.ave,
-    required this.onAbrirArticulo,
+    required this.onAbrirFicha,
     required this.onReportar,
     required this.guardada,
     required this.guardando,
@@ -2335,8 +3082,8 @@ class _TarjetaAve extends StatelessWidget {
     required this.onQuitar,
   });
 
-  final _AveWikipedia ave;
-  final VoidCallback onAbrirArticulo;
+  final _AveCatalogo ave;
+  final VoidCallback onAbrirFicha;
   final VoidCallback onReportar;
   final bool guardada;
   final bool guardando;
@@ -2346,145 +3093,157 @@ class _TarjetaAve extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final marca = context.marca;
-    final etiquetaHero = 'ave:${ave.urlArticulo}';
+    final etiquetaHero = 'ave:${ave.uid}';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       clipBehavior: Clip.antiAlias,
       shape: _formaTarjetaAve(context),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
-            children: [
-              GestureDetector(
-                onTap: () => mostrarVisorFoto(
-                  context,
-                  etiquetaHero: etiquetaHero,
-                  titulo: ave.nombre,
-                  subtitulo: ave.nombreCientifico,
-                  construirImagen: (_) => Image.network(
-                    ave.urlImagen,
-                    width: double.infinity,
-                    height: double.infinity,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) => ColoredBox(
-                      color: marca.placeholder,
-                      child: const Center(
-                        child: Icon(
-                          Icons.flutter_dash_rounded,
-                          size: 48,
-                          color: PaletaAves.violeta,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                child: Hero(
-                  tag: etiquetaHero,
-                  child: Image.network(
-                    ave.urlImagen,
-                    height: 220,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, progress) {
-                      if (progress == null) return child;
-                      return Container(
-                        height: 220,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final esApaisada =
+              MediaQuery.orientationOf(context) == Orientation.landscape &&
+              constraints.maxWidth >= 640;
+          final alturaImagen = esApaisada ? 180.0 : 220.0;
+          final anchoImagen = esApaisada
+              ? (constraints.maxWidth * 0.36).clamp(200.0, 260.0).toDouble()
+              : constraints.maxWidth;
+          final imagen = SizedBox(
+            width: anchoImagen,
+            child: Stack(
+              children: [
+                GestureDetector(
+                  onTap: () => mostrarVisorFoto(
+                    context,
+                    etiquetaHero: etiquetaHero,
+                    titulo: ave.nombre,
+                    subtitulo: ave.nombreCientifico,
+                    construirImagen: (_) => Image.network(
+                      ave.urlImagen,
+                      width: double.infinity,
+                      height: double.infinity,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => ColoredBox(
                         color: marca.placeholder,
                         child: const Center(
-                          child: CircularProgressIndicator(
-                            color: PaletaAves.morado,
+                          child: Icon(
+                            Icons.flutter_dash_rounded,
+                            size: 48,
+                            color: PaletaAves.violeta,
                           ),
                         ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      height: 220,
-                      color: marca.placeholder,
-                      child: const Center(
-                        child: Icon(
-                          Icons.flutter_dash_rounded,
-                          size: 48,
-                          color: PaletaAves.violeta,
+                      ),
+                    ),
+                  ),
+                  child: Hero(
+                    tag: etiquetaHero,
+                    child: Image.network(
+                      ave.urlImagen,
+                      height: alturaImagen,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      cacheWidth:
+                          (anchoImagen * MediaQuery.devicePixelRatioOf(context))
+                              .round(),
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return Container(
+                          height: alturaImagen,
+                          color: marca.placeholder,
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: PaletaAves.morado,
+                            ),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        height: alturaImagen,
+                        color: marca.placeholder,
+                        child: const Center(
+                          child: Icon(
+                            Icons.flutter_dash_rounded,
+                            size: 48,
+                            color: PaletaAves.violeta,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              Positioned(
-                top: 12,
-                right: 12,
-                child: _BotonReportar(onPressed: onReportar),
-              ),
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: 82,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        PaletaAves.morado.withValues(alpha: 0.72),
-                      ],
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: _BotonReportar(onPressed: onReportar),
+                ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: 82,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          PaletaAves.morado.withValues(alpha: 0.72),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              Positioned(
-                left: 14,
-                bottom: 12,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 7,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [PaletaAves.amarillo, Color(0xFFFFE88A)],
+                Positioned(
+                  left: 14,
+                  bottom: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 7,
                     ),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    ave.categoria,
-                    style: const TextStyle(
-                      color: PaletaAves.morado,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [PaletaAves.amarillo, Color(0xFFFFE88A)],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                  ),
-                ),
-              ),
-              Positioned(
-                right: 14,
-                bottom: 12,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.92),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Text(
-                    'Wikipedia',
-                    style: TextStyle(
-                      color: PaletaAves.morado,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
+                    child: Text(
+                      ave.categoria,
+                      style: const TextStyle(
+                        color: PaletaAves.morado,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          Padding(
+                Positioned(
+                  right: 14,
+                  bottom: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.92),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Text(
+                      'Aves de Chile',
+                      style: TextStyle(
+                        color: PaletaAves.morado,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+          final detalles = Padding(
             padding: const EdgeInsets.fromLTRB(18, 16, 18, 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2506,9 +3265,9 @@ class _TarjetaAve extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 10),
-                Text(
-                  ave.descripcion,
-                  style: TextStyle(color: marca.textoCuerpo, height: 1.45),
+                TextoExpandible(
+                  texto: ave.descripcion,
+                  estilo: TextStyle(color: marca.textoCuerpo, height: 1.45),
                 ),
                 Align(
                   alignment: Alignment.centerRight,
@@ -2567,20 +3326,35 @@ class _TarjetaAve extends StatelessWidget {
                         ),
                       ),
                       TextButton.icon(
-                        onPressed: onAbrirArticulo,
+                        onPressed: onAbrirFicha,
                         style: TextButton.styleFrom(
                           foregroundColor: PaletaAves.morado,
                         ),
                         icon: const Icon(Icons.open_in_new, size: 18),
-                        label: const Text('Wikipedia'),
+                        label: const Text('Aves de Chile'),
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-          ),
-        ],
+          );
+
+          if (esApaisada) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                imagen,
+                Expanded(child: detalles),
+              ],
+            );
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [imagen, detalles],
+          );
+        },
       ),
     );
   }
