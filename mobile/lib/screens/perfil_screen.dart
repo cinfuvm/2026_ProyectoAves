@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/usuario.dart';
 import '../services/auth_service.dart';
+import '../theme/app_theme.dart';
 import 'login_screen.dart';
 
 class PerfilScreen extends StatefulWidget {
@@ -80,12 +81,24 @@ class _PerfilScreenState extends State<PerfilScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              _usuario == null
-                  ? Icons.person_outline_rounded
-                  : Icons.account_circle_outlined,
-              size: 56,
-              color: Theme.of(context).colorScheme.secondary,
+            AnimatedSwitcher(
+              duration: duracion(context, 220),
+              switchInCurve: Curves.easeOutCubic,
+              transitionBuilder: (hijo, anim) => FadeTransition(
+                opacity: anim,
+                child: ScaleTransition(
+                  scale: Tween<double>(begin: 0.8, end: 1).animate(anim),
+                  child: hijo,
+                ),
+              ),
+              child: Icon(
+                _usuario == null
+                    ? Icons.person_outline_rounded
+                    : Icons.account_circle_outlined,
+                key: ValueKey<bool>(_usuario != null),
+                size: 56,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
             const SizedBox(height: 12),
             Text(

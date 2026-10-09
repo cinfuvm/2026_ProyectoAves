@@ -72,9 +72,10 @@ Estados sugeridos: `No ejecutado`, `Aprobado`, `Fallido`, `Bloqueado`. Registrar
 
 . Abrir la app.
 . Navegar por Inicio, Buscar, Coleccion y Perfil.
+. Deslizar horizontalmente entre las cuatro secciones y comprobar que la barra inferior actualiza la seleccion.
 . Alternar tema claro/oscuro y volver a Coleccion.
 
-*Esperado:* las cuatro secciones se abren, la navegacion sigue respondiendo, el tema cambia y no aparece una pantalla roja ni error de runtime.
+*Esperado:* las cuatro secciones se abren tanto desde la barra como con deslizamientos horizontales; los filtros horizontales de Buscar y Coleccion siguen desplazandose sin cambiar de seccion; el tema cambia y no aparece una pantalla roja ni error de runtime.
 
 *Resultado/evidencia:* pendiente de ejecucion.
 

@@ -9,7 +9,7 @@ Este registro resume los cambios de la solucion mobile y su documentacion que se
 
 === Interfaz y navegacion
 
-* Se organizo la experiencia en Inicio, Buscar, Coleccion y Perfil.
+* Se organizo la experiencia en Inicio, Buscar, Coleccion y Perfil, accesibles desde la barra inferior y mediante deslizamientos horizontales.
 * Se incorporaron los temas claro y oscuro y un estilo visual consistente para tarjetas y controles.
 * Se agregaron filtros de Coleccion en una fila horizontal. El filtro de tipo y el filtro de categoria se combinan; las fotos propias sin correspondencia con las categorias de muestra se presentan como sin clasificar.
 * Wikipedia se mantiene como fuente del catalogo de demostracion y no se ofrece como categoria de la coleccion.

@@ -22,7 +22,7 @@ El sistema completo también contempla un dashboard web de administración y mod
 El proyecto se encuentra en etapa de boceto. Actualmente incluye:
 
 - Proyecto Flutter y pantalla principal.
-- Navegación inicial con secciones de Inicio, Buscar, Colección y Perfil.
+- Navegación entre Inicio, Buscar, Colección y Perfil mediante la barra inferior o deslizamientos horizontales.
 - En Inicio, un feed de aves chilenas con imágenes y descripciones cargadas desde Wikipedia.
 - En Buscar, filtros por texto (nombre común, nombre científico o descripción) y categoría de muestra (Bosque, Rapaces, Humedal, Pradera y Picaflores).
 - Enlace a la página de Wikipedia de cada ave como referencia de la información e imagen.

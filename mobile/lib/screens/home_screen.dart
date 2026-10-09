@@ -4,30 +4,21 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../theme/app_theme.dart';
+import '../widgets/aparicion_diferida.dart';
+import '../widgets/visor_foto.dart';
 import 'perfil_screen.dart';
 
-abstract final class _ColoresAves {
-  static const morado = Color(0xFF5B2D91);
-  static const violeta = Color(0xFF8B5CC7);
-  static const lavanda = Color(0xFFF2EAFB);
-  static const amarillo = Color(0xFFFFD447);
-  static const fondo = Color(0xFFFBF8FF);
-}
-
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({
-    super.key,
-    required this.modoOscuro,
-    required this.onAlternarTema,
-  });
+  const HomeScreen({super.key, required this.onAlternarTema});
 
-  final bool modoOscuro;
   final VoidCallback onAlternarTema;
 
   @override
@@ -47,6 +38,8 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
 
   int _indiceSeleccionado = 0;
+  bool _entradaCatalogoPendiente = true;
+  final PageController _controladorPaginas = PageController();
   final ImagePicker _selectorImagen = ImagePicker();
   final TextEditingController _controladorBusqueda = TextEditingController();
   List<_FotoGuardada> _fotosGuardadas = [];
@@ -115,6 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _controladorPaginas.dispose();
     _controladorBusqueda.dispose();
     super.dispose();
   }
@@ -177,6 +171,17 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       }),
     );
+
+    // La entrada escalonada corre solo en la primera aparición del catálogo.
+    if (mounted) {
+      Future.delayed(const Duration(milliseconds: 1400), () {
+        if (mounted) {
+          setState(() {
+            _entradaCatalogoPendiente = false;
+          });
+        }
+      });
+    }
 
     return respuestas;
   }
@@ -368,7 +373,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _mostrarMensaje('No se pudo guardar el ave: $mensaje');
   }
 
-  Future<void> _quitarAvistamiento(_AvistamientoPropio avistamiento) async {
+  Future<bool> _quitarAvistamiento(_AvistamientoPropio avistamiento) async {
+    var registroQuitado = false;
     try {
       final nuevosAvistamientos = _avistamientosPropios
           .where((item) => item.rutaImagen != avistamiento.rutaImagen)
@@ -381,22 +387,23 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!guardado) {
         throw StateError('No se pudo actualizar la bitácora.');
       }
-
-      if (!mounted) return;
-      setState(() {
-        _avistamientosPropios = nuevosAvistamientos;
-      });
+      registroQuitado = true;
 
       final archivo = File(avistamiento.rutaImagen);
       if (await archivo.exists()) {
         await archivo.delete();
       }
       _mostrarMensaje('${avistamiento.nombreAve} se quitó de tu bitácora.');
+      return true;
     } on FileSystemException catch (error) {
-      _mostrarMensaje(
-        'El avistamiento se quitó de la bitácora, pero no se pudo borrar '
-        'la imagen local: ${error.message}',
-      );
+      if (registroQuitado) {
+        _mostrarMensaje(
+          'El avistamiento se quitó de la bitácora, pero no se pudo borrar '
+          'la imagen local: ${error.message}',
+        );
+        return true;
+      }
+      _mostrarMensaje('No se pudo actualizar la bitácora: ${error.message}');
     } on PlatformException catch (error) {
       _mostrarMensaje(
         'No se pudo actualizar la bitácora: '
@@ -410,9 +417,11 @@ class _HomeScreenState extends State<HomeScreen> {
     } on StateError catch (error) {
       _mostrarMensaje('No se pudo actualizar la bitácora: ${error.message}');
     }
+    return false;
   }
 
-  Future<void> _quitarDeColeccion(_FotoGuardada foto) async {
+  Future<bool> _quitarDeColeccion(_FotoGuardada foto) async {
+    var registroQuitado = false;
     try {
       final nuevasFotos = _fotosGuardadas
           .where((guardada) => guardada.urlArticulo != foto.urlArticulo)
@@ -425,22 +434,23 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!guardado) {
         throw StateError('No se pudo actualizar la colección.');
       }
-
-      if (!mounted) return;
-      setState(() {
-        _fotosGuardadas = nuevasFotos;
-      });
+      registroQuitado = true;
 
       final archivo = File(foto.rutaImagen);
       if (await archivo.exists()) {
         await archivo.delete();
       }
       _mostrarMensaje('${foto.nombre} se quitó de tu colección.');
+      return true;
     } on FileSystemException catch (error) {
-      _mostrarMensaje(
-        'El ave se quitó de la colección, pero no se pudo borrar '
-        'el archivo local: ${error.message}',
-      );
+      if (registroQuitado) {
+        _mostrarMensaje(
+          'El ave se quitó de la colección, pero no se pudo borrar '
+          'el archivo local: ${error.message}',
+        );
+        return true;
+      }
+      _mostrarErrorColeccion(error.message);
     } on PlatformException catch (error) {
       _mostrarErrorColeccion(
         error.message ?? 'No se pudo actualizar la colección guardada.',
@@ -452,6 +462,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } on StateError catch (error) {
       _mostrarErrorColeccion(error.message);
     }
+    return false;
   }
 
   void _mostrarErrorColeccion(String mensaje) {
@@ -459,6 +470,25 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _alTocarItem(int index) {
+    if (index == _indiceSeleccionado) return;
+    HapticFeedback.selectionClick();
+    setState(() {
+      _indiceSeleccionado = index;
+    });
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controladorPaginas.jumpToPage(index);
+      return;
+    }
+    _controladorPaginas.animateToPage(
+      index,
+      duration: duracion(context, 280),
+      curve: Curves.easeInOutCubic,
+    );
+  }
+
+  void _alCambiarPagina(int index) {
+    if (index == _indiceSeleccionado) return;
+    HapticFeedback.selectionClick();
     setState(() {
       _indiceSeleccionado = index;
     });
@@ -815,7 +845,7 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
-            child: CircularProgressIndicator(color: _ColoresAves.morado),
+            child: CircularProgressIndicator(color: PaletaAves.morado),
           );
         }
         if (snapshot.hasError) {
@@ -828,7 +858,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const Icon(
                     Icons.wifi_off_outlined,
                     size: 48,
-                    color: _ColoresAves.violeta,
+                    color: PaletaAves.violeta,
                   ),
                   const SizedBox(height: 12),
                   const Text(
@@ -841,6 +871,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     onPressed: () {
                       setState(() {
                         _aves = _cargarAves();
+                        _entradaCatalogoPendiente = true;
                       });
                     },
                     icon: const Icon(Icons.refresh),
@@ -869,7 +900,7 @@ class _HomeScreenState extends State<HomeScreen> {
             : aves;
 
         return ListView(
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 96),
           children: [
             _construirEncabezado(esBusqueda: esBusqueda),
             if (esBusqueda) ...[
@@ -880,18 +911,24 @@ class _HomeScreenState extends State<HomeScreen> {
                 decoration: InputDecoration(
                   hintText: 'Nombre común o científico',
                   prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _consulta.isEmpty
-                      ? null
-                      : IconButton(
-                          tooltip: 'Limpiar búsqueda',
-                          onPressed: () {
-                            _controladorBusqueda.clear();
-                            setState(() => _consulta = '');
-                          },
-                          icon: const Icon(Icons.close),
-                        ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
+                  suffixIcon: AnimatedSwitcher(
+                    duration: duracion(context, 150),
+                    switchInCurve: Curves.easeOutCubic,
+                    transitionBuilder: (hijo, anim) =>
+                        FadeTransition(opacity: anim, child: hijo),
+                    child: _consulta.isEmpty
+                        ? const SizedBox.shrink(
+                            key: ValueKey<String>('sin-consulta'),
+                          )
+                        : IconButton(
+                            key: const ValueKey<String>('limpiar-consulta'),
+                            tooltip: 'Limpiar búsqueda',
+                            onPressed: () {
+                              _controladorBusqueda.clear();
+                              setState(() => _consulta = '');
+                            },
+                            icon: const Icon(Icons.close),
+                          ),
                   ),
                 ),
               ),
@@ -911,23 +948,22 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(width: 8),
                   itemBuilder: (context, index) {
                     final categoria = _categorias[index];
+                    final marca = context.marca;
                     return ChoiceChip(
                       label: Text(categoria),
                       selected: _categoriaSeleccionada == categoria,
-                      selectedColor: _ColoresAves.morado,
-                      backgroundColor: widget.modoOscuro
-                          ? const Color(0xFF2B2335)
-                          : Colors.white,
+                      selectedColor: PaletaAves.morado,
+                      backgroundColor: marca.chipFondo,
                       labelStyle: TextStyle(
                         color: _categoriaSeleccionada == categoria
                             ? Colors.white
-                            : _ColoresAves.morado,
+                            : marca.chipTexto,
                         fontWeight: FontWeight.w600,
                       ),
                       side: BorderSide(
                         color: _categoriaSeleccionada == categoria
-                            ? _ColoresAves.morado
-                            : const Color(0xFFE5D8F5),
+                            ? PaletaAves.morado
+                            : marca.chipBorde,
                       ),
                       onSelected: (seleccionada) {
                         if (seleccionada) {
@@ -951,30 +987,46 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               )
             else
-              ...avesVisibles.map(
-                (ave) => _TarjetaAve(
-                  ave: ave,
-                  onAbrirArticulo: () => _abrirArticulo(ave),
-                  onReportar: () => _reportarFoto(
-                    nombre: ave.nombre,
-                    referenciaImagen: ave.urlImagen,
-                    origen: 'Wikipedia',
-                  ),
-                  guardada: _fotosGuardadas.any(
-                    (foto) => foto.urlArticulo == ave.urlArticulo,
-                  ),
-                  guardando: _avesGuardandose.contains(ave.urlArticulo),
-                  onGuardar: () => _guardarAve(ave),
-                  onQuitar: () {
-                    final fotosGuardadas = _fotosGuardadas.where(
+              ...avesVisibles.asMap().entries.map((entrada) {
+                final ave = entrada.value;
+                return AparicionDiferida(
+                  indice: entrada.key,
+                  activa: _entradaCatalogoPendiente,
+                  child: _TarjetaAve(
+                    ave: ave,
+                    onAbrirArticulo: () => _abrirArticulo(ave),
+                    onReportar: () => _reportarFoto(
+                      nombre: ave.nombre,
+                      referenciaImagen: ave.urlImagen,
+                      origen: 'Wikipedia',
+                    ),
+                    guardada: _fotosGuardadas.any(
                       (foto) => foto.urlArticulo == ave.urlArticulo,
-                    );
-                    if (fotosGuardadas.isNotEmpty) {
-                      _quitarDeColeccion(fotosGuardadas.first);
-                    }
-                  },
-                ),
-              ),
+                    ),
+                    guardando: _avesGuardandose.contains(ave.urlArticulo),
+                    onGuardar: () => _guardarAve(ave),
+                    onQuitar: () {
+                      final fotosGuardadas = _fotosGuardadas.where(
+                        (foto) => foto.urlArticulo == ave.urlArticulo,
+                      );
+                      if (fotosGuardadas.isNotEmpty) {
+                        final foto = fotosGuardadas.first;
+                        _quitarDeColeccion(foto).then((quitada) {
+                          if (!quitada || !mounted) return;
+                          setState(() {
+                            _fotosGuardadas = _fotosGuardadas
+                                .where(
+                                  (guardada) =>
+                                      guardada.urlArticulo != foto.urlArticulo,
+                                )
+                                .toList();
+                          });
+                        });
+                      }
+                    },
+                  ),
+                );
+              }),
           ],
         );
       },
@@ -982,19 +1034,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _construirEncabezado({required bool esBusqueda}) {
+    final marca = context.marca;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [_ColoresAves.morado, _ColoresAves.violeta],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: marca.cabeceraGradiente,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: _ColoresAves.morado.withValues(alpha: 0.2),
+            color: PaletaAves.morado.withValues(alpha: 0.2),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -1017,9 +1066,12 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Text(
                 esBusqueda ? 'Explora y descubre' : 'Aves de Chile',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   color: Colors.white,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 30,
+                  height: 1.15,
+                  letterSpacing: -0.4,
                 ),
               ),
               const SizedBox(height: 6),
@@ -1028,14 +1080,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     ? 'Encuentra tu próxima ave favorita.'
                     : 'Pequeños encuentros, grandes historias.',
                 style: Theme.of(context).textTheme.bodyMedium
-                    ?.copyWith(color: Colors.white.withValues(alpha: 0.9)),
+                    ?.copyWith(color: Colors.white.withValues(alpha: 0.92)),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
               Container(
-                width: 42,
-                height: 4,
+                width: 56,
+                height: 5,
                 decoration: BoxDecoration(
-                  color: _ColoresAves.amarillo,
+                  color: PaletaAves.amarillo,
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -1049,7 +1101,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _construirColeccion() {
     if (_cargandoColeccion) {
       return const Center(
-        child: CircularProgressIndicator(color: _ColoresAves.morado),
+        child: CircularProgressIndicator(color: PaletaAves.morado),
       );
     }
     if (_errorColeccion != null) {
@@ -1061,7 +1113,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               const Icon(
                 Icons.error_outline_rounded,
-                color: _ColoresAves.violeta,
+                color: PaletaAves.violeta,
                 size: 44,
               ),
               const SizedBox(height: 12),
@@ -1138,22 +1190,23 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 16),
         if (_fotosGuardadas.isEmpty && _avistamientosPropios.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
             child: Column(
               children: [
                 Icon(
                   Icons.bookmark_border_rounded,
                   size: 48,
-                  color: _ColoresAves.violeta,
+                  color: context.marca.iconoMarca,
                 ),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 Text(
                   'Tu colección está vacía',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  style: Theme.of(context).textTheme.titleLarge
+                      ?.copyWith(fontWeight: FontWeight.w700),
                 ),
-                SizedBox(height: 6),
-                Text(
+                const SizedBox(height: 6),
+                const Text(
                   'Guarda aves del catálogo o agrega una foto con sus datos.',
                   textAlign: TextAlign.center,
                 ),
@@ -1161,42 +1214,72 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         if (avistamientosVisibles.isNotEmpty)
-          const Padding(
-            padding: EdgeInsets.only(bottom: 12),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
             child: Text(
               'Avistamientos propios',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              style: Theme.of(context).textTheme.titleLarge
+                  ?.copyWith(fontWeight: FontWeight.w700),
             ),
           ),
         ...avistamientosVisibles.map(
-          (avistamiento) => _TarjetaAvistamientoPropio(
-            avistamiento: avistamiento,
-            fechaFormateada: _formatearFecha(avistamiento.fecha),
-            onQuitar: () => _quitarAvistamiento(avistamiento),
-            onReportar: () => _reportarFoto(
-              nombre: avistamiento.nombreAve,
-              referenciaImagen: avistamiento.rutaImagen,
-              origen: 'Avistamiento propio',
+          (avistamiento) => _TarjetaConSalida(
+            key: ValueKey<String>('avistamiento:${avistamiento.rutaImagen}'),
+            eliminar: () => _quitarAvistamiento(avistamiento),
+            alEliminar: () {
+              if (!mounted) return;
+              setState(() {
+                _avistamientosPropios = _avistamientosPropios
+                    .where((item) => item.rutaImagen != avistamiento.rutaImagen)
+                    .toList();
+              });
+            },
+            construir: (onQuitar, quitando) => _TarjetaAvistamientoPropio(
+              avistamiento: avistamiento,
+              fechaFormateada: _formatearFecha(avistamiento.fecha),
+              onQuitar: onQuitar,
+              quitando: quitando,
+              onReportar: () => _reportarFoto(
+                nombre: avistamiento.nombreAve,
+                referenciaImagen: avistamiento.rutaImagen,
+                origen: 'Avistamiento propio',
+              ),
             ),
           ),
         ),
         if (fotosVisibles.isNotEmpty)
-          const Padding(
-            padding: EdgeInsets.only(top: 8, bottom: 12),
+          Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 12),
             child: Text(
               'Aves guardadas',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              style: Theme.of(context).textTheme.titleLarge
+                  ?.copyWith(fontWeight: FontWeight.w700),
             ),
           ),
         ...fotosVisibles.map(
-          (foto) => _TarjetaFotoGuardada(
-            foto: foto,
-            onQuitar: () => _quitarDeColeccion(foto),
-            onAbrirFuente: () => _abrirEnlaceFuente(foto.urlArticulo),
-            onReportar: () => _reportarFoto(
-              nombre: foto.nombre,
-              referenciaImagen: foto.urlImagen,
-              origen: 'Wikipedia guardada',
+          (foto) => _TarjetaConSalida(
+            key: ValueKey<String>('guardada:${foto.urlArticulo}'),
+            eliminar: () => _quitarDeColeccion(foto),
+            alEliminar: () {
+              if (!mounted) return;
+              setState(() {
+                _fotosGuardadas = _fotosGuardadas
+                    .where(
+                      (guardada) => guardada.urlArticulo != foto.urlArticulo,
+                    )
+                    .toList();
+              });
+            },
+            construir: (onQuitar, quitando) => _TarjetaFotoGuardada(
+              foto: foto,
+              onQuitar: onQuitar,
+              quitando: quitando,
+              onAbrirFuente: () => _abrirEnlaceFuente(foto.urlArticulo),
+              onReportar: () => _reportarFoto(
+                nombre: foto.nombre,
+                referenciaImagen: foto.urlImagen,
+                origen: 'Wikipedia guardada',
+              ),
             ),
           ),
         ),
@@ -1226,7 +1309,7 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         Row(
           children: [
-            Icon(icono, size: 17, color: _ColoresAves.violeta),
+            Icon(icono, size: 17, color: PaletaAves.violeta),
             const SizedBox(width: 7),
             Text(
               etiqueta,
@@ -1245,6 +1328,7 @@ class _HomeScreenState extends State<HomeScreen> {
             itemBuilder: (context, index) {
               final opcion = opciones[index];
               final estaSeleccionada = opcion == seleccionado;
+              final marca = context.marca;
               return ChoiceChip(
                 label: Text(opcion),
                 selected: estaSeleccionada,
@@ -1252,22 +1336,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 visualDensity: VisualDensity.compact,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 side: BorderSide(
-                  color: estaSeleccionada
-                      ? _ColoresAves.morado
-                      : (widget.modoOscuro
-                            ? const Color(0xFF51415F)
-                            : const Color(0xFFE5D8F5)),
+                  color: estaSeleccionada ? PaletaAves.morado : marca.chipBorde,
                 ),
-                backgroundColor: widget.modoOscuro
-                    ? const Color(0xFF2B2335)
-                    : Colors.white,
-                selectedColor: _ColoresAves.morado,
+                backgroundColor: marca.chipFondo,
+                selectedColor: PaletaAves.morado,
                 labelStyle: TextStyle(
-                  color: estaSeleccionada
-                      ? Colors.white
-                      : (widget.modoOscuro
-                            ? const Color(0xFFE3D1FF)
-                            : _ColoresAves.morado),
+                  color: estaSeleccionada ? Colors.white : marca.chipTexto,
                   fontWeight: FontWeight.w600,
                   fontSize: 12,
                 ),
@@ -1299,6 +1373,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final marca = context.marca;
+    final esOscuro = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -1307,28 +1384,29 @@ class _HomeScreenState extends State<HomeScreen> {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: _ColoresAves.amarillo,
+                color: PaletaAves.amarillo,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: const Icon(
                 Icons.flutter_dash_rounded,
-                color: _ColoresAves.morado,
+                color: PaletaAves.morado,
                 size: 25,
               ),
             ),
             const SizedBox(width: 10),
-            const Text(
-              'Bitácora de Aves',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            const Text('Bitácora de Aves'),
           ],
         ),
-        flexibleSpace: const DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [_ColoresAves.morado, _ColoresAves.violeta],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
+        flexibleSpace: SizedBox(
+          width: double.infinity,
+          height: MediaQuery.paddingOf(context).top + kToolbarHeight,
+          child: const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [PaletaAves.morado, PaletaAves.violeta],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
             ),
           ),
         ),
@@ -1336,19 +1414,30 @@ class _HomeScreenState extends State<HomeScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Material(
-              color: _ColoresAves.amarillo,
+              color: PaletaAves.amarillo,
               shape: const CircleBorder(),
               elevation: 2,
               child: IconButton(
                 onPressed: widget.onAlternarTema,
-                tooltip: widget.modoOscuro
-                    ? 'Activar modo día'
-                    : 'Activar modo noche',
-                color: _ColoresAves.morado,
-                icon: Icon(
-                  widget.modoOscuro
-                      ? Icons.light_mode_rounded
-                      : Icons.dark_mode_rounded,
+                tooltip: esOscuro ? 'Activar modo día' : 'Activar modo noche',
+                color: PaletaAves.morado,
+                icon: AnimatedSwitcher(
+                  duration: duracion(context, 320),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  transitionBuilder: (hijo, anim) => FadeTransition(
+                    opacity: anim,
+                    child: RotationTransition(
+                      turns: Tween<double>(begin: -0.25, end: 0).animate(anim),
+                      child: hijo,
+                    ),
+                  ),
+                  child: Icon(
+                    esOscuro
+                        ? Icons.light_mode_rounded
+                        : Icons.dark_mode_rounded,
+                    key: ValueKey<bool>(esOscuro),
+                  ),
                 ),
               ),
             ),
@@ -1360,97 +1449,112 @@ class _HomeScreenState extends State<HomeScreen> {
         fit: StackFit.expand,
         children: [
           DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: widget.modoOscuro
-                    ? const [
-                        Color(0xFF1E1728),
-                        Color(0xFF17131E),
-                        Color(0xFF282016),
-                      ]
-                    : const [
-                        Color(0xFFFFFCFF),
-                        _ColoresAves.fondo,
-                        Color(0xFFFFF9E7),
-                      ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+            decoration: BoxDecoration(gradient: marca.fondoGradiente),
+            child: PageView.builder(
+              controller: _controladorPaginas,
+              itemCount: 4,
+              onPageChanged: _alCambiarPagina,
+              itemBuilder: (context, index) => switch (index) {
+                0 => _construirInicio(),
+                1 => _construirBusqueda(),
+                2 => _construirColeccion(),
+                _ => _construirPerfil(),
+              },
+              physics: const PageScrollPhysics(),
             ),
-            child: switch (_indiceSeleccionado) {
-              0 => _construirInicio(),
-              1 => _construirBusqueda(),
-              2 => _construirColeccion(),
-              _ => _construirPerfil(),
-            },
           ),
-          if (_guardandoAvistamiento) ...[
-            const ModalBarrier(dismissible: false, color: Colors.black26),
-            const Center(
-              child: Card(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 3),
-                      ),
-                      SizedBox(width: 16),
-                      Text('Guardando foto...'),
-                    ],
-                  ),
-                ),
+          AnimatedSwitcher(
+            duration: duracion(context, 200),
+            switchInCurve: Curves.easeOutCubic,
+            transitionBuilder: (hijo, anim) => FadeTransition(
+              opacity: anim,
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 0.94, end: 1).animate(anim),
+                child: hijo,
               ),
             ),
-          ],
+            child: _guardandoAvistamiento
+                ? const KeyedSubtree(
+                    key: ValueKey<String>('guardando-avistamiento'),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        ModalBarrier(dismissible: false, color: Colors.black26),
+                        Center(
+                          child: Card(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 20,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 3,
+                                    ),
+                                  ),
+                                  SizedBox(width: 16),
+                                  Text('Guardando foto...'),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : null,
+          ),
         ],
       ),
-      floatingActionButton: _indiceSeleccionado == 0
-          ? FloatingActionButton.extended(
-              onPressed: _mostrarOpcionesImagen,
-              backgroundColor: _ColoresAves.amarillo,
-              foregroundColor: _ColoresAves.morado,
-              elevation: 6,
-              icon: const Icon(Icons.add_a_photo_outlined),
-              label: const Text(
-                'Agregar foto',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            )
-          : null,
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: widget.modoOscuro
-                ? const [Color(0xFF342245), Color(0xFF21182D)]
-                : const [_ColoresAves.morado, Color(0xFF43206F)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+      floatingActionButton: AnimatedSwitcher(
+        duration: duracion(context, 220),
+        switchInCurve: Curves.easeOutCubic,
+        transitionBuilder: (hijo, anim) => FadeTransition(
+          opacity: anim,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.85, end: 1).animate(anim),
+            child: hijo,
           ),
         ),
-        child: BottomNavigationBar(
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          items: const <BottomNavigationBarItem>[
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
-            BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Buscar'),
-            BottomNavigationBarItem(
+        child: _indiceSeleccionado == 0
+            ? KeyedSubtree(
+                key: const ValueKey<String>('fab-agregar-foto'),
+                child: FloatingActionButton.extended(
+                  onPressed: _mostrarOpcionesImagen,
+                  backgroundColor: PaletaAves.amarillo,
+                  foregroundColor: PaletaAves.morado,
+                  elevation: 6,
+                  icon: const Icon(Icons.add_a_photo_outlined),
+                  label: const Text(
+                    'Agregar foto',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              )
+            : null,
+      ),
+      bottomNavigationBar: DecoratedBox(
+        decoration: BoxDecoration(gradient: marca.barraGradiente),
+        child: NavigationBar(
+          selectedIndex: _indiceSeleccionado,
+          onDestinationSelected: _alTocarItem,
+          destinations: const <NavigationDestination>[
+            NavigationDestination(icon: Icon(Icons.home), label: 'Inicio'),
+            NavigationDestination(icon: Icon(Icons.search), label: 'Buscar'),
+            NavigationDestination(
               icon: Icon(Icons.library_books),
               label: 'Colección',
             ),
-            BottomNavigationBarItem(
+            NavigationDestination(
               icon: Icon(Icons.person_outline),
               label: 'Perfil',
             ),
           ],
-          currentIndex: _indiceSeleccionado,
-          selectedItemColor: _ColoresAves.amarillo,
-          unselectedItemColor: Colors.white70,
-          onTap: _alTocarItem,
         ),
       ),
     );
@@ -1779,47 +1883,153 @@ class _AvistamientoPropio {
   };
 }
 
+class _TarjetaConSalida extends StatefulWidget {
+  const _TarjetaConSalida({
+    super.key,
+    required this.construir,
+    required this.eliminar,
+    required this.alEliminar,
+  });
+
+  final Widget Function(VoidCallback onQuitar, bool quitando) construir;
+  final Future<bool> Function() eliminar;
+  final VoidCallback alEliminar;
+
+  @override
+  State<_TarjetaConSalida> createState() => _TarjetaConSalidaState();
+}
+
+class _TarjetaConSalidaState extends State<_TarjetaConSalida> {
+  bool _quitando = false;
+  bool _saliendo = false;
+
+  Future<void> _eliminar() async {
+    if (_quitando || _saliendo) return;
+    final eliminar = widget.eliminar;
+    final alEliminar = widget.alEliminar;
+    setState(() {
+      _quitando = true;
+    });
+
+    final eliminado = await eliminar();
+    if (!eliminado) {
+      if (mounted) {
+        setState(() {
+          _quitando = false;
+        });
+      }
+      return;
+    }
+    if (!mounted) {
+      alEliminar();
+      return;
+    }
+
+    setState(() {
+      _saliendo = true;
+    });
+    await Future<void>.delayed(duracion(context, 220));
+    alEliminar();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 1, end: _saliendo ? 0 : 1),
+      duration: duracion(context, 220),
+      curve: Curves.easeInOutCubic,
+      builder: (context, avance, child) {
+        final direccion = Directionality.of(context) == TextDirection.ltr
+            ? 1.0
+            : -1.0;
+        return ClipRect(
+          child: Align(
+            alignment: Alignment.topCenter,
+            heightFactor: avance,
+            child: Opacity(
+              opacity: avance,
+              child: Transform.translate(
+                offset: Offset(direccion * 14 * (1 - avance), 0),
+                child: child,
+              ),
+            ),
+          ),
+        );
+      },
+      child: widget.construir(_eliminar, _quitando),
+    );
+  }
+}
+
 class _TarjetaAvistamientoPropio extends StatelessWidget {
   const _TarjetaAvistamientoPropio({
     required this.avistamiento,
     required this.fechaFormateada,
     required this.onQuitar,
+    required this.quitando,
     required this.onReportar,
   });
 
   final _AvistamientoPropio avistamiento;
   final String fechaFormateada;
   final VoidCallback onQuitar;
+  final bool quitando;
   final VoidCallback onReportar;
 
   @override
   Widget build(BuildContext context) {
-    final modoOscuro = Theme.of(context).brightness == Brightness.dark;
+    final marca = context.marca;
+    final etiquetaHero = 'avist:${avistamiento.rutaImagen}';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: _formaTarjetaAve(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Stack(
             children: [
-              Image.file(
-                File(avistamiento.rutaImagen),
-                height: 240,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  height: 240,
-                  color: modoOscuro
-                      ? const Color(0xFF30263A)
-                      : _ColoresAves.lavanda,
-                  child: const Center(
-                    child: Icon(
-                      Icons.broken_image_outlined,
-                      color: _ColoresAves.violeta,
-                      size: 48,
+              GestureDetector(
+                onTap: () => mostrarVisorFoto(
+                  context,
+                  etiquetaHero: etiquetaHero,
+                  titulo: avistamiento.nombreAve,
+                  subtitulo: null,
+                  construirImagen: (_) => Image.file(
+                    File(avistamiento.rutaImagen),
+                    width: double.infinity,
+                    height: double.infinity,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) => ColoredBox(
+                      color: marca.placeholder,
+                      child: const Center(
+                        child: Icon(
+                          Icons.broken_image_outlined,
+                          color: PaletaAves.violeta,
+                          size: 48,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                child: Hero(
+                  tag: etiquetaHero,
+                  child: Image.file(
+                    File(avistamiento.rutaImagen),
+                    height: 240,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 240,
+                      color: marca.placeholder,
+                      child: const Center(
+                        child: Icon(
+                          Icons.broken_image_outlined,
+                          color: PaletaAves.violeta,
+                          size: 48,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -1839,10 +2049,8 @@ class _TarjetaAvistamientoPropio extends StatelessWidget {
                 Text(
                   avistamiento.nombreAve,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: modoOscuro
-                        ? const Color(0xFFE3D1FF)
-                        : _ColoresAves.morado,
-                    fontWeight: FontWeight.bold,
+                    color: marca.tituloCard,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -1850,7 +2058,7 @@ class _TarjetaAvistamientoPropio extends StatelessWidget {
                   children: [
                     const Icon(
                       Icons.location_on_outlined,
-                      color: _ColoresAves.violeta,
+                      color: PaletaAves.violeta,
                     ),
                     const SizedBox(width: 6),
                     Expanded(
@@ -1867,7 +2075,7 @@ class _TarjetaAvistamientoPropio extends StatelessWidget {
                   children: [
                     const Icon(
                       Icons.calendar_month_outlined,
-                      color: _ColoresAves.violeta,
+                      color: PaletaAves.violeta,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
@@ -1880,19 +2088,26 @@ class _TarjetaAvistamientoPropio extends StatelessWidget {
                   style: const TextStyle(height: 1.45),
                 ),
                 const SizedBox(height: 10),
-                const Text(
+                Text(
                   'Avistamiento guardado en este dispositivo.',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: marca.textoSecundario),
                 ),
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton.icon(
-                    onPressed: onQuitar,
+                    onPressed: quitando ? null : onQuitar,
                     style: TextButton.styleFrom(
-                      foregroundColor: _ColoresAves.morado,
+                      foregroundColor: PaletaAves.morado,
                     ),
-                    icon: const Icon(Icons.delete_outline),
-                    label: const Text('Quitar'),
+                    icon: quitando
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.delete_outline),
+                    label: Text(quitando ? 'Quitando…' : 'Quitar'),
                   ),
                 ),
               ],
@@ -1958,43 +2173,71 @@ class _TarjetaFotoGuardada extends StatelessWidget {
   const _TarjetaFotoGuardada({
     required this.foto,
     required this.onQuitar,
+    required this.quitando,
     required this.onAbrirFuente,
     required this.onReportar,
   });
 
   final _FotoGuardada foto;
   final VoidCallback onQuitar;
+  final bool quitando;
   final VoidCallback onAbrirFuente;
   final VoidCallback onReportar;
 
   @override
   Widget build(BuildContext context) {
-    final modoOscuro = Theme.of(context).brightness == Brightness.dark;
+    final marca = context.marca;
+    final etiquetaHero = 'foto:${foto.urlArticulo}';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: _formaTarjetaAve(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Stack(
             children: [
-              Image.file(
-                File(foto.rutaImagen),
-                height: 220,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  height: 220,
-                  color: modoOscuro
-                      ? const Color(0xFF30263A)
-                      : _ColoresAves.lavanda,
-                  child: const Center(
-                    child: Icon(
-                      Icons.broken_image_outlined,
-                      color: _ColoresAves.violeta,
-                      size: 48,
+              GestureDetector(
+                onTap: () => mostrarVisorFoto(
+                  context,
+                  etiquetaHero: etiquetaHero,
+                  titulo: foto.nombre,
+                  subtitulo: foto.nombreCientifico,
+                  construirImagen: (_) => Image.file(
+                    File(foto.rutaImagen),
+                    width: double.infinity,
+                    height: double.infinity,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) => ColoredBox(
+                      color: marca.placeholder,
+                      child: const Center(
+                        child: Icon(
+                          Icons.broken_image_outlined,
+                          color: PaletaAves.violeta,
+                          size: 48,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                child: Hero(
+                  tag: etiquetaHero,
+                  child: Image.file(
+                    File(foto.rutaImagen),
+                    height: 220,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 220,
+                      color: marca.placeholder,
+                      child: const Center(
+                        child: Icon(
+                          Icons.broken_image_outlined,
+                          color: PaletaAves.violeta,
+                          size: 48,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -2014,17 +2257,18 @@ class _TarjetaFotoGuardada extends StatelessWidget {
                 Text(
                   foto.nombre,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: modoOscuro
-                        ? const Color(0xFFE3D1FF)
-                        : _ColoresAves.morado,
-                    fontWeight: FontWeight.bold,
+                    color: marca.tituloCard,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   foto.nombreCientifico,
-                  style: Theme.of(context).textTheme.bodyMedium
-                      ?.copyWith(fontStyle: FontStyle.italic),
+                  style: GoogleFonts.fraunces(
+                    fontSize: 15,
+                    fontStyle: FontStyle.italic,
+                    color: marca.textoCientifico,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Chip(
@@ -2042,25 +2286,34 @@ class _TarjetaFotoGuardada extends StatelessWidget {
                       TextButton.icon(
                         onPressed: onAbrirFuente,
                         style: TextButton.styleFrom(
-                          foregroundColor: _ColoresAves.morado,
+                          foregroundColor: PaletaAves.morado,
                         ),
                         icon: const Icon(Icons.open_in_new, size: 18),
                         label: const Text('Fuente'),
                       ),
                       TextButton.icon(
-                        onPressed: onQuitar,
+                        onPressed: quitando ? null : onQuitar,
                         style: TextButton.styleFrom(
-                          foregroundColor: _ColoresAves.morado,
+                          foregroundColor: PaletaAves.morado,
                         ),
-                        icon: const Icon(Icons.bookmark_remove_outlined),
-                        label: const Text('Quitar'),
+                        icon: quitando
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.bookmark_remove_outlined),
+                        label: Text(quitando ? 'Quitando…' : 'Quitar'),
                       ),
                     ],
                   ),
                 ),
-                const Text(
+                Text(
                   'Imagen de Wikipedia guardada en este dispositivo.',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: marca.textoSecundario),
                 ),
               ],
             ),
@@ -2092,46 +2345,70 @@ class _TarjetaAve extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final modoOscuro = Theme.of(context).brightness == Brightness.dark;
+    final marca = context.marca;
+    final etiquetaHero = 'ave:${ave.urlArticulo}';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: _formaTarjetaAve(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Stack(
             children: [
-              Image.network(
-                ave.urlImagen,
-                height: 220,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                loadingBuilder: (context, child, progress) {
-                  if (progress == null) return child;
-                  return Container(
-                    height: 220,
-                    color: modoOscuro
-                        ? const Color(0xFF30263A)
-                        : _ColoresAves.lavanda,
-                    child: const Center(
-                      child: CircularProgressIndicator(
-                        color: _ColoresAves.morado,
+              GestureDetector(
+                onTap: () => mostrarVisorFoto(
+                  context,
+                  etiquetaHero: etiquetaHero,
+                  titulo: ave.nombre,
+                  subtitulo: ave.nombreCientifico,
+                  construirImagen: (_) => Image.network(
+                    ave.urlImagen,
+                    width: double.infinity,
+                    height: double.infinity,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) => ColoredBox(
+                      color: marca.placeholder,
+                      child: const Center(
+                        child: Icon(
+                          Icons.flutter_dash_rounded,
+                          size: 48,
+                          color: PaletaAves.violeta,
+                        ),
                       ),
                     ),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) => Container(
-                  height: 220,
-                  color: modoOscuro
-                      ? const Color(0xFF30263A)
-                      : _ColoresAves.lavanda,
-                  child: const Center(
-                    child: Icon(
-                      Icons.flutter_dash_rounded,
-                      size: 48,
-                      color: _ColoresAves.violeta,
+                  ),
+                ),
+                child: Hero(
+                  tag: etiquetaHero,
+                  child: Image.network(
+                    ave.urlImagen,
+                    height: 220,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return Container(
+                        height: 220,
+                        color: marca.placeholder,
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            color: PaletaAves.morado,
+                          ),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 220,
+                      color: marca.placeholder,
+                      child: const Center(
+                        child: Icon(
+                          Icons.flutter_dash_rounded,
+                          size: 48,
+                          color: PaletaAves.violeta,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -2153,7 +2430,7 @@ class _TarjetaAve extends StatelessWidget {
                       end: Alignment.bottomCenter,
                       colors: [
                         Colors.transparent,
-                        _ColoresAves.morado.withValues(alpha: 0.72),
+                        PaletaAves.morado.withValues(alpha: 0.72),
                       ],
                     ),
                   ),
@@ -2169,14 +2446,14 @@ class _TarjetaAve extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [_ColoresAves.amarillo, Color(0xFFFFE88A)],
+                      colors: [PaletaAves.amarillo, Color(0xFFFFE88A)],
                     ),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     ave.categoria,
                     style: const TextStyle(
-                      color: _ColoresAves.morado,
+                      color: PaletaAves.morado,
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
                     ),
@@ -2198,7 +2475,7 @@ class _TarjetaAve extends StatelessWidget {
                   child: const Text(
                     'Wikipedia',
                     style: TextStyle(
-                      color: _ColoresAves.morado,
+                      color: PaletaAves.morado,
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
@@ -2215,31 +2492,23 @@ class _TarjetaAve extends StatelessWidget {
                 Text(
                   ave.nombre,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: modoOscuro
-                        ? const Color(0xFFE3D1FF)
-                        : _ColoresAves.morado,
-                    fontWeight: FontWeight.bold,
+                    color: marca.tituloCard,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   ave.nombreCientifico,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  style: GoogleFonts.fraunces(
+                    fontSize: 15,
                     fontStyle: FontStyle.italic,
-                    color: modoOscuro
-                        ? const Color(0xFFB8AFC1)
-                        : const Color(0xFF766A83),
+                    color: marca.textoCientifico,
                   ),
                 ),
                 const SizedBox(height: 10),
                 Text(
                   ave.descripcion,
-                  style: TextStyle(
-                    color: modoOscuro
-                        ? const Color(0xFFE5DFEB)
-                        : const Color(0xFF403A48),
-                    height: 1.45,
-                  ),
+                  style: TextStyle(color: marca.textoCuerpo, height: 1.45),
                 ),
                 Align(
                   alignment: Alignment.centerRight,
@@ -2253,25 +2522,54 @@ class _TarjetaAve extends StatelessWidget {
                             : guardada
                             ? onQuitar
                             : onGuardar,
-                        icon: guardando
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
+                        icon: AnimatedSwitcher(
+                          duration: duracion(context, 240),
+                          switchInCurve: Curves.easeOutCubic,
+                          switchOutCurve: Curves.easeInCubic,
+                          transitionBuilder: (hijo, anim) => RotationTransition(
+                            turns: Tween<double>(
+                              begin: 0.035,
+                              end: 0,
+                            ).animate(anim),
+                            child: ScaleTransition(
+                              scale: Tween<double>(
+                                begin: 0.65,
+                                end: 1,
+                              ).animate(anim),
+                              child: FadeTransition(opacity: anim, child: hijo),
+                            ),
+                          ),
+                          child: guardando
+                              ? const SizedBox(
+                                  key: ValueKey<String>('guardando'),
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Icon(
+                                  guardada
+                                      ? Icons.bookmark_rounded
+                                      : Icons.bookmark_border_rounded,
+                                  key: ValueKey<bool>(guardada),
                                 ),
-                              )
-                            : Icon(
-                                guardada
-                                    ? Icons.bookmark_remove_outlined
-                                    : Icons.bookmark_border_rounded,
-                              ),
-                        label: Text(guardada ? 'Quitar' : 'Guardar'),
+                        ),
+                        label: AnimatedSwitcher(
+                          duration: duracion(context, 180),
+                          switchInCurve: Curves.easeOutCubic,
+                          transitionBuilder: (hijo, anim) =>
+                              FadeTransition(opacity: anim, child: hijo),
+                          child: Text(
+                            guardada ? 'Quitar' : 'Guardar',
+                            key: ValueKey<bool>(guardada),
+                          ),
+                        ),
                       ),
                       TextButton.icon(
                         onPressed: onAbrirArticulo,
                         style: TextButton.styleFrom(
-                          foregroundColor: _ColoresAves.morado,
+                          foregroundColor: PaletaAves.morado,
                         ),
                         icon: const Icon(Icons.open_in_new, size: 18),
                         label: const Text('Wikipedia'),
@@ -2286,4 +2584,17 @@ class _TarjetaAve extends StatelessWidget {
       ),
     );
   }
+}
+
+ShapeBorder _formaTarjetaAve(BuildContext context) {
+  final esOscuro = Theme.of(context).brightness == Brightness.dark;
+  return RoundedRectangleBorder(
+    side: BorderSide(
+      color: esOscuro
+          ? const Color(0xFFC69BFF).withValues(alpha: 0.62)
+          : PaletaAves.violeta.withValues(alpha: 0.5),
+      width: 1.2,
+    ),
+    borderRadius: BorderRadius.circular(24),
+  );
 }
