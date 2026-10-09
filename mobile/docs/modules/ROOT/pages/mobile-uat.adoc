@@ -11,7 +11,7 @@ Verificar manualmente que la app mobile cumple los criterios de aceptacion defin
 
 === Incluido
 
-* Inicio, navegacion y estados de carga/error del catalogo externo de Aves de Chile.
+* Inicio (panel de bienvenida y resumen), Buscar, navegacion y estados de carga/error del catalogo externo de Aves de Chile.
 * Reorganizacion de navegacion y contenido al usar la app en orientacion horizontal.
 * Busqueda, categorias generales, guardado y eliminacion de aves de catalogo.
 * Seleccion de imagen, formulario de observacion propia, persistencia y eliminacion.
@@ -102,7 +102,7 @@ Estados sugeridos: `No ejecutado`, `Aprobado`, `Fallido`, `Bloqueado`. Registrar
 
 *Precondiciones:* conectividad disponible.
 
-. Abrir Inicio y esperar la carga del catalogo.
+. Abrir Buscar y esperar la carga del catalogo.
 . Revisar una descripcion larga contraida; tocar `Ver más` y luego `Ver menos`.
 . Desactivar la red y usar Reintentar desde el estado de error (si el servicio deja de responder).
 . Restaurar la red y reintentar.

@@ -50,7 +50,8 @@ Este registro resume los cambios de la solucion mobile y su documentacion que se
 === Catalogo y coleccion local
 
 * Se integro el indice de 216 especies y sus fichas desde Aves de Chile, con busqueda y filtros por categorias generales.
-* Inicio y Buscar muestran las especies y miniaturas del indice mientras se completan las fichas por lotes; las imagenes de la lista se solicitan al acercarse a pantalla.
+* Buscar muestra las especies y miniaturas del indice mientras se completan las fichas por lotes; las imagenes de la lista se solicitan al acercarse a pantalla.
+* Inicio es un panel de bienvenida y resumen, distinto de Buscar: presenta saludo con el nombre de la sesion, contadores de avistamientos y aves guardadas, los ultimos avistamientos propios, las fotos mas recientes de la comunidad y accesos rapidos a Buscar y Explorar.
 * Las descripciones y comentarios largos de las tarjetas aparecen contraidos y se pueden expandir o volver a contraer.
 * Se puede guardar y quitar un ave del catalogo desde la coleccion. La imagen se conserva como archivo privado de la app y los metadatos persisten en el dispositivo.
 * El estado de guardado se recupera despues de cerrar y volver a abrir la aplicacion.

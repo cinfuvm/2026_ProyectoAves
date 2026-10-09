@@ -23,8 +23,8 @@ El proyecto se encuentra en etapa de prototipo con integración inicial del BFF.
 
 - Proyecto Flutter con plataformas Android e iOS (el target iOS está generado, pendiente de validar en un Mac).
 - Navegación entre Inicio, Buscar, Explorar, Colección y Perfil mediante la barra inferior o deslizamientos horizontales.
-- En Inicio, el catálogo de 216 especies de Aves de Chile, con imágenes, descripciones y nombres científicos.
-- En Buscar, filtros por nombre común, nombre científico, descripción, palabras clave y categorías generales (Terrestres, Acuáticas, Rapaces, Marinas y Otras).
+- En **Inicio**, un panel de bienvenida y resumen: saludo con el nombre de la sesión, contadores de avistamientos y aves guardadas, los últimos avistamientos propios, las fotos más recientes de la comunidad y accesos rápidos a Buscar y Explorar.
+- En **Buscar**, el catálogo de 216 especies de Aves de Chile, con imágenes, descripciones y nombres científicos, más filtros por nombre común, nombre científico, descripción, palabras clave y categorías generales (Terrestres, Acuáticas, Rapaces, Marinas y Otras).
 - Enlace a la ficha de cada especie en [Aves de Chile](https://uvm.neocities.org/aves/).
 - En **Explorar**, un feed de fotos de otros usuarios (mock local por defecto; se conectará al BFF Phoenix vía `birds_apis.yaml`), con filtro por categoría, guardado en la colección personal y reporte de fotos inapropiadas.
 - Guardado de aves del catálogo en Colección, con copia local de la imagen y opción para quitarla.

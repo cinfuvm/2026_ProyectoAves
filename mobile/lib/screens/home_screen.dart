@@ -67,6 +67,9 @@ class _HomeScreenState extends State<HomeScreen> {
   String _categoriaSeleccionada = 'Todas';
   String _filtroTipoColeccion = 'Todo';
   String _filtroCategoriaColeccion = 'Todas';
+  String? _nombreInicio;
+  final List<FotoPublica> _fotosFeedInicio = [];
+  bool _cargandoFeedInicio = true;
   late Future<List<_AveCatalogo>> _aves;
 
   static const List<String> _tiposColeccion = [
@@ -80,10 +83,38 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _aves = _cargarAves();
     _cargarColeccion();
+    _cargarSesionInicio();
+    _cargarFeedInicio();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _recuperarImagenPerdida();
       _reintentarSubidasPendientes();
     });
+  }
+
+  Future<void> _cargarSesionInicio() async {
+    final usuario = await AuthService().obtenerSesion();
+    if (!mounted) return;
+    setState(() => _nombreInicio = usuario?.nombre);
+  }
+
+  Future<void> _cargarFeedInicio() async {
+    try {
+      final pagina = await _fotosServicio.getFotos(
+        categoria: 'Todas',
+        pagina: 0,
+        porPagina: 8,
+      );
+      if (!mounted) return;
+      setState(() {
+        _fotosFeedInicio
+          ..clear()
+          ..addAll(pagina.fotos);
+        _cargandoFeedInicio = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _cargandoFeedInicio = false);
+    }
   }
 
   @override
@@ -1086,14 +1117,358 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _construirInicio() {
-    return _construirCatalogo(esBusqueda: false);
+    final avistamientosRecientes = _avistamientosPropios.take(5).toList();
+    final fotosComunidad = _fotosFeedInicio.take(8).toList();
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 96),
+      children: [
+        _construirEncabezadoInicio(),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _tarjetaResumen(
+                icono: Icons.camera_alt_outlined,
+                valor: _avistamientosPropios.length,
+                etiqueta: _avistamientosPropios.length == 1
+                    ? 'Avistamiento'
+                    : 'Avistamientos',
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _tarjetaResumen(
+                icono: Icons.bookmark_border_rounded,
+                valor: _fotosGuardadas.length,
+                etiqueta: _fotosGuardadas.length == 1
+                    ? 'Ave guardada'
+                    : 'Aves guardadas',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        if (avistamientosRecientes.isEmpty)
+          _tarjetaVaciaInicio(
+            icono: Icons.camera_alt_outlined,
+            titulo: 'Aún no tienes avistamientos',
+            mensaje: 'Agrega tu primera foto y guarda dónde la encontraste.',
+            accion: 'Agregar foto',
+            onAccion: _mostrarOpcionesImagen,
+          )
+        else ...[
+          Text(
+            'Tus últimos avistamientos',
+            style: Theme.of(context).textTheme.titleMedium
+                ?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 148,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: avistamientosRecientes.length,
+              separatorBuilder: (context, index) => const SizedBox(width: 10),
+              itemBuilder: (context, index) {
+                final avistamiento = avistamientosRecientes[index];
+                return _TarjetaAvistamientoReciente(
+                  avistamiento: avistamiento,
+                  fechaFormateada: _formatearFecha(avistamiento.fecha),
+                  onAbrir: () => _alTocarItem(3),
+                );
+              },
+            ),
+          ),
+        ],
+        const SizedBox(height: 24),
+        if (_cargandoFeedInicio)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: CircularProgressIndicator(color: PaletaAves.morado),
+            ),
+          )
+        else if (fotosComunidad.isEmpty)
+          _tarjetaVaciaInicio(
+            icono: Icons.explore_outlined,
+            titulo: 'La comunidad está tranquila por ahora',
+            mensaje:
+                'Cuando la gente publique fotos aparecerán aquí. '
+                'Mientras tanto, explora las aves de Chile.',
+            accion: 'Explorar ahora',
+            onAccion: () => _alTocarItem(2),
+          )
+        else ...[
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Recién en la comunidad',
+                  style: Theme.of(context).textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+              TextButton(
+                onPressed: () => _alTocarItem(2),
+                child: const Text('Ver todo'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          SizedBox(
+            height: 158,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: fotosComunidad.length,
+              separatorBuilder: (context, index) => const SizedBox(width: 10),
+              itemBuilder: (context, index) {
+                final foto = fotosComunidad[index];
+                return _TarjetaFotoComunidad(
+                  foto: foto,
+                  onAbrir: () => _alTocarItem(2),
+                );
+              },
+            ),
+          ),
+        ],
+        const SizedBox(height: 24),
+        Text(
+          'Descubre más',
+          style: Theme.of(context).textTheme.titleMedium
+              ?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _tarjetaAccesoRapido(
+                icono: Icons.search,
+                titulo: 'Buscar aves',
+                mensaje: 'Catálogo de 216 especies de Chile.',
+                onAccion: () => _alTocarItem(1),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _tarjetaAccesoRapido(
+                icono: Icons.explore_outlined,
+                titulo: 'Comunidad',
+                mensaje: 'Fotos de observadores como tú.',
+                onAccion: () => _alTocarItem(2),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _construirEncabezadoInicio() {
+    final marca = context.marca;
+    final esApaisada =
+        MediaQuery.orientationOf(context) == Orientation.landscape &&
+        MediaQuery.sizeOf(context).width >= 600;
+    final saludo = _nombreInicio == null || _nombreInicio!.isEmpty
+        ? 'Hola, observador'
+        : 'Hola, ${_nombreInicio!}';
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(esApaisada ? 14 : 20),
+      decoration: BoxDecoration(
+        gradient: marca.cabeceraGradiente,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: PaletaAves.morado.withValues(alpha: 0.2),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  saludo,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 28,
+                    height: 1.15,
+                    letterSpacing: -0.4,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Pequeños encuentros, grandes historias.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.white.withValues(alpha: 0.92),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  width: 56,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: PaletaAves.amarillo,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Icon(
+            Icons.flutter_dash_rounded,
+            size: esApaisada ? 48 : 76,
+            color: Colors.white.withValues(alpha: 0.16),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tarjetaResumen({
+    required IconData icono,
+    required int valor,
+    required String etiqueta,
+  }) {
+    final marca = context.marca;
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      shape: _formaTarjetaAve(context),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: marca.chipFondo,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icono, color: marca.iconoMarca, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '$valor',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Text(
+                    etiqueta,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _tarjetaVaciaInicio({
+    required IconData icono,
+    required String titulo,
+    required String mensaje,
+    required String accion,
+    required VoidCallback onAccion,
+  }) {
+    final marca = context.marca;
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      shape: _formaTarjetaAve(context),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icono, size: 36, color: marca.iconoMarca),
+            const SizedBox(height: 10),
+            Text(
+              titulo,
+              style: Theme.of(context).textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 4),
+            Text(mensaje, style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: onAccion,
+              style: FilledButton.styleFrom(
+                backgroundColor: PaletaAves.morado,
+                foregroundColor: Colors.white,
+              ),
+              icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+              label: Text(accion),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _tarjetaAccesoRapido({
+    required IconData icono,
+    required String titulo,
+    required String mensaje,
+    required VoidCallback onAccion,
+  }) {
+    final marca = context.marca;
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      shape: _formaTarjetaAve(context),
+      child: InkWell(
+        onTap: onAccion,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icono, size: 28, color: marca.iconoMarca),
+              const SizedBox(height: 10),
+              Text(
+                titulo,
+                style: Theme.of(context).textTheme.titleSmall
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                mensaje,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _construirBusqueda() {
-    return _construirCatalogo(esBusqueda: true);
+    return _construirCatalogo();
   }
 
-  Widget _construirCatalogo({required bool esBusqueda}) {
+  Widget _construirCatalogo() {
     return FutureBuilder<List<_AveCatalogo>>(
       future: _aves,
       builder: (context, snapshot) {
@@ -1148,24 +1523,22 @@ class _HomeScreenState extends State<HomeScreen> {
               .toList()
             ..sort(),
         ];
-        final avesVisibles = esBusqueda
-            ? aves.where((ave) {
-                final consulta = _consulta.toLowerCase().trim();
-                final coincideCategoria =
-                    _categoriaSeleccionada == 'Todas' ||
-                    ave.categoria == _categoriaSeleccionada;
-                final coincideTexto =
-                    consulta.isEmpty ||
-                    ave.nombre.toLowerCase().contains(consulta) ||
-                    ave.nombreCientifico.toLowerCase().contains(consulta) ||
-                    ave.descripcion.toLowerCase().contains(consulta) ||
-                    ave.palabrasClave.toLowerCase().contains(consulta);
-                return coincideCategoria && coincideTexto;
-              }).toList()
-            : aves;
+        final avesVisibles = aves.where((ave) {
+          final consulta = _consulta.toLowerCase().trim();
+          final coincideCategoria =
+              _categoriaSeleccionada == 'Todas' ||
+              ave.categoria == _categoriaSeleccionada;
+          final coincideTexto =
+              consulta.isEmpty ||
+              ave.nombre.toLowerCase().contains(consulta) ||
+              ave.nombreCientifico.toLowerCase().contains(consulta) ||
+              ave.descripcion.toLowerCase().contains(consulta) ||
+              ave.palabrasClave.toLowerCase().contains(consulta);
+          return coincideCategoria && coincideTexto;
+        }).toList();
 
         final contenidoFijo = <Widget>[
-          _construirEncabezado(esBusqueda: esBusqueda),
+          _construirEncabezadoBusqueda(),
         ];
         if (snapshot.connectionState == ConnectionState.waiting) {
           contenidoFijo.addAll([
@@ -1199,82 +1572,80 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ]);
         }
-        if (esBusqueda) {
-          contenidoFijo.addAll([
-            const SizedBox(height: 16),
-            TextField(
-              controller: _controladorBusqueda,
-              onChanged: (valor) => setState(() => _consulta = valor),
-              decoration: InputDecoration(
-                hintText: 'Nombre común o científico',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: AnimatedSwitcher(
-                  duration: duracion(context, 150),
-                  switchInCurve: Curves.easeOutCubic,
-                  transitionBuilder: (hijo, anim) =>
-                      FadeTransition(opacity: anim, child: hijo),
-                  child: _consulta.isEmpty
-                      ? const SizedBox.shrink(
-                          key: ValueKey<String>('sin-consulta'),
-                        )
-                      : IconButton(
-                          key: const ValueKey<String>('limpiar-consulta'),
-                          tooltip: 'Limpiar búsqueda',
-                          onPressed: () {
-                            _controladorBusqueda.clear();
-                            setState(() => _consulta = '');
-                          },
-                          icon: const Icon(Icons.close),
-                        ),
-                ),
+        contenidoFijo.addAll([
+          const SizedBox(height: 16),
+          TextField(
+            controller: _controladorBusqueda,
+            onChanged: (valor) => setState(() => _consulta = valor),
+            decoration: InputDecoration(
+              hintText: 'Nombre común o científico',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: AnimatedSwitcher(
+                duration: duracion(context, 150),
+                switchInCurve: Curves.easeOutCubic,
+                transitionBuilder: (hijo, anim) =>
+                    FadeTransition(opacity: anim, child: hijo),
+                child: _consulta.isEmpty
+                    ? const SizedBox.shrink(
+                        key: ValueKey<String>('sin-consulta'),
+                      )
+                    : IconButton(
+                        key: const ValueKey<String>('limpiar-consulta'),
+                        tooltip: 'Limpiar búsqueda',
+                        onPressed: () {
+                          _controladorBusqueda.clear();
+                          setState(() => _consulta = '');
+                        },
+                        icon: const Icon(Icons.close),
+                      ),
               ),
             ),
-            const SizedBox(height: 14),
-            Text(
-              'Explorar por categoría',
-              style: Theme.of(context).textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Explorar por categoría',
+            style: Theme.of(context).textTheme.titleSmall
+                ?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 42,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: categorias.length,
+              separatorBuilder: (context, index) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final categoria = categorias[index];
+                final marca = context.marca;
+                return ChoiceChip(
+                  label: Text(categoria),
+                  selected: _categoriaSeleccionada == categoria,
+                  selectedColor: PaletaAves.morado,
+                  backgroundColor: marca.chipFondo,
+                  labelStyle: TextStyle(
+                    color: _categoriaSeleccionada == categoria
+                        ? Colors.white
+                        : marca.chipTexto,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  side: BorderSide(
+                    color: _categoriaSeleccionada == categoria
+                        ? PaletaAves.morado
+                        : marca.chipBorde,
+                  ),
+                  onSelected: (seleccionada) {
+                    if (seleccionada) {
+                      setState(() {
+                        _categoriaSeleccionada = categoria;
+                      });
+                    }
+                  },
+                );
+              },
             ),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 42,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: categorias.length,
-                separatorBuilder: (context, index) => const SizedBox(width: 8),
-                itemBuilder: (context, index) {
-                  final categoria = categorias[index];
-                  final marca = context.marca;
-                  return ChoiceChip(
-                    label: Text(categoria),
-                    selected: _categoriaSeleccionada == categoria,
-                    selectedColor: PaletaAves.morado,
-                    backgroundColor: marca.chipFondo,
-                    labelStyle: TextStyle(
-                      color: _categoriaSeleccionada == categoria
-                          ? Colors.white
-                          : marca.chipTexto,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    side: BorderSide(
-                      color: _categoriaSeleccionada == categoria
-                          ? PaletaAves.morado
-                          : marca.chipBorde,
-                    ),
-                    onSelected: (seleccionada) {
-                      if (seleccionada) {
-                        setState(() {
-                          _categoriaSeleccionada = categoria;
-                        });
-                      }
-                    },
-                  );
-                },
-              ),
-            ),
-          ]);
-        }
-        contenidoFijo.add(const SizedBox(height: 16));
+          ),
+          const SizedBox(height: 16),
+        ]);
         if (avesVisibles.isEmpty) {
           contenidoFijo.add(
             const Padding(
@@ -1334,7 +1705,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _construirEncabezado({required bool esBusqueda}) {
+  Widget _construirEncabezadoBusqueda() {
     final marca = context.marca;
     final esApaisada =
         MediaQuery.orientationOf(context) == Orientation.landscape &&
@@ -1362,7 +1733,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        esBusqueda ? 'Explora y descubre' : 'Aves de Chile',
+                        'Explora y descubre',
                         style: Theme.of(context).textTheme.headlineSmall
                             ?.copyWith(
                               color: Colors.white,
@@ -1371,14 +1742,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        esBusqueda
-                            ? 'Encuentra tu próxima ave favorita.'
-                            : 'Pequeños encuentros, grandes historias.',
+                        'Encuentra tu próxima ave favorita.',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.white.withValues(alpha: 0.92),
-                        ),
+                        style: Theme.of(context).textTheme.bodyMedium
+                            ?.copyWith(
+                              color: Colors.white.withValues(alpha: 0.92),
+                            ),
                       ),
                       const SizedBox(height: 8),
                       Container(
@@ -1394,9 +1764,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(width: 16),
                 Icon(
-                  esBusqueda
-                      ? Icons.search_rounded
-                      : Icons.flutter_dash_rounded,
+                  Icons.search_rounded,
                   size: 48,
                   color: Colors.white.withValues(alpha: 0.18),
                 ),
@@ -1409,9 +1777,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   top: 0,
                   bottom: 0,
                   child: Icon(
-                    esBusqueda
-                        ? Icons.search_rounded
-                        : Icons.flutter_dash_rounded,
+                    Icons.search_rounded,
                     size: 76,
                     color: Colors.white.withValues(alpha: 0.16),
                   ),
@@ -1420,7 +1786,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      esBusqueda ? 'Explora y descubre' : 'Aves de Chile',
+                      'Explora y descubre',
                       style: Theme.of(context).textTheme.headlineMedium
                           ?.copyWith(
                             color: Colors.white,
@@ -1432,12 +1798,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      esBusqueda
-                          ? 'Encuentra tu próxima ave favorita.'
-                          : 'Pequeños encuentros, grandes historias.',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.92),
-                      ),
+                      'Encuentra tu próxima ave favorita.',
+                      style: Theme.of(context).textTheme.bodyMedium
+                          ?.copyWith(
+                            color: Colors.white.withValues(alpha: 0.92),
+                          ),
                     ),
                     const SizedBox(height: 16),
                     Container(
@@ -3355,6 +3720,158 @@ class _TarjetaAve extends StatelessWidget {
             children: [imagen, detalles],
           );
         },
+      ),
+    );
+  }
+}
+
+class _TarjetaAvistamientoReciente extends StatelessWidget {
+  const _TarjetaAvistamientoReciente({
+    required this.avistamiento,
+    required this.fechaFormateada,
+    required this.onAbrir,
+  });
+
+  final _AvistamientoPropio avistamiento;
+  final String fechaFormateada;
+  final VoidCallback onAbrir;
+
+  @override
+  Widget build(BuildContext context) {
+    final marca = context.marca;
+    return SizedBox(
+      width: 240,
+      child: Card(
+        margin: EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
+        shape: _formaTarjetaAve(context),
+        child: InkWell(
+          onTap: onAbrir,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: SizedBox.expand(
+                  child: Image.file(
+                    File(avistamiento.rutaImagen),
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => ColoredBox(
+                      color: marca.placeholder,
+                      child: const Center(
+                        child: Icon(
+                          Icons.broken_image_outlined,
+                          color: PaletaAves.violeta,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      avistamiento.nombreAve,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${avistamiento.lugar} · $fechaFormateada',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: marca.textoSecundario,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TarjetaFotoComunidad extends StatelessWidget {
+  const _TarjetaFotoComunidad({
+    required this.foto,
+    required this.onAbrir,
+  });
+
+  final FotoPublica foto;
+  final VoidCallback onAbrir;
+
+  @override
+  Widget build(BuildContext context) {
+    final marca = context.marca;
+    return SizedBox(
+      width: 240,
+      child: Card(
+        margin: EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
+        shape: _formaTarjetaAve(context),
+        child: InkWell(
+          onTap: onAbrir,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: SizedBox.expand(
+                  child: Image.network(
+                    foto.url,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => ColoredBox(
+                      color: marca.placeholder,
+                      child: const Center(
+                        child: Icon(
+                          Icons.broken_image_outlined,
+                          color: PaletaAves.violeta,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      foto.autor ?? 'Observador',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      [
+                        if (foto.categoria.isNotEmpty) foto.categoria,
+                        if (foto.lugar != null && foto.lugar!.isNotEmpty)
+                          foto.lugar!,
+                      ].join(' · '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: marca.textoSecundario,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
