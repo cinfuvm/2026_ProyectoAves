@@ -105,10 +105,19 @@ class _HomeScreenState extends State<HomeScreen> {
         porPagina: 8,
       );
       if (!mounted) return;
+      final fotos = [...pagina.fotos]
+        ..sort((a, b) {
+          final ta = a.subidaEn ?? (a.fecha != null ? DateTime.tryParse(a.fecha!) : null);
+          final tb = b.subidaEn ?? (b.fecha != null ? DateTime.tryParse(b.fecha!) : null);
+          if (ta == null && tb == null) return 0;
+          if (ta == null) return 1;
+          if (tb == null) return -1;
+          return tb.compareTo(ta);
+        });
       setState(() {
         _fotosFeedInicio
           ..clear()
-          ..addAll(pagina.fotos);
+          ..addAll(fotos);
         _cargandoFeedInicio = false;
       });
     } catch (_) {
@@ -2401,16 +2410,13 @@ class _HomeScreenState extends State<HomeScreen> {
         child: _indiceSeleccionado == 0 && !esApaisada
             ? KeyedSubtree(
                 key: const ValueKey<String>('fab-agregar-foto'),
-                child: FloatingActionButton.extended(
+                child: FloatingActionButton(
                   onPressed: _mostrarOpcionesImagen,
+                  tooltip: 'Agregar foto',
                   backgroundColor: PaletaAves.amarillo,
                   foregroundColor: PaletaAves.morado,
                   elevation: 6,
-                  icon: const Icon(Icons.add_a_photo_outlined),
-                  label: const Text(
-                    'Agregar foto',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
+                  child: const Icon(Icons.add_a_photo_outlined),
                 ),
               )
             : null,
