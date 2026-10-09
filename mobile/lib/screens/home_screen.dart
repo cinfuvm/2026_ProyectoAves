@@ -172,7 +172,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }),
     );
 
-    // La entrada escalonada corre solo en la primera aparición del catálogo.
+    // La entrada escalonada se desactiva tras la primera aparición del catálogo.
     if (mounted) {
       Future.delayed(const Duration(milliseconds: 1400), () {
         if (mounted) {

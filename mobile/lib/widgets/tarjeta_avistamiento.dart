@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 
 class TarjetaAvistamiento extends StatelessWidget {
-  // Declaración de variables inmutables
   final String nombre;
   final String ubicacion;
   final String urlImagen;
 
-  // Constructor que exige los parámetros
   const TarjetaAvistamiento({
     super.key,
     required this.nombre,
@@ -24,7 +22,7 @@ class TarjetaAvistamiento extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Image.network(
-            urlImagen, // Uso de la variable inyectada
+            urlImagen,
             height: 200,
             width: double.infinity,
             fit: BoxFit.cover,
@@ -35,7 +33,7 @@ class TarjetaAvistamiento extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  nombre, // Uso de la variable inyectada
+                  nombre,
                   style: const TextStyle(
                     fontSize: 20.0,
                     fontWeight: FontWeight.bold,
@@ -43,7 +41,7 @@ class TarjetaAvistamiento extends StatelessWidget {
                 ),
                 const SizedBox(height: 8.0),
                 Text(
-                  ubicacion, // Uso de la variable inyectada
+                  ubicacion,
                   style: const TextStyle(
                     fontSize: 16.0,
                     color: Colors.grey,

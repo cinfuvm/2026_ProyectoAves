@@ -138,7 +138,7 @@ class AppTheme {
 
   static ThemeData oscuro() => _construir(Brightness.dark);
 
-  /// Aplica [aplicar] a cada rol del TextTheme conservando tamaños y pesos.
+  /// Se aplica [aplicar] a cada rol del TextTheme sin alterar tamaño ni peso.
   static TextTheme _mapearTexto(
     TextTheme base,
     TextStyle? Function(TextStyle?) aplicar,

@@ -3,11 +3,11 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/app_theme.dart';
 
-/// Abre el visor a pantalla completa con vuelo Hero desde la tarjeta.
+/// Presenta el visor a pantalla completa mediante una transición Hero.
 ///
 /// [construirImagen] debe devolver una imagen con el mismo [etiquetaHero]
-/// que la tarjeta de origen; el Hero usa el destino como shuttle, así que
-/// conviene usar `BoxFit.contain` aquí aunque la tarjeta use `cover`.
+/// que la tarjeta de origen. Durante la transición Hero, la imagen debe
+/// usar `BoxFit.contain`, aunque la tarjeta use `cover`.
 Future<void> mostrarVisorFoto(
   BuildContext contexto, {
   required String etiquetaHero,
