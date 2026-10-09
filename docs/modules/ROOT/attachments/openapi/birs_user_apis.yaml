@@ -1,0 +1,141 @@
+openapi: 3.0.0
+info:
+  title: birs_user_apis
+  version: 1.0.0
+paths:
+  /images:
+    post:
+      summary: Subir fotos
+      description: ''
+      tags:
+        - API fotos
+      responses:
+        '200':
+          description: ''
+      security:
+        - subir_fotos: []
+      servers:
+        - url: http://127.0.0.1
+    get:
+      summary: Filtrar fotos
+      description: ''
+      tags:
+        - API fotos
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              example: |-
+                {
+                  urls: [
+                    "www.ejemplourl1.jgp",
+                    "www.ejemplourl2.jpg",
+                    ...
+                    "www.ejemplourln.jpg"
+                  ],
+                  
+                  paginado: 0 / n,
+                }
+      parameters:
+        - name: categoria
+          in: query
+          description: ''
+          required: true
+          schema:
+            type: string
+      servers:
+        - url: http://127.0.0.1
+    put:
+      summary: Reportar foto
+      description: ''
+      tags:
+        - API fotos
+      responses:
+        '200':
+          description: ''
+      parameters:
+        - name: id
+          in: query
+          description: ''
+          required: true
+          schema:
+            type: string
+      security:
+        - reportar_foto: []
+      servers:
+        - url: http://127.0.0.1
+  /user/login:
+    post:
+      summary: Log in
+      description: ''
+      tags:
+        - API users
+      responses:
+        '200':
+          description: ''
+      requestBody:
+        $ref: '#/components/requestBodies/log_in'
+      servers:
+        - url: http://127.0.0.1
+  /user/signin:
+    post:
+      summary: Crear usuario
+      description: ''
+      tags:
+        - API users
+      responses:
+        '200':
+          description: ''
+      requestBody:
+        $ref: '#/components/requestBodies/crear_usuario'
+      servers:
+        - url: http://127.0.0.1
+servers: []
+components:
+  schemas:
+    log_in:
+      type: object
+      properties:
+        user:
+          type: string
+        password:
+          type: string
+      example:
+        user: nombre_generico
+        password: contraseña
+    crear_usuario:
+      type: object
+      properties:
+        user:
+          type: string
+        password:
+          type: string
+        confirm_pasword:
+          type: string
+      example:
+        user: nombre_generico1
+        password: contraseña_generica1
+        confirm_pasword: contraseña_generica1
+  requestBodies:
+    log_in:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/log_in'
+      description: ''
+      required: true
+    crear_usuario:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/crear_usuario'
+      description: ''
+      required: true
+  securitySchemes:
+    subir_fotos:
+      type: http
+      scheme: bearer
+    reportar_foto:
+      type: http
+      scheme: bearer
