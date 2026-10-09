@@ -6,3 +6,5 @@
 *** xref:mobile-changes.adoc[Registro de cambios]
 ** Arquitectura
 *** xref:mobile-architecture.adoc[Arquitectura mobile]
+** Integración
+*** xref:mobile-contrato.adoc[Extensiones al contrato API]

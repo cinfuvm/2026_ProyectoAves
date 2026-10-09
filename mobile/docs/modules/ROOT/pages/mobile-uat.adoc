@@ -11,8 +11,9 @@ Verificar manualmente que la app mobile cumple los criterios de aceptacion defin
 
 === Incluido
 
-* Inicio, navegacion y estados de carga/error del catalogo de demostracion.
-* Busqueda, categoria de muestra, guardado y eliminacion de aves de catalogo.
+* Inicio, navegacion y estados de carga/error del catalogo externo de Aves de Chile.
+* Reorganizacion de navegacion y contenido al usar la app en orientacion horizontal.
+* Busqueda, categorias generales, guardado y eliminacion de aves de catalogo.
 * Seleccion de imagen, formulario de observacion propia, persistencia y eliminacion.
 * Filtros combinados de tipo y categoria en Coleccion.
 * Registro local de reportes y mensajes que describen correctamente su estado.
@@ -20,10 +21,10 @@ Verificar manualmente que la app mobile cumple los criterios de aceptacion defin
 
 === Excluido / no aceptable como disponible hoy
 
-* Registro/login de usuarios, feed de aportes de otros usuarios y sincronizacion remota.
-* Subida de fotos al backend, API propia, moderacion desde dashboard o notificaciones de estado.
+* Feed comunitario y subida/reportes reales contra el BFF: se prueban en modo mock (UAT-13..UAT-15); la integracion real (UAT-16) requiere el backend Phoenix disponible.
+* Moderacion desde dashboard, notificaciones de estado de reporte.
 * Popularidad basada en vistas, comentarios, chat y seguimiento de perfiles.
-* Certificacion iOS: ejecutar estos casos en iOS solo despues de configurar y validar ese target.
+* Certificacion iOS: ejecutar estos casos en iOS solo despues de configurar y validar ese target en un Mac.
 
 == 3. Estrategia
 
@@ -74,8 +75,10 @@ Estados sugeridos: `No ejecutado`, `Aprobado`, `Fallido`, `Bloqueado`. Registrar
 . Navegar por Inicio, Buscar, Coleccion y Perfil.
 . Deslizar horizontalmente entre las cuatro secciones y comprobar que la barra inferior actualiza la seleccion.
 . Alternar tema claro/oscuro y volver a Coleccion.
+. Girar el dispositivo a orientacion horizontal y cambiar de seccion desde la navegacion lateral.
+. Reducir el ancho de la ventana por debajo de 600 dp y comprobar que vuelve la barra inferior; volver a ampliarlo.
 
-*Esperado:* las cuatro secciones se abren tanto desde la barra como con deslizamientos horizontales; los filtros horizontales de Buscar y Coleccion siguen desplazandose sin cambiar de seccion; el tema cambia y no aparece una pantalla roja ni error de runtime.
+*Esperado:* en ventanas de menos de 600 dp se conserva la barra inferior; desde 600 dp se usa navegacion lateral, que permite desplazarse si la altura disponible es reducida. En apaisado la cabecera y las tarjetas del catalogo reducen su altura; la imagen y los datos del ave aparecen lado a lado, y Agregar foto pasa a la barra superior para no cubrir el contenido. El contenido se centra con un ancho maximo en ventanas amplias para conservar la legibilidad. Las cuatro secciones siguen accesibles; los filtros horizontales de Buscar y Coleccion siguen desplazandose sin cambiar de seccion; el tema cambia y no aparece una pantalla roja ni error de runtime.
 
 *Resultado/evidencia:* pendiente de ejecucion.
 
@@ -100,15 +103,16 @@ Estados sugeridos: `No ejecutado`, `Aprobado`, `Fallido`, `Bloqueado`. Registrar
 *Precondiciones:* conectividad disponible.
 
 . Abrir Inicio y esperar la carga del catalogo.
+. Revisar una descripcion larga contraida; tocar `Ver más` y luego `Ver menos`.
 . Desactivar la red y usar Reintentar desde el estado de error (si el servicio deja de responder).
 . Restaurar la red y reintentar.
 
-*Esperado:* con red, se muestran las fichas disponibles. Sin red, la app comunica el fallo y ofrece reintento sin cerrarse. Una respuesta externa invalida tampoco produce exito falso.
+*Esperado:* con red, el indice permite mostrar especies y miniaturas progresivamente mientras llegan las fichas por lotes; las imagenes fuera de pantalla no se descargan antes de necesitarlas. Las descripciones y comentarios extensos pueden expandirse y contraerse. Sin red, la app comunica el fallo y ofrece reintento sin cerrarse. Una respuesta externa invalida tampoco produce exito falso.
 
 *Resultado/evidencia:* pendiente de ejecucion.
 
 [[uat-04]]
-=== UAT-04 - Buscar y filtrar especies de muestra
+=== UAT-04 - Buscar y filtrar especies del catalogo
 
 *Prioridad:* P1
 
@@ -116,10 +120,10 @@ Estados sugeridos: `No ejecutado`, `Aprobado`, `Fallido`, `Bloqueado`. Registrar
 
 . Abrir Buscar y escribir un nombre comun conocido.
 . Repetir con parte del nombre cientifico o descripcion.
-. Elegir una categoria y luego `Todas`.
+. Elegir una categoria general y luego `Todas`.
 . Buscar un texto sin coincidencias.
 
-*Esperado:* los resultados coinciden con texto y categoria; limpiar busqueda restaura resultados; sin coincidencias aparece estado vacio. Las categorias se identifican como filtros del catalogo de muestra, no como taxonomia definitiva del backend.
+*Esperado:* los resultados coinciden con texto y categoria general; limpiar busqueda restaura resultados; sin coincidencias aparece estado vacio. Las especies quedan agrupadas como Terrestres, Acuaticas, Rapaces, Marinas u Otras.
 
 *Resultado/evidencia:* pendiente de ejecucion.
 
@@ -148,9 +152,10 @@ Estados sugeridos: `No ejecutado`, `Aprobado`, `Fallido`, `Bloqueado`. Registrar
 
 . Desde Inicio, tocar Agregar foto y elegir galeria.
 . Seleccionar una imagen.
-. Completar nombre, lugar, fecha y comentario; tocar Guardar foto.
+. Completar nombre, lugar, fecha y comentario. Dejar vacios el nombre cientifico y la categoria; tocar Guardar foto.
+. Repetir el registro incluyendo el nombre cientifico y la categoria.
 
-*Esperado:* se muestra progreso durante el guardado; al finalizar aparece el registro con imagen y metadatos en Coleccion y una confirmacion. No hay congelamiento prolongado ni pantalla roja.
+*Esperado:* ambos registros se guardan; el nombre cientifico y la categoria pueden omitirse y se muestran cuando se ingresan. Se muestra progreso durante el guardado y una confirmacion al finalizar. No hay congelamiento prolongado ni pantalla roja.
 
 *Resultado/evidencia:* pendiente de ejecucion.
 
@@ -177,12 +182,12 @@ Estados sugeridos: `No ejecutado`, `Aprobado`, `Fallido`, `Bloqueado`. Registrar
 
 *Precondiciones:* disponer de al menos una especie guardada y una observacion propia de especie reconocida por el catalogo; preparar tambien un nombre no catalogado.
 
-. En Coleccion, escoger `Mis avistamientos` y `Bosque`.
+. En Coleccion, escoger `Mis avistamientos` y `Acuáticas`.
 . Cambiar solo el tipo a `Todo`, conservando la categoria.
 . Escoger `Aves guardadas` y una categoria sin registros.
 . Filtrar la observacion de nombre no catalogado por `Sin clasificar`.
 
-*Esperado:* ambos filtros se aplican simultaneamente; modificar uno conserva el otro. No hay resultados ajenos a los criterios y se informa claramente cuando no hay coincidencias. Un nombre no catalogado queda bajo `Sin clasificar`; las categorias actuales son una aproximacion basada en el catalogo de muestra.
+*Esperado:* ambos filtros se aplican simultaneamente; modificar uno conserva el otro. No hay resultados ajenos a los criterios y se informa claramente cuando no hay coincidencias. Un nombre no catalogado queda bajo `Sin clasificar`, salvo que se haya ingresado una categoria manualmente.
 
 *Resultado/evidencia:* pendiente de ejecucion.
 
@@ -241,9 +246,76 @@ Estados sugeridos: `No ejecutado`, `Aprobado`, `Fallido`, `Bloqueado`. Registrar
 . Confirmar que no se solicita login ni se presenta sincronizacion de registros.
 . Guardar una observacion propia y revisar que se muestra en el mismo dispositivo.
 . Crear un reporte y revisar el mensaje de no envio a moderacion.
-. Comprobar que el catalogo se identifica como contenido de demostracion/fuente Wikipedia.
+. Comprobar que las fichas del catalogo enlazan a Aves de Chile y que no se presenta como API propia del proyecto.
 
 *Esperado:* la app no presenta funcionalidades de backend aun no integradas como disponibles. El comportamiento local queda explicado en interfaz/documentacion.
+
+*Resultado/evidencia:* pendiente de ejecucion.
+
+[[uat-13]]
+=== UAT-13 - Feed Explorar (modo mock)
+
+*Prioridad:* P0
+
+*Precondiciones:* app en modo mock (por defecto), conectividad para cargar las imagenes de ejemplo.
+
+. Abrir la pestana Explorar.
+. Verificar que se muestran fotos con autor y lugar.
+. Cambiar el filtro de categoria y comprobar que el feed se recarga.
+. Desplazarse al final para verificar la carga de mas fotos si hay varias paginas.
+. Abrir una foto y verificar el visor con transicion Hero.
+. Conectar internet y verificar el estado de error y el boton Reintentar si se interrumpe la red.
+
+*Esperado:* el feed carga por categoria, pagina sus resultados y presenta estados de carga/vacio/error comprensibles.
+
+*Resultado/evidencia:* pendiente de ejecucion.
+
+[[uat-14]]
+=== UAT-14 - Guardar y reportar fotos de la comunidad
+
+*Prioridad:* P0
+
+*Precondiciones:* pestana Explorar con feed cargado.
+
+. Guardar una foto de la comunidad en la coleccion.
+. Abrir Coleccion y verificar que la foto aparece con el origen de la comunidad.
+. Reportar una foto con motivo "La foto no muestra un ave".
+. Verificar el mensaje de reporte (enviado en mock o guardado local como respaldo).
+. Quitar la foto de la coleccion y verificar que se elimina su archivo local.
+
+*Esperado:* la foto ajena se guarda localmente, se reporta y se puede quitar sin dejar archivos huerfanos.
+
+*Resultado/evidencia:* pendiente de ejecucion.
+
+[[uat-15]]
+=== UAT-15 - Subida de avistamiento con sesion mock
+
+*Prioridad:* P1
+
+*Precondiciones:* sesion iniciada (mock) y modo mock activo.
+
+. Registrar un avistamiento propio con lugar, fecha y comentario.
+. Verificar el mensaje de exito local.
+. En modo mock, el `FotosService` simula la subida; verificar que no hay errores inesperados.
+. Probar el mismo flujo con la sesion cerrada y verificar que solo se guarda local (sin intento de subida).
+
+*Esperado:* con sesion la app intenta subir al BFF (mock o real); sin sesion solo guarda local sin errores.
+
+*Resultado/evidencia:* pendiente de ejecucion.
+
+[[uat-16]]
+=== UAT-16 - Autenticacion real (cuando el BFF este disponible)
+
+*Prioridad:* P1
+
+*Precondiciones:* BFF Phoenix corriendo y app compilada con `--dart-define=BFF_ACTIVO=true --dart-define=BFF_URL=<url>`.
+
+. Registrar un usuario nuevo desde la app (o endpoint signin).
+. Iniciar sesion con credenciales validas y verificar que el perfil muestra el usuario.
+. Enviar un reporte y verificar que llega al servidor (respuesta 200).
+. Cerrar sesion y verificar que los flujos protegidos vuelven a pedir login.
+
+*Esperado:* el login real devuelve y persiste un JWT; los endpoints autenticados funcionan con la sesion activa.
 
 *Resultado/evidencia:* pendiente de ejecucion.
 
@@ -255,7 +327,7 @@ Copiar esta tabla para cada build/ciclo UAT. Adjuntar capturas/videos con nombre
 |===
 |Caso |Estado |Ejecutor |Fecha |Build/dispositivo |Issue/evidencia
 
-|UAT-01..UAT-12
+|UAT-01..UAT-16
 |No ejecutado
 |Pendiente
 |Pendiente

@@ -19,27 +19,39 @@ El sistema completo también contempla un dashboard web de administración y mod
 
 ## Estado actual
 
-El proyecto se encuentra en etapa de boceto. Actualmente incluye:
+El proyecto se encuentra en etapa de prototipo con integración inicial del BFF. Actualmente incluye:
 
-- Proyecto Flutter y pantalla principal.
-- Navegación entre Inicio, Buscar, Colección y Perfil mediante la barra inferior o deslizamientos horizontales.
-- En Inicio, un feed de aves chilenas con imágenes y descripciones cargadas desde Wikipedia.
-- En Buscar, filtros por texto (nombre común, nombre científico o descripción) y categoría de muestra (Bosque, Rapaces, Humedal, Pradera y Picaflores).
-- Enlace a la página de Wikipedia de cada ave como referencia de la información e imagen.
+- Proyecto Flutter con plataformas Android e iOS (el target iOS está generado, pendiente de validar en un Mac).
+- Navegación entre Inicio, Buscar, Explorar, Colección y Perfil mediante la barra inferior o deslizamientos horizontales.
+- En Inicio, el catálogo de 216 especies de Aves de Chile, con imágenes, descripciones y nombres científicos.
+- En Buscar, filtros por nombre común, nombre científico, descripción, palabras clave y categorías generales (Terrestres, Acuáticas, Rapaces, Marinas y Otras).
+- Enlace a la ficha de cada especie en [Aves de Chile](https://uvm.neocities.org/aves/).
+- En **Explorar**, un feed de fotos de otros usuarios (mock local por defecto; se conectará al BFF Phoenix vía `birds_apis.yaml`), con filtro por categoría, guardado en la colección personal y reporte de fotos inapropiadas.
 - Guardado de aves del catálogo en Colección, con copia local de la imagen y opción para quitarla.
-- Registro de una foto propia desde la cámara o la galería, solicitando nombre del ave, lugar, fecha y comentario antes de guardarla en Colección.
-- Botón superpuesto en las imágenes para reportarlas seleccionando uno o más motivos.
+- Registro de una foto propia desde la cámara o la galería. El formulario solicita nombre del ave, lugar, fecha y comentario; el nombre científico y la categoría son opcionales. Si hay sesión iniciada, la app intenta subir el avistamiento al BFF y lo encola para reintentar si no hay conexión.
+- Botón superpuesto en las imágenes para reportarlas seleccionando uno o más motivos; los motivos se mapean al enum del contrato (`no_es_ave`, etc.) y, con sesión, se envían al servidor.
+- Autenticación con modo mock por defecto y soporte real para `POST /user/login` y `POST /user/signin` (JWT) cuando el BFF esté disponible.
 
-Para esta versión inicial, las imágenes y descripciones del catálogo de muestra se obtienen en tiempo de ejecución desde la API de Wikipedia en español; no son contenido aportado por usuarios. Las categorías son agrupaciones demostrativas del catálogo local y no provienen de una API ni representan todavía las categorías definitivas del proyecto. Cada ficha enlaza al artículo de Wikipedia usado como fuente; las imágenes pueden tener licencias distintas, por lo que se debe consultar la página fuente para sus créditos y condiciones de reutilización.
+El catálogo se obtiene en tiempo de ejecución desde el índice y las fichas JSON de [Aves de Chile](https://uvm.neocities.org/aves/). La app agrupa los órdenes taxonómicos en categorías generales: Terrestres, Acuáticas, Rapaces, Marinas y Otras. Las imágenes del catálogo se descargan al guardarlas; el nombre científico y la categoría que se ingresan para una observación propia no son obligatorios. Se debe consultar el sitio fuente para sus créditos y condiciones de uso.
 
-Las aves guardadas desde el catálogo y los avistamientos propios (imagen, nombre del ave, lugar, fecha y comentario) se conservan localmente en el dispositivo y pueden consultarse sin conexión; se necesita Internet para guardar una nueva imagen desde Wikipedia. Los reportes y sus motivos también se almacenan solo en el dispositivo y todavía no se envían al equipo de moderación porque la app no está conectada al backend. El perfil sigue siendo provisional. Tampoco están implementados el registro de usuarios, las interacciones ni la carga de aves populares.
+Las aves guardadas desde el catálogo, los avistamientos propios y las fotos guardadas de la comunidad se conservan localmente en el dispositivo y pueden consultarse sin conexión. Se necesita Internet para cargar el catálogo y las imágenes del feed. Los reportes y sus motivos se almacenan en el dispositivo y se envían al servidor cuando hay sesión y conectividad; si falla, quedan encolados. El perfil funciona con sesión mock por defecto; el registro/login real depende del BFF.
+
+## Ejecución con el BFF (cuando esté disponible)
+
+Por defecto la app usa un mock local. Para apuntar al BFF real:
+
+```bash
+flutter run --dart-define=BFF_ACTIVO=true --dart-define=BFF_URL=http://10.0.2.2:4000
+```
+
+En el emulador de Android, `10.0.2.2` apunta al `localhost` de la máquina.
 
 ## Tecnologías
 
 - **Flutter** y **Dart** para la aplicación móvil.
 - **image_picker** para seleccionar o tomar imágenes en el prototipo.
-- **Wikipedia en español** para las imágenes y descripciones de las especies de muestra.
-- **http** para consultar Wikipedia y **url_launcher** para abrir los artículos fuente.
+- **Aves de Chile** para el índice, las fichas, imágenes y descripciones del catálogo.
+- **http** para consultar el catálogo y sus imágenes, y **url_launcher** para abrir las fichas fuente.
 - **path_provider** y **shared_preferences** para conservar imágenes y datos de la colección local en el dispositivo.
 - Android como plataforma actualmente configurada; Android e iOS son el objetivo de la entrega móvil.
 
