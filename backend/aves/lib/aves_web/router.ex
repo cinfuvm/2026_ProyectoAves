@@ -14,6 +14,11 @@ defmodule AvesWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :api_auth do
+    plug :accepts, ["json"]
+    plug AvesWeb.AuthPlug
+  end
+
   scope "/api/json" do
     pipe_through [:api]
 
@@ -30,6 +35,12 @@ defmodule AvesWeb.Router do
     post "/user/signin", UserController, :register
     post "/user/login", UserController, :login
     delete "/user/logout", UserController, :logout
+  end
+
+  scope "/api", AvesWeb.API do
+    pipe_through [:api_auth]
+
+    get "/user/me", UserController, :me
   end
 
   scope "/", AvesWeb do

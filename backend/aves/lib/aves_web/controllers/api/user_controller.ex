@@ -47,6 +47,12 @@ defmodule AvesWeb.API.UserController do
     |> send_resp(:no_content, "")
   end
 
+  @doc "GET /api/user/me - Devuelve el usuario autenticado (requiere bearer token)."
+  def me(conn, _params) do
+    user = Ash.PlugHelpers.get_actor(conn)
+    json(conn, %{user: user_json(user)})
+  end
+
   defp strategy, do: Info.strategy!(User, :password)
 
   # Acepta `user` como alias de `email` para mantener compatibilidad con el
@@ -69,13 +75,17 @@ defmodule AvesWeb.API.UserController do
 
   defp auth_response(user) do
     %{
-      user: %{
-        id: user.id,
-        email: to_string(user.email),
-        nickname: user.nickname,
-        rol: to_string(user.rol)
-      },
+      user: user_json(user),
       token: user.__metadata__.token
+    }
+  end
+
+  defp user_json(user) do
+    %{
+      id: user.id,
+      email: to_string(user.email),
+      nickname: user.nickname,
+      rol: to_string(user.rol)
     }
   end
 

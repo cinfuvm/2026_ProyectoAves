@@ -88,4 +88,36 @@ defmodule AvesWeb.API.UserControllerTest do
       assert response(conn, 204)
     end
   end
+
+  describe "GET /api/user/me" do
+    test "devuelve el usuario autenticado con bearer token", %{conn: conn} do
+      conn = post(conn, ~p"/api/user/signin", @register_attrs)
+      %{"token" => token} = json_response(conn, 201)
+
+      conn =
+        build_conn()
+        |> put_req_header("authorization", "Bearer #{token}")
+        |> get(~p"/api/user/me")
+
+      assert %{"user" => user} = json_response(conn, 200)
+      assert user["email"] == "ana@example.com"
+      assert user["nickname"] == "ana"
+      assert user["rol"] == "usuario"
+    end
+
+    test "sin token devuelve 401", %{conn: conn} do
+      conn = get(conn, ~p"/api/user/me")
+
+      assert %{"error" => _} = json_response(conn, 401)
+    end
+
+    test "con token inválido devuelve 401", %{conn: conn} do
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer token.invalido.aqui")
+        |> get(~p"/api/user/me")
+
+      assert %{"error" => _} = json_response(conn, 401)
+    end
+  end
 end
