@@ -1,8 +1,67 @@
 openapi: 3.0.0
 info:
   title: birs_user_apis
-  version: 1.0.0
+  version: 1.1.0
 paths:
+  /api/user/signin:
+    post:
+      summary: Registrar usuario
+      description: Crea un usuario y devuelve un bearer token.
+      tags:
+        - API users
+      requestBody:
+        $ref: '#/components/requestBodies/register'
+      responses:
+        '201':
+          description: Usuario creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '422':
+          description: Datos inválidos (email/nickname duplicado, password, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      servers:
+        - url: http://127.0.0.1:4000
+  /api/user/login:
+    post:
+      summary: Iniciar sesión
+      description: Autentica por email y devuelve un bearer token.
+      tags:
+        - API users
+      requestBody:
+        $ref: '#/components/requestBodies/login'
+      responses:
+        '200':
+          description: Autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Credenciales inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      servers:
+        - url: http://127.0.0.1:4000
+  /api/user/logout:
+    delete:
+      summary: Cerrar sesión
+      description: Revoca el bearer token enviado en el header Authorization.
+      tags:
+        - API users
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Token revocado
+      servers:
+        - url: http://127.0.0.1:4000
   /images:
     post:
       summary: Subir fotos
@@ -13,9 +72,9 @@ paths:
         '200':
           description: ''
       security:
-        - subir_fotos: []
+        - bearerAuth: []
       servers:
-        - url: http://127.0.0.1
+        - url: http://127.0.0.1:4000
     get:
       summary: Filtrar fotos
       description: ''
@@ -45,7 +104,7 @@ paths:
           schema:
             type: string
       servers:
-        - url: http://127.0.0.1
+        - url: http://127.0.0.1:4000
     put:
       summary: Reportar foto
       description: ''
@@ -62,80 +121,110 @@ paths:
           schema:
             type: string
       security:
-        - reportar_foto: []
+        - bearerAuth: []
       servers:
-        - url: http://127.0.0.1
-  /user/login:
-    post:
-      summary: Log in
-      description: ''
-      tags:
-        - API users
-      responses:
-        '200':
-          description: ''
-      requestBody:
-        $ref: '#/components/requestBodies/log_in'
-      servers:
-        - url: http://127.0.0.1
-  /user/signin:
-    post:
-      summary: Crear usuario
-      description: ''
-      tags:
-        - API users
-      responses:
-        '200':
-          description: ''
-      requestBody:
-        $ref: '#/components/requestBodies/crear_usuario'
-      servers:
-        - url: http://127.0.0.1
+        - url: http://127.0.0.1:4000
 servers: []
 components:
   schemas:
-    log_in:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        nickname:
+          type: string
+        rol:
+          type: string
+          enum:
+            - usuario
+            - moderador
+            - admin
+      required:
+        - id
+        - email
+        - nickname
+        - rol
+    AuthResponse:
       type: object
       properties:
         user:
+          $ref: '#/components/schemas/User'
+        token:
           type: string
-        password:
-          type: string
-      example:
-        user: nombre_generico
-        password: contraseña
-    crear_usuario:
+          description: Bearer JWT para el header Authorization.
+      required:
+        - user
+        - token
+    RegisterRequest:
       type: object
       properties:
-        user:
+        email:
+          type: string
+          format: email
+        nickname:
           type: string
         password:
           type: string
-        confirm_pasword:
+          format: password
+        password_confirmation:
           type: string
+          format: password
+      required:
+        - email
+        - nickname
+        - password
+        - password_confirmation
       example:
-        user: nombre_generico1
+        email: ana@example.com
+        nickname: ana
         password: contraseña_generica1
-        confirm_pasword: contraseña_generica1
+        password_confirmation: contraseña_generica1
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+      required:
+        - email
+        - password
+      example:
+        email: ana@example.com
+        password: contraseña_generica1
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        errors:
+          type: array
+          items:
+            type: string
   requestBodies:
-    log_in:
+    register:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/log_in'
-      description: ''
+            $ref: '#/components/schemas/RegisterRequest'
+      description: Datos de registro
       required: true
-    crear_usuario:
+    login:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/crear_usuario'
-      description: ''
+            $ref: '#/components/schemas/LoginRequest'
+      description: Credenciales de acceso
       required: true
   securitySchemes:
-    subir_fotos:
+    bearerAuth:
       type: http
       scheme: bearer
-    reportar_foto:
-      type: http
-      scheme: bearer
+      bearerFormat: JWT

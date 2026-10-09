@@ -24,6 +24,14 @@ defmodule AvesWeb.Router do
     forward "/", AvesWeb.AshJsonApiRouter
   end
 
+  scope "/api", AvesWeb.API do
+    pipe_through [:api]
+
+    post "/user/signin", UserController, :register
+    post "/user/login", UserController, :login
+    delete "/user/logout", UserController, :logout
+  end
+
   scope "/", AvesWeb do
     pipe_through :browser
 
