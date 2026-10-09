@@ -1,4 +1,4 @@
-// Genera assets/icono_app.png (1024x1024): cámara + pajarito.
+// Genera assets/icono_app.png (1024x1024): pajarito flutter_dash morado sobre fondo amarillo.
 // Uso: dart run tool/gen_icono.dart
 import 'dart:io';
 import 'dart:math' as math;
@@ -9,97 +9,84 @@ void main() {
   const s = 1024;
   final img = Image(width: s, height: s);
 
-  // Fondo: gradiente vertical morado #6A1B9A -> #4A148C
-  final top = ColorRgb8(0x6A, 0x1B, 0x9A);
-  final bottom = ColorRgb8(0x4A, 0x14, 0x8C);
+  final amarillo = ColorRgb8(0xFD, 0xD8, 0x35);
+  final morado = ColorRgb8(0x6A, 0x1B, 0x9A);
+  final moradoOscuro = ColorRgb8(0x4A, 0x14, 0x8C);
+
+  // Fondo amarillo completo
   for (var y = 0; y < s; y++) {
-    final t = y / (s - 1);
-    final r = (top.r + (bottom.r - top.r) * t).round();
-    final g = (top.g + (bottom.g - top.g) * t).round();
-    final b = (top.b + (bottom.b - top.b) * t).round();
-    final c = ColorRgb8(r, g, b);
     for (var x = 0; x < s; x++) {
-      img.setPixel(x, y, c);
+      img.setPixel(x, y, amarillo);
     }
   }
 
-  final amarillo = ColorRgb8(0xFD, 0xD8, 0x35);
-  final moradoOscuro = ColorRgb8(0x3E, 0x0F, 0x6E);
-
-  // --- Cuerpo de la cámara (rectángulo redondeado) ---
   final cx = s ~/ 2;
-  final cy = s ~/ 2 + 40;
-  final cw = 520;
-  final ch = 360;
-  final radio = 60;
-  _rectRedondeado(img, cx - cw ~/ 2, cy - ch ~/ 2, cw, ch, radio, amarillo);
+  final cy = s ~/ 2;
 
-  // --- Bump del visor (pequeño rectángulo arriba, centrado-izquierda) ---
-  final bx = cx - cw ~/ 2 + 90;
-  final by = cy - ch ~/ 2 - 50;
-  _rectRedondeado(img, bx, by, 120, 70, 24, amarillo);
+  // --- Cuerpo del pajarito (elipse grande) ---
+  _elipse(img, cx, cy + 40, 220, 180, morado);
 
-  // --- Lente: círculos concéntricos ---
-  final lensR = 130;
-  _circulo(img, cx, cy, lensR, amarillo);
-  _circulo(img, cx, cy, lensR - 28, moradoOscuro);
-  _circulo(img, cx, cy, lensR - 60, amarillo);
-  _circulo(img, cx, cy, lensR - 90, moradoOscuro);
+  // --- Cabeza (círculo arriba-derecha) ---
+  final hx = cx + 120;
+  final hy = cy - 140;
+  _circulo(img, hx, hy, 130, morado);
 
-  // --- Destello pequeño (esquina superior derecha de la cámara) ---
-  final fx = cx + cw ~/ 2 - 70;
-  final fy = cy - ch ~/ 2 + 40;
-  _circulo(img, fx, fy, 22, moradoOscuro);
+  // --- Pico (triángulo hacia la derecha) ---
+  _triangulo(
+    img,
+    hx + 100,
+    hy - 20,
+    hx + 220,
+    hy + 15,
+    hx + 100,
+    hy + 50,
+    morado,
+  );
 
-  // --- Pajarito silhouette (sobre el lente, ligeramente a la derecha) ---
-  _pajarito(img, cx + 40, cy - 190, scale: 1.15, color: amarillo);
+  // --- Ala (elipse sobre el cuerpo) ---
+  _elipse(img, cx - 40, cy + 20, 140, 90, moradoOscuro);
+
+  // --- Cola (triángulo largo hacia atrás-izquierda) ---
+  _triangulo(
+    img,
+    cx - 160,
+    cy + 20,
+    cx - 380,
+    cy - 40,
+    cx - 160,
+    cy + 120,
+    morado,
+  );
+  // Segundo pluma de cola
+  _triangulo(
+    img,
+    cx - 150,
+    cy + 60,
+    cx - 340,
+    cy + 80,
+    cx - 140,
+    cy + 150,
+    morado,
+  );
+
+  // --- Patas (dos líneas cortas hacia abajo) ---
+  _elipse(img, cx - 40, cy + 210, 18, 50, morado);
+  _elipse(img, cx + 40, cy + 210, 18, 50, morado);
+
+  // --- Ojo (círculo amarillo en la cabeza) ---
+  _circulo(img, hx + 40, hy - 30, 35, amarillo);
+  // Pupila
+  _circulo(img, hx + 48, hy - 28, 16, moradoOscuro);
+
+  // --- Cresta (triángulos pequeños arriba de la cabeza) ---
+  _triangulo(img, hx - 40, hy - 110, hx - 10, hy - 190, hx + 20, hy - 100, morado);
+  _triangulo(img, hx + 10, hy - 120, hx + 50, hy - 200, hx + 80, hy - 100, morado);
 
   // Guardar
   final dir = Directory('assets');
   if (!dir.existsSync()) dir.createSync(recursive: true);
   File('assets/icono_app.png').writeAsBytesSync(encodePng(img));
   stdout.writeln('assets/icono_app.png generado (${img.width}x${img.height})');
-}
-
-void _rectRedondeado(
-  Image img,
-  int x,
-  int y,
-  int w,
-  int h,
-  int r,
-  Color c,
-) {
-  for (var py = y; py < y + h; py++) {
-    for (var px = x; px < x + w; px++) {
-      if (_dentroRedondeado(px - x, py - y, w, h, r)) {
-        img.setPixel(px, py, c);
-      }
-    }
-  }
-}
-
-bool _dentroRedondeado(int lx, int ly, int w, int h, int r) {
-  if (lx >= r && lx < w - r) return true;
-  if (ly >= r && ly < h - r) return true;
-  // Esquinas
-  final corners = [
-    (r, r),
-    (w - r - 1, r),
-    (r, h - r - 1),
-    (w - r - 1, h - r - 1),
-  ];
-  for (final (ccx, ccy) in corners) {
-    final dx = lx - ccx;
-    final dy = ly - ccy;
-    if (dx * dx + dy * dy <= r * r) {
-      // Solo dentro del cuadrante de la esquina
-      final inCornerX = lx < r || lx >= w - r;
-      final inCornerY = ly < r || ly >= h - r;
-      if (inCornerX && inCornerY) return true;
-    }
-  }
-  return false;
 }
 
 void _circulo(Image img, int cx, int cy, int r, Color c) {
@@ -114,60 +101,6 @@ void _circulo(Image img, int cx, int cy, int r, Color c) {
       }
     }
   }
-}
-
-/// Dibuja un pajarito silhouette simple (cuerpo elipse + cabeza + pico + cola + ala).
-void _pajarito(
-  Image img,
-  int cx,
-  int cy, {
-  double scale = 1.0,
-  Color? color,
-}) {
-  final c = color ?? ColorRgb8(0xFD, 0xD8, 0x35);
-  final s = scale;
-
-  // Cuerpo: elipse
-  _elipse(img, cx, cy, (55 * s).round(), (35 * s).round(), c);
-
-  // Cabeza: círculo
-  final hx = cx + (48 * s).round();
-  final hy = cy - (28 * s).round();
-  _circulo(img, hx, hy, (28 * s).round(), c);
-
-  // Pico: triángulo hacia la derecha
-  _triangulo(
-    img,
-    hx + (24 * s).round(),
-    hy - (4 * s).round(),
-    hx + (50 * s).round(),
-    hy + (2 * s).round(),
-    hx + (24 * s).round(),
-    hy + (10 * s).round(),
-    c,
-  );
-
-  // Cola: triángulo hacia atrás-izquierda
-  final tx = cx - (50 * s).round();
-  final ty = cy - (5 * s).round();
-  _triangulo(
-    img,
-    tx,
-    ty - (12 * s).round(),
-    tx - (45 * s).round(),
-    ty + (5 * s).round(),
-    tx,
-    ty + (18 * s).round(),
-    c,
-  );
-
-  // Ala: elipse rotada (aproximada con elipse)
-  _elipse(img, cx - (5 * s).round(), cy + (5 * s).round(), (32 * s).round(),
-      (16 * s).round(), c);
-
-  // Ojo: punto morado
-  _circulo(img, hx + (10 * s).round(), hy - (6 * s).round(),
-      (5 * s).round().clamp(1, 999), ColorRgb8(0x3E, 0x0F, 0x6E));
 }
 
 void _elipse(Image img, int cx, int cy, int rx, int ry, Color c) {
