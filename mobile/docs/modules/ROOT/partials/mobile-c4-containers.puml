@@ -4,7 +4,7 @@
 title Bitacora de Aves Mobile - Contenedores actuales
 
 Person(usuario, "Observador de aves")
-System_Ext(wikipedia, "Wikipedia en espanol", "API HTTPS de resumen y origen de imagenes del catalogo de demostracion.")
+System_Ext(aveschile, "Aves de Chile", "Indice, fichas e imagenes JSON en uvm.neocities.org/aves.")
 System_Ext(so, "Camara y galeria del dispositivo", "Selector nativo de imagenes.")
 
 System_Boundary(mobile, "Aplicacion mobile Bitacora de Aves") {
@@ -14,7 +14,7 @@ System_Boundary(mobile, "Aplicacion mobile Bitacora de Aves") {
 }
 
 Rel(usuario, app, "Usa")
-Rel(app, wikipedia, "Obtiene el catalogo de muestra", "HTTPS / REST")
+Rel(app, aveschile, "Obtiene indice, fichas e imagenes", "HTTPS / JSON")
 Rel(app, so, "Abre camara/galeria", "image_picker")
 Rel(app, preferencias, "Lee/escribe colecciones y reportes", "shared_preferences")
 Rel(app, archivos, "Copia, muestra y elimina imagenes", "path_provider / dart:io")

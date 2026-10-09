@@ -3,7 +3,7 @@ site:
   start_page: bitacora-mobile::index.adoc
 content:
   sources:
-    - url: ..
+    - url: ../..
       branches: HEAD
       worktrees: .
       start_path: docs

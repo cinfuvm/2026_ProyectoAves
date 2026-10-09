@@ -7,7 +7,7 @@
 
 Bitacora de Aves Mobile es una aplicacion Flutter para que una persona registre encuentros con aves, guarde imagenes y consulte sus registros desde una interfaz movil. El valor principal de la version objetivo es facilitar que la comunidad aporte observaciones e imagenes, y que esas contribuciones puedan integrarse posteriormente con un backend y herramientas de gestion.
 
-El repositorio implementa un *prototipo mobile local*. Permite guardar fotos y sus datos en el dispositivo y explorar un catalogo de demostracion consultado desde Wikipedia. No hay actualmente cuentas, feed remoto de aportes comunitarios, API propia, sincronizacion entre dispositivos, envio de reportes a moderacion ni conteo de popularidad. El catalogo de Wikipedia es una fuente de demostracion y no debe confundirse con la fuente objetivo del contenido comunitario.
+El repositorio implementa un *prototipo mobile local*. Permite guardar fotos y sus datos en el dispositivo y explorar el catalogo de 216 especies consultado desde https://uvm.neocities.org/aves/[Aves de Chile]. No hay actualmente cuentas, feed remoto de aportes comunitarios, API propia, sincronizacion entre dispositivos, envio de reportes a moderacion ni conteo de popularidad. El catalogo externo no debe confundirse con la fuente objetivo del contenido comunitario.
 
 === Problema y oportunidad
 
@@ -25,7 +25,7 @@ Las observaciones de aves suelen quedar dispersas entre fotografias y notas. Una
 . Permitir registrar una observacion propia con fotografia y datos contextuales.
 . Mantener los registros propios accesibles despues de reiniciar la aplicacion.
 . Permitir explorar y filtrar los registros de la coleccion.
-. Facilitar descubrimiento de especies con un catalogo de muestra mientras se define el contrato de datos definitivo.
+. Facilitar el descubrimiento de especies con el catalogo externo mientras se define el contrato de datos definitivo.
 . Preparar una arquitectura mobile que pueda integrarse con la API y los procesos de moderacion del proyecto.
 
 === Fuera de alcance del prototipo actual
@@ -35,11 +35,11 @@ Las observaciones de aves suelen quedar dispersas entre fotografias y notas. Una
 * Sincronizacion, copias de seguridad o migracion de registros entre dispositivos.
 * Envio de reportes o moderacion desde un dashboard.
 * Conteo de vistas, ranking de popularidad, comentarios, chat o seguimiento de perfiles.
-* Categorias definitivas administradas por el backend.
+* Taxonomia definitiva administrada por el backend.
 
 == 2. Requisitos funcionales
 
-Los estados indican la implementacion observada en el repositorio al redactar este documento: *Implementado local* significa que la funcion opera en el dispositivo; *Demostracion externa* indica una dependencia de Wikipedia; *Pendiente de integracion* no debe presentarse como funcion ya disponible.
+Los estados indican la implementacion observada en el repositorio al redactar este documento: *Implementado local* significa que la funcion opera en el dispositivo; *Catalogo externo* indica una dependencia de Aves de Chile; *Pendiente de integracion* no debe presentarse como funcion ya disponible.
 
 [cols="1,3,2,1",options="header"]
 |===
@@ -51,13 +51,13 @@ Los estados indican la implementacion observada en el repositorio al redactar es
 |Alta
 
 |MOB-FR-02
-|La app muestra especies de un catalogo de demostracion con imagen, descripcion y enlace fuente.
-|Demostracion externa: Wikipedia en espanol
+|La app muestra el catalogo externo de Aves de Chile con imagen, descripcion, nombre cientifico y enlace a la ficha.
+|Catalogo externo: Aves de Chile
 |Media
 
 |MOB-FR-03
-|La persona puede buscar especies de demostracion por nombre comun, nombre cientifico o descripcion, y filtrar por las categorias de muestra.
-|Implementado sobre catalogo de demostracion
+|La persona puede buscar especies por nombre comun, nombre cientifico, descripcion o palabras clave, y filtrar por categorias generales (Terrestres, Acuaticas, Rapaces, Marinas y Otras).
+|Implementado sobre catalogo externo
 |Media
 
 |MOB-FR-04
@@ -66,7 +66,7 @@ Los estados indican la implementacion observada en el repositorio al redactar es
 |Media
 
 |MOB-FR-05
-|La persona puede seleccionar una imagen de camara o galeria y registrar nombre del ave, lugar, fecha y comentario.
+|La persona puede seleccionar una imagen de camara o galeria y registrar nombre del ave, lugar, fecha y comentario; nombre cientifico y categoria son opcionales.
 |Implementado local; sujeto a disponibilidad de permisos y plataforma
 |Alta
 
@@ -118,7 +118,7 @@ Los estados indican la implementacion observada en el repositorio al redactar es
 * Aplicacion desarrollada en Flutter y Dart; manifiesto con minimo de SDK Dart `^3.13.4`.
 * Paquetes principales: `image_picker`, `http`, `url_launcher`, `path_provider` y `shared_preferences`.
 * La coleccion se guarda en preferencias locales y las imagenes en directorios de documentos de la app.
-* La consulta del catalogo depende de conectividad y de la API de resumen de Wikipedia en espanol.
+* La consulta del catalogo depende de conectividad para obtener el indice y las fichas JSON de Aves de Chile; las fichas se solicitan en lotes limitados.
 * El README identifica Android como plataforma actualmente configurada; Android e iOS son objetivo de entrega, pero iOS necesita validacion especifica antes de declararse soportado.
 * No hay servicio de API propio conectado ni almacenamiento remoto.
 
@@ -128,7 +128,7 @@ Los estados indican la implementacion observada en el repositorio al redactar es
 * Dashboard y gestion deben acordar motivos, estados y trazabilidad de reportes/moderacion.
 * El equipo mobile debe convertir esos contratos acordados en requisitos y pruebas antes de integrar.
 * DevOps mantiene la publicacion de documentacion HTML; mobile mantiene sus fuentes AsciiDoc y diagramas.
-* El catalogo de Wikipedia contiene informacion e imagenes de terceros; cada pagina fuente tiene sus propias condiciones y creditos. No debe asumirse que todo el contenido permite la misma reutilizacion.
+* El catalogo de Aves de Chile contiene informacion e imagenes externas; revisar los creditos y condiciones de uso publicados por la fuente antes de reutilizar sus recursos.
 
 == 4. Criterios de aceptacion
 
@@ -143,11 +143,11 @@ La version prototipo mobile se acepta cuando se cumplen los criterios `MOB-AC-*`
 |xref:mobile-uat.adoc#uat-01[UAT-01], xref:mobile-uat.adoc#uat-02[UAT-02]
 
 |MOB-AC-02
-|Con conectividad, el catalogo de muestra carga especies; una falla de red ofrece reintento y no cierra la app.
+|Con conectividad, carga el indice y las fichas del catalogo externo; una falla de red ofrece reintento y no cierra la app.
 |xref:mobile-uat.adoc#uat-03[UAT-03]
 
 |MOB-AC-03
-|La busqueda y el filtro por categoria de muestra reducen los resultados correctamente.
+|La busqueda y el filtro por categoria general reducen los resultados correctamente.
 |xref:mobile-uat.adoc#uat-04[UAT-04]
 
 |MOB-AC-04
@@ -204,8 +204,8 @@ No se incluye un enlace a un prototipo externo aprobado. Si el equipo adopta un 
 * Archivo grande, extension inesperada, archivo inaccesible o espacio insuficiente.
 * La app se cierra durante la copia o antes de persistir los metadatos.
 * Una ruta local deja de existir; la interfaz debe mostrar estado de imagen faltante y conservar informacion textual util.
-* Wikipedia no responde, limita solicitudes, devuelve formato inesperado o un articulo sin miniatura.
-* El nombre de especie escrito por una persona no coincide con el catalogo de muestra y queda como `Sin clasificar`.
+* Aves de Chile no responde, limita solicitudes, devuelve formato inesperado o una ficha sin imagen.
+* El nombre de especie escrito por una persona no coincide con el catalogo y queda como `Sin clasificar`, salvo que la categoria se indique manualmente.
 * Datos locales corruptos o version futura del esquema requieren manejo explicito; no borrar datos automaticamente.
 * Quitar una entrada y fallar al borrar el archivo debe distinguir el exito parcial del borrado completo.
 * Dos operaciones de guardado simultaneas no deben crear estados inconsistentes.
