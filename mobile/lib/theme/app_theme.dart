@@ -131,6 +131,21 @@ Duration duracion(BuildContext contexto, int milisegundos) {
   return Duration(milliseconds: milisegundos);
 }
 
+/// Borde redondeado fino usado por las tarjetas de aves, con contraste
+/// según el tema activo.
+ShapeBorder formaTarjetaAve(BuildContext context) {
+  final esOscuro = Theme.of(context).brightness == Brightness.dark;
+  return RoundedRectangleBorder(
+    side: BorderSide(
+      color: esOscuro
+          ? const Color(0xFFC69BFF).withValues(alpha: 0.62)
+          : PaletaAves.violeta.withValues(alpha: 0.5),
+      width: 1.2,
+    ),
+    borderRadius: BorderRadius.circular(24),
+  );
+}
+
 class AppTheme {
   const AppTheme._();
 
