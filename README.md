@@ -28,6 +28,9 @@ Cada issue del proyecto indica en su descripción el RF que cubre.
 
 ## Documentación
 
+Para levantar el proyecto en local (BFF, backend y app móvil) y probarlo desde
+el emulador o un celular, sigue [`LOCAL_SETUP.md`](LOCAL_SETUP.md).
+
 La documentación se escribe con [Antora](https://antora.org/) en la carpeta `docs/`.
 
 Para generarla en local (requiere Node.js 18 o superior):

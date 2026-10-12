@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../config/api_config.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/aparicion_diferida.dart';
+import 'registro_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -40,9 +42,21 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) Navigator.pop(context, true);
     } on FormatException catch (error) {
       if (mounted) setState(() => _error = error.message);
+    } on Exception {
+      if (mounted) {
+        setState(() => _error = 'No se pudo conectar con el servidor.');
+      }
     } finally {
       if (mounted) setState(() => _cargando = false);
     }
+  }
+
+  Future<void> _abrirRegistro() async {
+    final creado = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const RegistroScreen()),
+    );
+    if (creado == true && mounted) Navigator.pop(context, true);
   }
 
   @override
@@ -121,10 +135,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     AnimatedSwitcher(
                       duration: duracion(context, 180),
                       switchInCurve: Curves.easeOutCubic,
-                      transitionBuilder: (hijo, anim) => FadeTransition(
-                        opacity: anim,
-                        child: hijo,
-                      ),
+                      transitionBuilder: (hijo, anim) =>
+                          FadeTransition(opacity: anim, child: hijo),
                       child: _error == null
                           ? const SizedBox.shrink(
                               key: ValueKey<String>('sin-error'),
@@ -172,14 +184,24 @@ class _LoginScreenState extends State<LoginScreen> {
                         label: const Text('Entrar'),
                       ),
                     ),
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: _cargando ? null : _abrirRegistro,
+                      icon: const Icon(
+                        Icons.person_add_alt_1_outlined,
+                        size: 18,
+                      ),
+                      label: const Text('¿No tienes cuenta? Regístrate'),
+                    ),
                     const SizedBox(height: 12),
                     Text(
-                      'Sesión de demostración. El BFF con autenticación real '
-                      'está en planificación.',
+                      ApiConfig.usarMock
+                          ? 'Sesión de demostración. Activa el BFF con '
+                                '--dart-define=BFF_ACTIVO=true para usar la API real.'
+                          : 'Conectado al servidor de Bitácora de Aves.',
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: marca.textoSecundario,
-                      ),
+                      style: Theme.of(context).textTheme.bodySmall
+                          ?.copyWith(color: marca.textoSecundario),
                     ),
                   ],
                 ),

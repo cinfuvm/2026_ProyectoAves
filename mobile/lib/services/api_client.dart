@@ -38,8 +38,7 @@ class ApiClient {
 
   Map<String, String> _cabeceras({Map<String, String>? extra}) {
     return {
-      if (token != null && token!.isNotEmpty)
-        'Authorization': 'Bearer $token',
+      if (token != null && token!.isNotEmpty) 'Authorization': 'Bearer $token',
       ...?extra,
     };
   }
@@ -79,6 +78,13 @@ class ApiClient {
           headers: _cabeceras(extra: {'Content-Type': 'application/json'}),
           body: jsonEncode(cuerpo),
         )
+        .timeout(ApiConfig.tiempoLimite);
+    return _verificar(respuesta);
+  }
+
+  Future<http.Response> delete(String ruta) async {
+    final respuesta = await _cliente
+        .delete(_uri(ruta), headers: _cabeceras())
         .timeout(ApiConfig.tiempoLimite);
     return _verificar(respuesta);
   }
@@ -128,6 +134,24 @@ class ApiClient {
       if (json is Map<String, dynamic>) {
         error = json['error'] as String?;
         mensaje = json['message'] as String?;
+        // Validaciones (422) del backend: {"errors": ["...", "..."]}
+        final errores = json['errors'];
+        if (mensaje == null && errores is List) {
+          final textos = errores
+              .map((elemento) {
+                if (elemento is String) return elemento;
+                if (elemento is Map<String, dynamic>) {
+                  return (elemento['title'] ??
+                          elemento['detail'] ??
+                          elemento['message'])
+                      ?.toString();
+                }
+                return null;
+              })
+              .whereType<String>()
+              .toList();
+          if (textos.isNotEmpty) mensaje = textos.join('\n');
+        }
       }
     } on FormatException {
       // cuerpo no JSON; se ignora
@@ -135,7 +159,7 @@ class ApiClient {
     throw ApiException(
       statusCode: respuesta.statusCode,
       error: error ?? 'error',
-      message: mensaje,
+      message: mensaje ?? error,
     );
   }
 
