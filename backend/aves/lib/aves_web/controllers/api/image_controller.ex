@@ -16,7 +16,7 @@ defmodule AvesWeb.API.ImageController do
 
   use AvesWeb, :controller
 
-  alias Aves.Media.{Image, Report}
+  alias Aves.Media.{Image, Report, Subidas}
 
   # `Ash.Query.filter/2` es una macro, así que hay que requerir el módulo.
   require Ash.Query
@@ -181,17 +181,39 @@ defmodule AvesWeb.API.ImageController do
   defp guardar(conn, params, extension) do
     archivo = params["file"]
     nombre = "#{Ecto.UUID.generate()}.#{extension}"
-    destino = Path.join(ruta_subidas(), nombre)
+    destinos = Enum.map(Subidas.carpetas(), &Path.join(&1, nombre))
 
+    case escribir(archivo.path, destinos, []) do
+      {:ok, escritos} ->
+        crear_registro(conn, params, archivo, nombre, escritos)
+
+      {:error, motivo, escritos} ->
+        borrar(escritos)
+        {:error, motivo}
+    end
+  end
+
+  # Copia el archivo a las carpetas de `Aves.Media.Subidas`. Si alguna falla,
+  # se borran las copias ya hechas para no dejar huérfanos.
+  defp escribir(origen, [destino | resto], escritos) do
+    case escribir_uno(origen, destino) do
+      :ok -> escribir(origen, resto, [destino | escritos])
+      {:error, motivo} -> {:error, motivo, escritos}
+    end
+  end
+
+  defp escribir(_origen, [], escritos), do: {:ok, Enum.reverse(escritos)}
+
+  defp escribir_uno(origen, destino) do
     case preparar_destino(destino) do
       :ok ->
-        case File.cp(archivo.path, destino) do
-          :ok -> crear_registro(conn, params, archivo, nombre, destino)
+        case File.cp(origen, destino) do
+          :ok -> :ok
           {:error, posix} -> {:error, "No se pudo guardar el archivo: #{posix}"}
         end
 
-      {:error, mensaje} ->
-        {:error, mensaje}
+      {:error, motivo} ->
+        {:error, motivo}
     end
   end
 
@@ -203,13 +225,13 @@ defmodule AvesWeb.API.ImageController do
     end
   end
 
-  defp crear_registro(conn, params, archivo, nombre, destino) do
+  defp crear_registro(conn, params, archivo, nombre, escritos) do
     attrs = %{
       ruta: Path.join("uploads", nombre),
       url: url_publica(nombre),
       categoria: params["categoria"] || "sin categoria",
       mime: archivo.content_type,
-      tamano: File.stat!(destino).size,
+      tamano: File.stat!(List.first(escritos)).size,
       lugar: params["lugar"],
       fecha: params["fecha"],
       comentario: params["comentario"],
@@ -222,12 +244,14 @@ defmodule AvesWeb.API.ImageController do
         {:ok, imagen}
 
       {:error, error} ->
-        # El fichero ya estaba en disco: no dejamos huérfanos si el registro
-        # no se pudo guardar.
-        File.rm(destino)
+        # Los ficheros ya estaban en disco: no dejamos huérfanos si el
+        # registro no se pudo guardar.
+        borrar(escritos)
         {:error, mensaje(error)}
     end
   end
+
+  defp borrar(archivos), do: Enum.each(archivos, &File.rm/1)
 
   # --- Reportes -------------------------------------------------------------
 
@@ -304,8 +328,6 @@ defmodule AvesWeb.API.ImageController do
   # --- Utilidades ------------------------------------------------------------
 
   defp actor(conn), do: Ash.PlugHelpers.get_actor(conn)
-
-  defp ruta_subidas, do: Application.app_dir(:aves, "priv/static/uploads")
 
   defp url_publica(nombre), do: Path.join([base_url_publica(), "uploads", nombre])
 

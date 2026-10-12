@@ -61,7 +61,8 @@ mix run priv/repo/seeds.exs
 > En Windows, Elixir **copia** `priv/` a `_build\dev\lib\aves\priv` en lugar
 > de enlazarlo. Si borras una migración de `priv/`, sigue estando en la copia y
 > Phoenix levanta `PendingMutationError`/migraciones pendientes fantasma:
-> `Remove-Item _build\dev\lib\aves -Recurse -Force` y vuelve a compilar.
+> `Remove-Item _build\dev\lib\aves -Recurse -Force` y vuelve a compilar. Las
+> fotos subidas no se pierden con eso (ver «Dónde viven las fotos subidas»).
 
 ### Arranque
 
@@ -284,9 +285,37 @@ $env:PORT = '4001'; $env:PUBLIC_BASE_URL = 'http://192.168.1.9:4001'; mix phx.se
 ```
 
 > Phoenix debe escuchar en `0.0.0.0` (ya lo hace en `config/dev.exs`) o la IP de
-> LAN no llega. Las fotos subidas viven en
-> `_build\dev\lib\aves\priv\static\uploads` (copia de `priv/` en Windows): se
-> pierden al borrar `_build`.
+> LAN no llega.
+
+### Dónde viven las fotos subidas
+
+El binario no se guarda en la base de datos: se copia a disco y solo los
+metadatos van en Postgres. Cada foto se escribe en **dos** carpetas, que lista
+`Aves.Media.Subidas`:
+
+| Carpeta | Para qué |
+|---|---|
+| `_build\dev\lib\aves\priv\static\uploads` | la que `Plug.Static` sirve en `/uploads` |
+| `priv\static\uploads` | la de origen, que sobrevive a limpiezas |
+
+En Unix ambas son la misma carpeta (Elixir enlaza `priv/`), pero en Windows
+`priv/` se **copia**, así que viven separadas. Espejarlas significa que si
+borras `_build`, las fotos se recuperan solas al recompilar: `mix compile`
+vuelve a copiar `priv/`. Las dos carpetas están en `.gitignore`.
+
+### Vaciar el catálogo de fotos de prueba
+
+No hay `DELETE /images` en el contrato y nadie resuelve los reportes de
+moderación, así que el catálogo solo crece. Para volver a un estado limpio:
+
+```powershell
+cd backend\aves
+mix aves.limpiar_subidas --dry-run   # informa sin tocar nada
+mix aves.limpiar_subidas             # borra registros, reportes y ficheros
+```
+
+Avisa de los registros cuya foto ya no está en disco, que es lo que queda si
+se limpia `_build` sin recompilar después.
 
 ## Orden de arranque recomendado
 
