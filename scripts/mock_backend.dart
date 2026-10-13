@@ -2,10 +2,15 @@
 // backend real (que corre en otra máquina) ni PostgreSQL.
 //
 // Reproduce las 4 rutas de autenticación que consume la app:
-//   POST   /api/user/signin  -> 201 {data:{token, user:{email,nickname}}}
-//   POST   /api/user/login   -> 200 {data:{token, user:{email,nickname}}}
-//   GET    /api/user/me      -> 200 {user:{email,nickname}}   (requiere Bearer)
+//   POST   /api/user/signin  -> 201 {data:{token, user:{id,user,rol}}}
+//   POST   /api/user/login   -> 200 {data:{token, user:{id,user,rol}}}
+//   GET    /api/user/me      -> 200 {user:{id,user,rol}}       (requiere Bearer)
 //   DELETE /api/user/logout  -> 200 {message}
+//
+// El identificador se recibe y se devuelve como `user` en el JSON, el nombre
+// que fija el contrato `birds_apis.yaml` (en la base de datos es `username`).
+// No valida credenciales: devuelve el usuario que se le pidió, para que la app
+// muestre en el perfil lo mismo que se escribió en el formulario.
 //
 // Uso:
 //   dart scripts\mock_backend.dart              # 0.0.0.0:4001
@@ -63,29 +68,31 @@ Future<void> _manejar(HttpRequest req) async {
     '$consulta${descripcion.isEmpty ? '' : ' $descripcion'}',
   );
 
+  // El identificador que pidió el cliente, para devolverlo igual que el
+  // backend real; si no hay cuerpo JSON, se responde con el usuario demo.
+  final identificador = _identificador(cuerpo);
+
   final clave = '$metodo $ruta';
   switch (clave) {
     case 'POST /api/user/signin':
       _responder(req, 201, {
         'data': {
           'token': 'mock-token-123',
-          'user': {'email': 'demo@aves.cl', 'nickname': 'demo'},
+          'user': _datosUsuario(identificador),
         },
       });
     case 'POST /api/user/login':
       _responder(req, 200, {
         'data': {
           'token': 'mock-token-123',
-          'user': {'email': 'demo@aves.cl', 'nickname': 'demo'},
+          'user': _datosUsuario(identificador),
         },
       });
     case 'GET /api/user/me':
       if (auth == null) {
         _responder(req, 401, {'error': 'unauthorized', 'message': 'Falta el token.'});
       } else {
-        _responder(req, 200, {
-          'user': {'email': 'demo@aves.cl', 'nickname': 'demo'},
-        });
+        _responder(req, 200, {'user': _datosUsuario(identificador)});
       }
     case 'DELETE /api/user/logout':
       _responder(req, 200, {'message': 'Sesión cerrada.'});
@@ -112,6 +119,35 @@ Future<void> _manejar(HttpRequest req) async {
       });
   }
 }
+
+/// Último identificador entregado. `/me` y `/logout` llegan sin cuerpo, y así
+/// devuelven el mismo usuario que acaba de entrar, como hace el backend real
+/// leyendo el token. No hay sesiones: si reinicias el mock vuelve a `demo`.
+String _ultimo = 'demo';
+
+/// Lee `user` del cuerpo JSON de la petición. Si no lo trae, devuelve el
+/// último identificador entregado.
+String _identificador(String? cuerpo) {
+  if (cuerpo == null || cuerpo.isEmpty) return _ultimo;
+  try {
+    final json = jsonDecode(cuerpo);
+    final valor = json is Map<String, dynamic> ? json['user'] : null;
+    if (valor is String && valor.trim().isNotEmpty) {
+      _ultimo = valor.trim();
+      return _ultimo;
+    }
+  } on FormatException {
+    // Sin cuerpo JSON se contesta con el último usuario entregado.
+  }
+  return _ultimo;
+}
+
+/// Cuerpo del usuario en la forma que espera `_usuarioDesdeMe` de la app.
+Map<String, dynamic> _datosUsuario(String identificador) => {
+  'id': 'mock-0000-0000-0000-000000000000',
+  'user': identificador,
+  'rol': 'usuario',
+};
 
 /// Respuesta en el formato que parsea `PaginaFotos.fromJson` de la app:
 /// `{urls: [...], paginado: {pagina, total}}`.

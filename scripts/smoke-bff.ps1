@@ -69,8 +69,8 @@ if ($r.Codigo -eq 204 -and $allow -eq '*') {
 }
 
 Write-Host "`n- Autenticacion (las 4 rutas que usa la app)"
-Probar 'POST'   '/api/user/signin' '{"email":"smoke@aves.cl","nickname":"smoke","password":"secret123","confirm_password":"secret123"}' @(200,201,409,422,502)
-Probar 'POST'   '/api/user/login'  '{"email":"smoke@aves.cl","password":"secret123"}'                                   @(200,401,422,502)
+Probar 'POST'   '/api/user/signin' '{"user":"smoke","password":"secret123","confirm_password":"secret123"}'               @(200,201,409,422,502)
+Probar 'POST'   '/api/user/login'  '{"user":"smoke","password":"secret123"}'                                              @(200,401,422,502)
 Probar 'GET'    '/api/user/me'     $null                                                                                  @(200,401,403,502) @("Authorization: Bearer $Token")
 Probar 'DELETE' '/api/user/logout' $null                                                                                  @(200,204,401,502) @("Authorization: Bearer $Token")
 Probar 'GET'    '/api/user/me'     $null                                                                                  @(200,401,403,502)
@@ -100,14 +100,14 @@ Write-Host ("  [{0,-6} {1,-22}] {2,-4} {3}  ({4} ms)" -f 'POST', '/images (multi
 Remove-Item $tmpArchivo -Force -ErrorAction SilentlyContinue
 
 Write-Host "`n- Forma de la sesion (la app asume {data:{token,user:{...}}})"
-$r = Llamar 'POST' '/api/user/login' '{"email":"smoke@aves.cl","password":"secret123"}' @()
+$r = Llamar 'POST' '/api/user/login' '{"user":"smoke","password":"secret123"}' @()
 if ($r.Codigo -eq 200) {
   try {
     $json = $r.Cuerpo | ConvertFrom-Json
-    $formaOk = $null -ne $json.data.token -and $null -ne $json.data.user.email
+    $formaOk = $null -ne $json.data.token -and $null -ne $json.data.user.user
   } catch { $formaOk = $false }
   if ($formaOk) {
-    Write-Host "  [forma login               ] OK   token + user.email presentes" -ForegroundColor Green
+    Write-Host "  [forma login               ] OK   token + user.user presentes" -ForegroundColor Green
   } else {
     Write-Host "  [forma login               ] FALLO $($r.Cuerpo)" -ForegroundColor Red
     $fallos++

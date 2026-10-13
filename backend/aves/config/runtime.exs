@@ -24,10 +24,48 @@ config :aves, AvesWeb.Endpoint, http: [port: String.to_integer(System.get_env("P
 
 # URL pública bajo la que Phoenix sirve las fotos subidas (`priv/static/uploads`).
 # La app necesita descargarlas, así que no basta con `127.0.0.1`: desde el
-# Android emulator ese `127.0.0.1` es el propio emulador. La IP de la red local
-# sí llega bien desde el PC y desde el emulator, por eso es el valor por
-# defecto. Sobreescribe la variable si tu red es otra.
-config :aves, :url_publica, System.get_env("PUBLIC_BASE_URL", "http://192.168.1.2:4001")
+# Android emulator ese `127.0.0.1` es el propio emulador.
+#
+# Por defecto se detecta la IP de la red local al arrancar. No se hardcodea
+# porque una renovación DHCP la cambia sin avisar y entonces las fotos dejan
+# de cargarse en la app mientras el servidor sigue respondiendo bien por
+# `127.0.0.1`. `PUBLIC_BASE_URL` sigue teniendo prioridad si la defines; hazlo
+# en producción, donde la IP privada que se detecte no será la pública.
+puerto_publico = String.to_integer(System.get_env("PORT", "4000"))
+
+ip_lan =
+  case :inet.getifaddrs() do
+    {:ok, interfaces} ->
+      # Prioridad entre rangos privados (RFC 1918): 192.168 suele ser la red de
+      # escritorio; 172.16-31 y 10 suelen ser Docker o VPN, que no llegan a la app.
+      preferencia = fn
+        {192, 168, _, _} -> 0
+        {172, segundo, _, _} when segundo >= 16 and segundo <= 31 -> 1
+        {10, _, _, _} -> 2
+        _ -> nil
+      end
+
+      interfaces
+      |> Enum.flat_map(fn {_nombre, opciones} -> Keyword.get_values(opciones, :addr) end)
+      |> Enum.map(&{preferencia.(&1), &1})
+      |> Enum.reject(fn {prioridad, _direccion} -> is_nil(prioridad) end)
+      |> case do
+        [] -> nil
+        candidatas -> candidatas |> Enum.min_by(fn {prioridad, _} -> prioridad end) |> elem(1)
+      end
+      |> case do
+        nil -> nil
+        direccion -> :inet.ntoa(direccion) |> to_string()
+      end
+
+    {:error, _motivo} ->
+      nil
+  end
+
+config :aves,
+       :url_publica,
+       System.get_env("PUBLIC_BASE_URL") ||
+         "http://#{ip_lan || "127.0.0.1"}:#{puerto_publico}"
 
 if config_env() == :dev do
   # Reload browser tabs when matching files change.
