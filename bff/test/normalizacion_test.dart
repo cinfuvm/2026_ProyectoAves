@@ -29,9 +29,11 @@ void main() {
       });
       final data = _data(normalizarSesion(cuerpo));
       expect(data['token'], equals('abc'));
+      // `rol` es lo que la app mira para enseñar la pantalla de moderación,
+      // así que no se puede perder aquí.
       expect(
         data['user'] as Map<String, dynamic>,
-        equals({'user': 'ana.rios'}),
+        equals({'user': 'ana.rios', 'rol': 'usuario'}),
       );
     });
 
@@ -82,7 +84,7 @@ void main() {
   });
 
   group('normalizarUsuario', () {
-    test('devuelve solo {user:{user}}, sin campos extra.', () {
+    test('devuelve solo {user:{user,rol}}, sin campos extra.', () {
       final cuerpo = jsonEncode({
         'user': {'id': '1', 'user': 'ana.rios', 'rol': 'usuario'},
         'extra': 'x',
@@ -90,9 +92,23 @@ void main() {
       expect(
         normalizarUsuario(cuerpo),
         equals({
-          'user': {'user': 'ana.rios'},
+          'user': {'user': 'ana.rios', 'rol': 'usuario'},
         }),
       );
+    });
+
+    test('sin rol no se inventa la clave.', () {
+      final cuerpo = jsonEncode({
+        'user': {'user': 'ana.rios'},
+      });
+      expect(_user(normalizarUsuario(cuerpo)).containsKey('rol'), isFalse);
+    });
+
+    test('un rol vacío no viaja: la app lo leería como desconocido.', () {
+      final cuerpo = jsonEncode({
+        'user': {'user': 'ana.rios', 'rol': ''},
+      });
+      expect(_user(normalizarUsuario(cuerpo)).containsKey('rol'), isFalse);
     });
 
     test('tolera un backend viejo que aún manda email o nickname.', () {

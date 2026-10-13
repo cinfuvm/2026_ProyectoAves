@@ -4,6 +4,7 @@ import '../models/usuario.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 import 'login_screen.dart';
+import 'reportes_screen.dart';
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key, required this.reportesGuardados});
@@ -40,6 +41,13 @@ class _PerfilScreenState extends State<PerfilScreen> {
       MaterialPageRoute(builder: (_) => const LoginScreen()),
     );
     if (inicio == true) await _cargarSesion();
+  }
+
+  Future<void> _abrirReportes() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ReportesScreen()),
+    );
   }
 
   Future<void> _cerrarSesion() async {
@@ -112,10 +120,19 @@ class _PerfilScreenState extends State<PerfilScreen> {
             ),
             const SizedBox(height: 6),
             const Text(
-              'Los reportes aún no se envían al equipo de moderación.',
+              'Solo los de las fotos de «Explorar» llegan a moderación; '
+              'el resto se queda en este dispositivo.',
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
+            if (_usuario?.esAdmin == true) ...[
+              FilledButton.tonalIcon(
+                onPressed: _abrirReportes,
+                icon: const Icon(Icons.flag_outlined),
+                label: const Text('Reportes de moderación'),
+              ),
+              const SizedBox(height: 12),
+            ],
             if (_usuario == null)
               FilledButton.icon(
                 onPressed: _abrirLogin,

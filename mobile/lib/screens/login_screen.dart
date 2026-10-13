@@ -204,7 +204,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Text(
                       ApiConfig.usarMock
                           ? 'Sesión de demostración. Activa el BFF con '
-                                '--dart-define=BFF_ACTIVO=true para usar la API real.'
+                                '--dart-define=MOCK_BFF=false para usar la API real.'
                           : 'Conectado al servidor de Bitácora de Aves.',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodySmall

@@ -9,9 +9,12 @@ defmodule AvesWeb.API.ImageController do
     * `GET  /images`       catálogo público, filtrable y paginado
     * `POST /images`       subida de una foto (bearer)
     * `PUT  /images?id=`   reporte de moderación (bearer)
+    * `GET  /images/reports`      lista de reportes (solo `admin`)
+    * `PUT  /images/reports/:id`  cambia el estado de uno (solo `admin`)
 
   El contrato que responde es el de `birds_apis.yaml`, que es el que parsean
-  `PaginaFotos` y `FotoPublica` de la app.
+  `PaginaFotos` y `FotoPublica` de la app. La ruta de reportes no forma parte
+  de ese contrato: es una extensión propia para la pantalla de moderación.
   """
 
   use AvesWeb, :controller
@@ -43,6 +46,10 @@ defmodule AvesWeb.API.ImageController do
     "derechos_autor" => :derechos_autor,
     "otro" => :otro
   }
+
+  # Estados que la app puede ponerle a un reporte. Igual motivo que @motivos:
+  # mapeo explícito, nunca `String.to_existing_atom`.
+  @estados %{"abierto" => :abierto, "revisado" => :revisado, "descartado" => :descartado}
 
   @doc "GET /images - Devuelve una página del catálogo. Es público."
   def index(conn, params) do
@@ -86,6 +93,42 @@ defmodule AvesWeb.API.ImageController do
       |> json(reporte_json(reporte))
     else
       {:error, :no_encontrada, mensaje} -> error(conn, :not_found, mensaje)
+      {:error, mensaje} -> error(conn, :bad_request, mensaje)
+    end
+  end
+
+  @doc """
+  GET /images/reports - Lista los reportes con su foto.
+
+  Reservado a `admin`: cada fila lleva el texto que escribió quien reportó y
+  su nombre. Acepta `?estado=` para quedarse con `abierto`, `revisado`,
+  `descartado` o `todos`.
+  """
+  def list_reports(conn, params) do
+    with :ok <- solo_admin(conn),
+         {:ok, filtro} <- filtro_estado(params["estado"]),
+         {:ok, reportes} <- leer_reportes(conn, filtro),
+         {:ok, con_contexto} <- cargar_contexto(reportes, conn) do
+      json(conn, %{reportes: Enum.map(con_contexto, &reporte_moderacion_json/1)})
+    else
+      {:error, :no_autorizado, mensaje} -> error(conn, :forbidden, mensaje)
+      {:error, mensaje} -> error(conn, :bad_request, mensaje)
+    end
+  end
+
+  @doc "PUT /images/reports/:id - Cambia el estado de un reporte. Solo `admin`."
+  def update_report(conn, params) do
+    with :ok <- solo_admin(conn),
+         {:ok, estado} <- validar_estado(params["estado"]),
+         {:ok, reporte} <- buscar_reporte(conn, params["id"]),
+         {:ok, actualizado} <- poner_estado(conn, reporte, estado),
+         {:ok, [con_contexto]} <- cargar_contexto([actualizado], conn) do
+      conn
+      |> put_status(:ok)
+      |> json(reporte_moderacion_json(con_contexto))
+    else
+      {:error, :no_autorizado, mensaje} -> error(conn, :forbidden, mensaje)
+      {:error, :no_encontrado, mensaje} -> error(conn, :not_found, mensaje)
       {:error, mensaje} -> error(conn, :bad_request, mensaje)
     end
   end
@@ -299,6 +342,95 @@ defmodule AvesWeb.API.ImageController do
   defp no_encontrado?(%Ash.Error.Query.NotFound{}), do: true
   defp no_encontrado?(_), do: false
 
+  # --- Moderación -----------------------------------------------------------
+
+  # El router ya exige un bearer válido; el rol es la segunda puerta, y este
+  # es el mensaje que verá la app en el 403.
+  defp solo_admin(conn) do
+    case actor(conn) do
+      %{rol: :admin} -> :ok
+      _ -> {:error, :no_autorizado, "Solo un administrador puede moderar reportes."}
+    end
+  end
+
+  # `?estado=` vacío o `todos` deja el listado completo.
+  defp filtro_estado(valor) when is_binary(valor) do
+    case String.trim(valor) do
+      "" -> {:ok, nil}
+      "todos" -> {:ok, nil}
+      otro -> estado_desde_mapa(otro)
+    end
+  end
+
+  defp filtro_estado(_valor), do: {:ok, nil}
+
+  # En cambio al cambiar el estado sí hace falta mandarlo.
+  defp validar_estado(valor) when is_binary(valor) do
+    case String.trim(valor) do
+      "" -> {:error, "Falta el estado del reporte."}
+      otro -> estado_desde_mapa(otro)
+    end
+  end
+
+  defp validar_estado(_valor), do: {:error, "Falta el estado del reporte."}
+
+  defp estado_desde_mapa(otro) do
+    case Map.fetch(@estados, otro) do
+      {:ok, estado} -> {:ok, estado}
+      :error -> {:error, "Estado no reconocido: #{otro}."}
+    end
+  end
+
+  defp leer_reportes(conn, filtro) do
+    Report
+    |> filtrar_estado(filtro)
+    |> Ash.Query.sort(inserted_at: :desc)
+    |> Ash.read(actor: actor(conn), authorize?: true)
+    |> case do
+      {:ok, reportes} -> {:ok, reportes}
+      {:error, error} -> {:error, mensaje(error)}
+    end
+  end
+
+  defp filtrar_estado(query, nil), do: query
+
+  defp filtrar_estado(query, valor) do
+    Ash.Query.filter(query, estado == ^valor)
+  end
+
+  defp buscar_reporte(conn, id) do
+    case Ash.get(Report, id, actor: actor(conn), authorize?: true) do
+      {:ok, %Report{} = reporte} ->
+        {:ok, reporte}
+
+      {:error, error} ->
+        if no_encontrado?(error) do
+          {:error, :no_encontrado, "El reporte no existe."}
+        else
+          {:error, mensaje(error)}
+        end
+    end
+  end
+
+  defp poner_estado(conn, reporte, estado) do
+    case Ash.update(reporte, %{estado: estado}, actor: actor(conn), authorize?: true) do
+      {:ok, actualizado} -> {:ok, actualizado}
+      {:error, error} -> {:error, mensaje(error)}
+    end
+  end
+
+  # La foto y el usuario solo sirven para pintar la fila de moderación: el
+  # reporte ya se ha autorizado, así que se cargan sin volver a pasar por las
+  # políticas (la de `User` no deja leer sus filas fuera del propio login).
+  defp cargar_contexto(reportes, conn) do
+    opciones = [actor: actor(conn), authorize?: false]
+
+    case Ash.load(reportes, [:avistamiento, :reportado_por], opciones) do
+      {:ok, cargados} -> {:ok, cargados}
+      {:error, error} -> {:error, mensaje(error)}
+    end
+  end
+
   # --- Serialización --------------------------------------------------------
 
   defp imagen_json(imagen) do
@@ -324,6 +456,40 @@ defmodule AvesWeb.API.ImageController do
       creado_en: reporte.inserted_at
     }
   end
+
+  # Forma que lee la pantalla de moderación: el reporte con su foto al lado
+  # y el nombre de quien lo abrió, que no sale en `reporte_json/1` porque ese
+  # JSON es el que ya consume la app al abrirlo.
+  defp reporte_moderacion_json(reporte) do
+    %{
+      id: reporte.id,
+      motivo: reporte.motivo,
+      detalle: reporte.detalle,
+      estado: reporte.estado,
+      creado_en: reporte.inserted_at,
+      reportado_por: usuario_nombre(reporte.reportado_por),
+      avistamiento: imagen_moderacion_json(reporte.avistamiento)
+    }
+  end
+
+  # Si la foto se borró mientras el reporte seguía abierto, se deja la fila
+  # con `avistamiento: null` en vez de romper el listado entero.
+  defp imagen_moderacion_json(%Image{} = imagen) do
+    %{
+      id: imagen.id,
+      url: imagen.url,
+      categoria: imagen.categoria,
+      autor: imagen.autor_nombre,
+      lugar: imagen.lugar,
+      fecha: imagen.fecha,
+      comentario: imagen.comentario
+    }
+  end
+
+  defp imagen_moderacion_json(_imagen), do: nil
+
+  defp usuario_nombre(%{username: username}), do: to_string(username)
+  defp usuario_nombre(_autor), do: nil
 
   # --- Utilidades ------------------------------------------------------------
 

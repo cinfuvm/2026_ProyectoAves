@@ -244,7 +244,8 @@ String? _textoLegible(dynamic elemento) {
 // shape estable para la app, así un cambio de forma solo toca el BFF.
 // ---------------------------------------------------------------------------
 
-/// `login`/`signin` → `{"data": {"token": "...", "user": {"user": "..."}}}`.
+/// `login`/`signin` → `{"data": {"token": "...", "user": {"user": "..."}}}`,
+/// con `rol` añadido si el backend lo mandó.
 ///
 /// Devuelve `null` si no hay token, y en ese caso la respuesta pasa tal cual.
 Map<String, dynamic>? normalizarSesion(String cuerpo) {
@@ -264,7 +265,7 @@ Map<String, dynamic>? normalizarSesion(String cuerpo) {
   };
 }
 
-/// `GET /api/user/me` → `{"user": {"user": "..."}}`.
+/// `GET /api/user/me` → `{"user": {"user": "...", "rol": "..."}}`.
 Map<String, dynamic>? normalizarUsuario(String cuerpo) {
   final json = _comoMapa(_decodificar(cuerpo));
   if (json == null) return null;
@@ -278,14 +279,19 @@ Map<String, dynamic>? normalizarUsuario(String cuerpo) {
 /// `user` puede venir como string o como objeto con el identificador dentro.
 ///
 /// El backend lo manda como `user`; se toleran `email` y `nickname` por si
-/// alguna versión vieja aún los emite.
+/// alguna versión vieja aún los emite. `rol` solo viaja si el backend lo manda:
+/// es lo que decide si la app enseña la pantalla de moderación.
 Map<String, dynamic> _usuarioNormalizado(dynamic usuario) {
   if (usuario is String) return {'user': usuario};
 
   final mapa = _comoMapa(usuario) ?? const <String, dynamic>{};
   final identificador = mapa['user'] ?? mapa['email'] ?? mapa['nickname'];
+  final rol = mapa['rol'];
 
-  return {'user': identificador is String ? identificador : ''};
+  return {
+    'user': identificador is String ? identificador : '',
+    if (rol is String && rol.isNotEmpty) 'rol': rol,
+  };
 }
 
 dynamic _decodificar(String cuerpo) {

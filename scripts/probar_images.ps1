@@ -1,12 +1,15 @@
 <#
 .SYNOPSIS
-  Batería de pruebas de Phoenix: 46 comprobaciones contra el backend real.
+  Batería de pruebas de Phoenix: 69 comprobaciones contra el backend real.
 
 .DESCRIPTION
   Recorre /images de punta a punta contra http://127.0.0.1:4001: subida
   multipart, paginación, filtro por categoría, reportes y los códigos de error.
   Se apoya en el usuario `emulador` / `secret123` y exige el catálogo vacío al
   empezar, así que conviene vaciarlo antes con `mix aves.limpiar_subidas`.
+
+  La sección de moderación exige además que `emulador` tenga el rol `admin`,
+  que es lo que hacen los seeds (`mix run priv/repo/seeds.exs`).
 
   Sale con código distinto de 0 si alguna comprobación falla.
 
@@ -166,6 +169,60 @@ Ver 'POST de texto es 400' ((Llamar 'POST' '/images' $out ($auth + @('-F', "file
 
 Write-Output '--- 16. POST /images sin archivo ---'
 Ver 'POST sin archivo es 400' ((Llamar 'POST' '/images' $out ($auth + @('-F', 'categoria=Ave'))) -eq 400)
+
+Write-Output '--- 17. GET /images/reports (solo admin) ---'
+$c = Llamar 'GET' '/images/reports' $out $auth
+if ($c -eq 403) {
+  Write-Output '  PISTA: emulador no tiene el rol admin. Reaplica los seeds con: mix run priv/repo/seeds.exs'
+}
+$todos = @(@((Json $out).reportes) | Where-Object { $_ })
+# Se busca el reporte de esta sesion en vez de contar: la lista puede traer
+# los que dejaron pasadas anteriores de esta misma bateria.
+$nuestro = @($todos | Where-Object { $_.id -eq $r.id })
+Write-Output "  status=$c total=$($todos.Count) nuestro=$($nuestro.Count)"
+Ver 'GET /images/reports es 200' ($c -eq 200)
+Ver 'el reporte de esta sesion aparece' ($nuestro.Count -eq 1)
+Ver 'el reporte esta abierto' ($nuestro.estado -eq 'abierto')
+Ver 'reportado_por es emulador' ($nuestro.reportado_por -eq 'emulador')
+Ver 'detalle llega entero' ($nuestro.detalle -eq 'Es un perro')
+Ver 'el reporte trae su foto' ($nuestro.avistamiento.id -eq $foto.id)
+Ver 'la foto trae su autor' ($nuestro.avistamiento.autor -eq 'emulador')
+Ver 'la foto trae su categoria' ($nuestro.avistamiento.categoria -eq 'Ave')
+
+Write-Output '--- 18. Filtros de /images/reports ---'
+Llamar 'GET' '/images/reports?estado=abierto' $out $auth | Out-Null
+Ver 'estado=abierto lo lista' (@((Json $out).reportes | Where-Object { $_.id -eq $r.id }).Count -eq 1)
+Llamar 'GET' '/images/reports?estado=revisado' $out $auth | Out-Null
+Ver 'estado=revisado no lo lista' (@((Json $out).reportes | Where-Object { $_.id -eq $r.id }).Count -eq 0)
+Llamar 'GET' '/images/reports?estado=todos' $out $auth | Out-Null
+Ver 'estado=todos lista todos' (@(@((Json $out).reportes) | Where-Object { $_ }).Count -eq $todos.Count)
+Llamar 'GET' '/images/reports?estado=' $out $auth | Out-Null
+Ver 'estado vacio lista todos' (@(@((Json $out).reportes) | Where-Object { $_ }).Count -eq $todos.Count)
+Ver 'estado desconocido es 400' ((Llamar 'GET' '/images/reports?estado=zzz' $out $auth) -eq 400)
+Ver 'GET /images/reports sin token es 401' ((Llamar 'GET' '/images/reports' $out) -eq 401)
+
+Write-Output '--- 19. PUT /images/reports/:id ---'
+$nuevoEstado = Cuerpo '{"estado":"revisado"}' (Join-Path $dir 'estado.json')
+$c = Llamar 'PUT' "/images/reports/$($r.id)" $out ($auth + $json + @('-d', $nuevoEstado))
+Write-Output "  status=$c body=$(Get-Content $out -Raw -Encoding UTF8)"
+Ver 'PUT /images/reports es 200' ($c -eq 200)
+Ver 'devuelve el nuevo estado' ((Json $out).estado -eq 'revisado')
+Llamar 'GET' '/images/reports?estado=revisado' $out $auth | Out-Null
+Ver 'ahora aparece en revisados' (@((Json $out).reportes | Where-Object { $_.id -eq $r.id }).Count -eq 1)
+Llamar 'GET' '/images/reports?estado=abierto' $out $auth | Out-Null
+Ver 'ya no aparece en abiertos' (@((Json $out).reportes | Where-Object { $_.id -eq $r.id }).Count -eq 0)
+$maloEstado = Cuerpo '{"estado":"inventado"}' (Join-Path $dir 'estado_malo.json')
+Ver 'PUT estado invalido es 400' ((Llamar 'PUT' "/images/reports/$($r.id)" $out ($auth + $json + @('-d', $maloEstado))) -eq 400)
+Ver 'PUT reporte inexistente es 404' ((Llamar 'PUT' '/images/reports/00000000-0000-0000-0000-000000000000' $out ($auth + $json + @('-d', $nuevoEstado))) -eq 404)
+
+Write-Output '--- 20. Un usuario normal no ve los reportes ---'
+$login2 = Cuerpo '{"user":"demo","password":"secret123"}' (Join-Path $dir 'login2.json')
+$lc2 = Llamar 'POST' '/api/user/login' $out ($json + @('-d', $login2))
+$token2 = (Json $out).token
+Ver 'login de demo es 200' ($lc2 -eq 200)
+$auth2 = @('-H', "Authorization: Bearer $token2")
+Ver 'GET como usuario normal es 403' ((Llamar 'GET' '/images/reports' $out $auth2) -eq 403)
+Ver 'PUT como usuario normal es 403' ((Llamar 'PUT' "/images/reports/$($r.id)" $out ($auth2 + $json + @('-d', $nuevoEstado))) -eq 403)
 
 Write-Output ''
 Write-Output "Resultado: $ok comprobaciones correctas, $mal fallos."

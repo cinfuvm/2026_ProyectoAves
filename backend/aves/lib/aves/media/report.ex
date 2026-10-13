@@ -4,7 +4,10 @@ defmodule Aves.Media.Report do
 
   La app envía un reporte por cada motivo marcado en el diálogo, así que una
   misma foto puede acumular varios. `estado` arranca en `:abierto` y lo
-  movería el equipo de moderación.
+  mueve el rol `admin` desde `PUT /images/reports/:id`.
+
+  Quién los abre es cualquier usuario autenticado; leerlos o cambiar su
+  estado es labor de moderación, así que ambos quedan reservados a `admin`.
   """
 
   use Ash.Resource,
@@ -29,6 +32,15 @@ defmodule Aves.Media.Report do
 
       accept [:avistamiento_id, :motivo, :detalle, :reportado_por_id]
     end
+
+    update :update_estado do
+      primary? true
+      description "Mueve un reporte de abierto a revisado o descartado."
+      accept [:estado]
+      # `estado` es un `:atom` con `one_of`, y Ash deja de aceptarlo de forma
+      # atómica al llevar constraints; sin esto el update fallaría al validar.
+      require_atomic? false
+    end
   end
 
   policies do
@@ -37,8 +49,14 @@ defmodule Aves.Media.Report do
       authorize_if actor_present()
     end
 
+    # Leerlos o mover su estado solo lo hace `admin`. El texto del reporte y
+    # el nombre de quien lo abrió no son públicos.
     policy action_type(:read) do
-      authorize_if always()
+      authorize_if actor_attribute_equals(:rol, :admin)
+    end
+
+    policy action(:update_estado) do
+      authorize_if actor_attribute_equals(:rol, :admin)
     end
   end
 

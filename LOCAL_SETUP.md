@@ -153,13 +153,14 @@ de "el BFF corre pero no llega al backend".
 ### Prueba end-to-end en el dispositivo
 
 Hay una prueba de integración que corre la app real en el emulador o en un
-celular y la apunta al BFF: login por la UI y luego colección, subida multipart
-y reporte usando el cliente HTTP y los parsers de la app.
+celular y la apunta al BFF: login por la UI, colección, subida multipart,
+reporte, y la moderación de reportes (lista y cambio de estado) usando el
+cliente HTTP y los parsers de la app.
 
 ```powershell
 # BFF y backend arriba primero (puntos 2 y 3).
 cd mobile
-flutter test integration_test -d emulator-5554 --dart-define=BFF_ACTIVO=true
+flutter test integration_test -d emulator-5554
 # Celular físico: cambia el dispositivo y pasa BFF_URL con la IP del PC.
 ```
 
@@ -190,17 +191,21 @@ La URL del BFF se resuelve en `mobile/lib/config/api_config.dart`:
 - Sin define, en Android usa `http://10.0.2.2:4000` (emulador).
 - En el resto de plataformas usa `http://127.0.0.1:4000` (desktop).
 
-Para que la app hable con el BFF real hay que desactivar el mock:
+La app habla con el BFF real **por defecto**: un `flutter run` a secas ya usa
+la API real. Para trabajar con datos de ejemplo en el dispositivo, sin red:
 
 ```powershell
---dart-define=BFF_ACTIVO=true
+--dart-define=MOCK_BFF=true
 ```
+
+`BFF_ACTIVO=false` sigue funcionando, por si hay algo escrito con el flag
+anterior.
 
 ### Emulador de Android
 
 ```powershell
 cd mobile
-flutter run --dart-define=BFF_ACTIVO=true
+flutter run
 ```
 
 `10.0.2.2` es el alias del `localhost` del PC desde dentro del emulador; ya es
@@ -217,7 +222,7 @@ ipconfig | findstr IPv4
 
 # 2. Arrancar la app apuntando a esa IP
 cd mobile
-flutter run --dart-define=BFF_ACTIVO=true --dart-define=BFF_URL=http://192.168.1.2:4000
+flutter run --dart-define=BFF_URL=http://192.168.1.2:4000
 ```
 
 El celular y el PC deben estar en la misma red (y sin aislamiento de cliente/
@@ -228,20 +233,26 @@ puerto **4000** en redes privadas.
 
 ```powershell
 cd mobile
-flutter run -d windows --dart-define=BFF_ACTIVO=true --dart-define=BFF_URL=http://127.0.0.1:4000
+flutter run -d windows --dart-define=BFF_URL=http://127.0.0.1:4000
 ```
 
 ## 7. Flujo end-to-end de autenticación
 
 1. Registro: `POST /api/user/signin` con `user`, `password`,
-   `confirm_password` → `{data:{token, user}}`.
-2. Login: `POST /api/user/login` con `user`, `password` → `{data:{token, user}}`.
-3. Sesión: `GET /api/user/me` con `Authorization: Bearer <token>` → `{user:{...}}`.
+   `confirm_password` → `{data:{token, user:{user, rol}}}`.
+2. Login: `POST /api/user/login` con `user`, `password` →
+   `{data:{token, user:{user, rol}}}`.
+3. Sesión: `GET /api/user/me` con `Authorization: Bearer <token>` →
+   `{user:{user, rol}}`.
 4. Logout: `DELETE /api/user/logout` con el Bearer → revoca el token.
 
+El identificador es `user` (`nombre` es solo el texto visible que la app
+deriva de él). `rol` es `usuario`, `moderador` o `admin`: solo `admin` ve la
+pantalla de moderación de reportes.
+
 El BFF **fija la forma** de esas respuestas para la app móvil: login y signin
-salen siempre como `{data:{token, user:{user}}}` y `me` como
-`{user:{user}}`, aunque el backend cambie de forma por su
+salen siempre como `{data:{token, user:{user, rol}}}` y `me` como
+`{user:{user, rol}}`, aunque el backend cambie de forma por su
 coordinación con web. Así, un cambio de forma allá solo se arregla en el BFF.
 
 ## 8. Flujo de fotos (`/images`)
@@ -251,6 +262,8 @@ coordinación con web. Así, un cambio de forma allá solo se arregla en el BFF.
 | `GET /images?categoria=&pagina=&por_pagina=` | Colección pública |
 | `POST /images` (multipart, campo `file`) | Subir foto |
 | `PUT /images?id=` (JSON con `motivo`) | Reportar foto |
+| `GET /images/reports?estado=` | Lista de reportes para moderar (solo `admin`) |
+| `PUT /images/reports/:id` (JSON con `estado`) | Pasar un reporte a `revisado` o `descartado` |
 
 El BFF no interpreta el contenido: reenvía método, cabeceras, query string y
 **cuerpo en bytes crudos**. Ese detalle importa: si el cuerpo se pasara por

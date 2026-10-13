@@ -45,7 +45,8 @@ defmodule AvesWeb.Router do
 
   # El catálogo vive en la raíz y no bajo `/api`: así es como lo pide el
   # contrato de `birds_apis.yaml` y como lo reenvía el BFF. La lectura es
-  # pública; subir y reportar requieren bearer.
+  # pública; subir, reportar y moderar requieren bearer, y la moderación
+  # además pide rol `admin` dentro del controlador y del recurso `Report`.
   scope "/", AvesWeb.API do
     pipe_through [:api]
 
@@ -57,6 +58,9 @@ defmodule AvesWeb.Router do
 
     post "/images", ImageController, :create
     put "/images", ImageController, :report
+
+    get "/images/reports", ImageController, :list_reports
+    put "/images/reports/:id", ImageController, :update_report
   end
 
   scope "/", AvesWeb do

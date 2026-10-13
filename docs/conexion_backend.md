@@ -120,8 +120,13 @@ estable** para la app:
 
 | Ruta | Forma que recibe la app |
 |---|---|
-| `POST /api/user/signin`, `POST /api/user/login` | `{data: {token, user: {user}}}` |
-| `GET /api/user/me` | `{user: {user}}` |
+| `POST /api/user/signin`, `POST /api/user/login` | `{data: {token, user: {user, rol}}}` |
+| `GET /api/user/me` | `{user: {user, rol}}` |
+
+`user` es el identificador (`nombre` es solo el texto visible que la app
+deriva de él). `rol` (`usuario`, `moderador` o `admin`) solo viaja si el
+backend lo manda: es lo que la app mira para enseñar la pantalla de
+moderación. Sin él, la app trata al usuario como `usuario`.
 
 Si el backend manda otra forma, se arregla **solo en el BFF** (ver
 `normalizarSesion` / `normalizarUsuario` en `bff/lib/backend.dart`). Sin token
@@ -138,6 +143,8 @@ texto rompería el `boundary` del multipart y el backend no leería el archivo.
 | `GET /images?categoria=&pagina=&por_pagina=` | Query string conservada |
 | `POST /images` | `multipart/form-data`, campo del archivo `file` |
 | `PUT /images?id=` | Body JSON con `motivo` y `detalle`; el `id` va en la query |
+| `GET /images/reports?estado=` | Lista de reportes con su foto; requiere rol `admin` |
+| `PUT /images/reports/:id` | Body JSON con `estado`; el `id` va en la ruta |
 
 ### Implementado en Phoenix
 
@@ -158,6 +165,23 @@ texto rompería el `boundary` del multipart y el backend no leería el archivo.
 | Archivo | `file` en `multipart/form-data`, `image/*`, máx. 10 MB → **413** |
 | Almacenamiento | `priv/static/uploads`, servido como `/uploads/<archivo>` (`uploads` está en `static_paths()`) |
 | URL pública | Absoluta, desde `:url_publica` / `PUBLIC_BASE_URL` (ver `LOCAL_SETUP.md`) |
+
+### Moderación (`/images/reports`)
+
+Extensión propia, **no incluida en `birds_apis.yaml`**: es lo que necesita la
+pantalla de moderación de la app.
+
+| Detalle | Comportamiento |
+|---|---|
+| Quién | Política Ash `actor_attribute_equals(:rol, :admin)`. Sin token → **401**; con rol distinto → **403** |
+| `estado=abierto`/`revisado`/`descartado` | Filtro; `todos`, vacío o ausente → sin filtro |
+| Otro `estado` | **400** |
+| Forma de la respuesta | `{"reportes": [{id, motivo, detalle, estado, creado_en, reportado_por, avistamiento: {id, url, categoria, autor, lugar, fecha, comentario}}]}`. `avistamiento` es `null` si la foto se borró |
+| `PUT /images/reports/:id` | Devuelve el reporte ya actualizado, con su `avistamiento`. Estado inválido → **400**; reporte inexistente → **404** |
+| Por qué PUT y no PATCH | El proxy del BFF no admite PATCH, y es el mismo verbo con el que ya se abren reportes (`PUT /images?id=`) |
+
+> El rol sale de `users.rol`; los seeds ascienden a `emulador` con
+> `mix run priv/repo/seeds.exs`.
 
 > No hay `DELETE /images`: el contrato `birds_apis.yaml` no lo incluye.
 
@@ -200,6 +224,13 @@ curl.exe -X POST http://127.0.0.1:4000/images `
 curl.exe -X PUT "http://127.0.0.1:4000/images?id=<FOTO_ID>" `
   -H "Authorization: Bearer <TOKEN>" -H "Content-Type: application/json" `
   -d '{"motivo":"no_es_ave","detalle":"Es un perro"}'
+
+# Moderación (solo rol admin): lista y cambio de estado
+curl.exe "http://127.0.0.1:4000/images/reports?estado=abierto" `
+  -H "Authorization: Bearer <TOKEN_ADMIN>"
+curl.exe -X PUT "http://127.0.0.1:4000/images/reports/<REPORTE_ID>" `
+  -H "Authorization: Bearer <TOKEN_ADMIN>" -H "Content-Type: application/json" `
+  -d '{"estado":"revisado"}'
 ```
 
 Automatizado: `powershell -ExecutionPolicy Bypass -File scripts\smoke-bff.ps1`.
@@ -227,6 +258,7 @@ El contrato `birds_apis.yaml` difiere del backend real en puntos a conciliar:
 | `{token, user}` o `{data:{...}}` | `{user:{...}, token}` | Normaliza a `{data:{token,user:{...}}}` |
 | `confirm_pasword` (typo) | `confirm_password` | La app ya envía el nombre real |
 | Endpoints `/images` | Implementados en `AvesWeb.API.ImageController` | Passthrough; solo normaliza errores |
+| **No incluye** `/images/reports` | Extensión propia para la moderación | Passthrough; el rol `admin` lo decide Phoenix |
 
 ## 9. Pendientes del backend
 

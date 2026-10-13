@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../models/foto_publica.dart';
+import '../models/reporte_moderacion.dart';
 import 'api_client.dart';
 import 'auth_service.dart';
 import 'fotos_service.dart';
@@ -83,5 +84,37 @@ class FotosServiceBff implements FotosService {
       },
       consulta: {'id': id},
     );
+  }
+
+  @override
+  Future<List<ReporteModeracion>> getReportes({String? estado}) async {
+    await _asegurarToken();
+    final respuesta = await _cliente.get(
+      '/images/reports',
+      consulta: {
+        // Sin estado el backend devuelve todos, que es lo que pide el filtro
+        // «Todos» de la pantalla.
+        if (estado != null && estado.isNotEmpty) 'estado': estado,
+      },
+    );
+    final json = _jsonMap(respuesta.bodyBytes);
+    final lista = json['reportes'];
+    if (lista is! List<dynamic>) return const [];
+    return lista
+        .whereType<Map<String, dynamic>>()
+        .map(ReporteModeracion.fromJson)
+        .toList();
+  }
+
+  @override
+  Future<ReporteModeracion> cambiarEstadoReporte({
+    required String id,
+    required String estado,
+  }) async {
+    await _asegurarToken();
+    final respuesta = await _cliente.putJson('/images/reports/$id', {
+      'estado': estado,
+    });
+    return ReporteModeracion.fromJson(_jsonMap(respuesta.bodyBytes));
   }
 }

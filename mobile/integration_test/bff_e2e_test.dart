@@ -5,6 +5,7 @@ import 'package:integration_test/integration_test.dart';
 
 import 'package:bitacora_aves/config/api_config.dart';
 import 'package:bitacora_aves/main.dart' as app;
+import 'package:bitacora_aves/screens/reportes_screen.dart';
 import 'package:bitacora_aves/services/auth_service.dart';
 import 'package:bitacora_aves/services/fotos_service_bff.dart';
 
@@ -131,6 +132,92 @@ void main() {
         ),
         completes,
       );
+    });
+
+    test('moderación: lista los reportes y mueve su estado', () async {
+      if (await _saltarSiNoHayBff()) return;
+
+      final servicio = FotosServiceBff();
+
+      // Solo el rol `admin` puede verlos, y `emulador` lo es por los seeds.
+      // Si el rol no llegara (se comió en el BFF), esto daría 403.
+      final abiertos = await servicio.getReportes(estado: 'abierto');
+      expect(abiertos, isNotEmpty);
+
+      final objetivo = abiertos.first;
+      expect(objetivo.avistamiento, isNotNull);
+      expect(objetivo.avistamiento!.id, isNotEmpty);
+      expect(objetivo.reportadoPor, isNotEmpty);
+      expect(objetivo.detalle, 'Es un perro');
+
+      final movido = await servicio.cambiarEstadoReporte(
+        id: objetivo.id,
+        estado: 'revisado',
+      );
+      expect(movido.estado, 'revisado');
+
+      // El filtro tiene que reflejar el cambio en las dos direcciones.
+      final revisados = await servicio.getReportes(estado: 'revisado');
+      expect(revisados.map((r) => r.id), contains(objetivo.id));
+      final abiertosDespues = await servicio.getReportes(estado: 'abierto');
+      expect(abiertosDespues.map((r) => r.id), isNot(contains(objetivo.id)));
+    });
+
+    testWidgets('un admin abre la moderación desde el perfil', (tester) async {
+      if (await _saltarSiNoHayBff()) return;
+
+      // Cada `testWidgets` empieza con el árbol vacío: hay que lanzar la app.
+      // La sesión de `emulador` quedó abierta en el primer test, así que aquí
+      // solo hace falta navegar al perfil.
+      app.main();
+      await _cargar(tester, pulsos: 40);
+
+      await tester.tap(
+        find
+            .descendant(
+              of: find.byType(NavigationBar),
+              matching: find.text('Perfil'),
+            )
+            .first,
+      );
+
+      // El perfil revalida la sesión contra el BFF al montarse, así que se
+      // espera a que termine de decidir si está dentro o fuera.
+      var resuelto = false;
+      for (var i = 0; i < 50; i++) {
+        if (find.text('Cerrar sesión').evaluate().isNotEmpty ||
+            find.text('Iniciar sesión').evaluate().isNotEmpty) {
+          resuelto = true;
+          break;
+        }
+        await tester.pump(const Duration(milliseconds: 120));
+      }
+      if (!resuelto) {
+        final vistas = find
+            .byType(Text)
+            .evaluate()
+            .map((e) => (e.widget as Text).data)
+            .whereType<String>()
+            .take(30)
+            .join(' | ');
+        fail('El perfil no mostró ningún estado. En pantalla: $vistas');
+      }
+
+      if (find.text('Cerrar sesión').evaluate().isEmpty) {
+        markTestSkipped('No hay sesión abierta: faltó el test de login.');
+        return;
+      }
+
+      final entrada = find.text('Reportes de moderación');
+      expect(entrada, findsOneWidget);
+
+      await tester.tap(entrada);
+      await _cargar(tester, pulsos: 40);
+
+      expect(find.byType(ReportesScreen), findsOneWidget);
+      expect(find.text('Todos'), findsOneWidget);
+      expect(find.text('Abiertos'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
     });
   });
 }

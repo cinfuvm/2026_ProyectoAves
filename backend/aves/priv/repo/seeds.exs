@@ -42,3 +42,12 @@ for usuario <- usuarios do
       IO.puts("Usuario #{usuario} no creado: #{Exception.message(error)}")
   end
 end
+
+# `emulador` es con el que se prueban los reportes de moderación, reservados
+# al rol `admin` (`GET /images/reports`), así que se le asciende aquí. `demo`
+# se queda como usuario normal para poder ver la app sin permisos.
+#
+# Es SQL crudo en vez de una acción de update porque el registro no acepta
+# `rol` y no hace falta abrir una acción nueva en `User` solo para los seeds.
+Aves.Repo.query!("UPDATE users SET rol = 'admin' WHERE username = 'emulador'")
+IO.puts("Rol de emulador: admin (moderación de reportes)")

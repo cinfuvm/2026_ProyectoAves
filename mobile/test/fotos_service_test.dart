@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:bitacora_aves/models/foto_publica.dart';
+import 'package:bitacora_aves/models/reporte_moderacion.dart';
 import 'package:bitacora_aves/services/fotos_service.dart';
 import 'package:bitacora_aves/services/fotos_service_mock.dart';
 
@@ -125,6 +126,139 @@ void main() {
           detalle: 'Es un perro',
         ),
         completes,
+      );
+    });
+  });
+
+  group('ReporteModeracion', () {
+    test('fromJson lee el contrato de GET /images/reports', () {
+      final reporte = ReporteModeracion.fromJson({
+        'id': 'r1',
+        'motivo': 'no_es_ave',
+        'detalle': 'Es un perro',
+        'estado': 'abierto',
+        'creado_en': '2026-10-08T09:15:00Z',
+        'reportado_por': 'ana.aves',
+        'avistamiento': {
+          'id': 'f1',
+          'url': 'https://ejemplo.cl/f1.jpg',
+          'categoria': 'Rapaces',
+          'autor': 'juan.observador',
+          'lugar': 'Valle de Elqui',
+          'comentario': 'Cóndor al atardecer',
+        },
+      });
+
+      expect(reporte.id, 'r1');
+      expect(reporte.motivo, 'no_es_ave');
+      expect(reporte.estado, 'abierto');
+      expect(reporte.abierto, isTrue);
+      expect(reporte.reportadoPor, 'ana.aves');
+      expect(reporte.creadoEn, isNotNull);
+      expect(reporte.avistamiento?.categoria, 'Rapaces');
+      expect(reporte.avistamiento?.autor, 'juan.observador');
+      expect(reporte.detalle, 'Es un perro');
+    });
+
+    test('tolera la foto borrada y un motivo desconocido', () {
+      final reporte = ReporteModeracion.fromJson({
+        'id': 'r2',
+        'motivo': 'codigo_inventado',
+        'estado': 'revisado',
+        'avistamiento': null,
+        'reportado_por': null,
+      });
+
+      expect(reporte.avistamiento, isNull);
+      expect(reporte.reportadoPor, isNull);
+      expect(reporte.abierto, isFalse);
+      // Sin motivo en la tabla se muestra el código, no se rompe la pantalla.
+      expect(motivoLegible('codigo_inventado'), 'codigo_inventado');
+    });
+
+    test('motivoLegible traduce los códigos del contrato', () {
+      expect(motivoLegible('no_es_ave'), 'La foto no muestra un ave');
+      expect(
+        motivoLegible('imagen_enganosa'),
+        'La imagen o información es engañosa',
+      );
+      expect(estadosReporte.values, containsAll(<String>[
+        'abierto',
+        'revisado',
+        'descartado',
+      ]));
+    });
+  });
+
+  group('Reportes en FotosServiceMock', () {
+    late FotosServiceMock servicio;
+
+    setUp(() {
+      servicio = FotosServiceMock();
+    });
+
+    test('sin filtro devuelve todos, del más reciente al más antiguo',
+        () async {
+      final reportes = await servicio.getReportes();
+      expect(reportes.length, greaterThanOrEqualTo(3));
+      for (var i = 1; i < reportes.length; i++) {
+        expect(
+          reportes[i - 1].creadoEn!.isAfter(reportes[i].creadoEn!),
+          isTrue,
+        );
+      }
+    });
+
+    test('filtra por estado', () async {
+      final abiertos = await servicio.getReportes(estado: 'abierto');
+      final descartados = await servicio.getReportes(estado: 'descartado');
+
+      expect(abiertos, isNotEmpty);
+      expect(abiertos.every((r) => r.abierto), isTrue);
+      expect(descartados, isNotEmpty);
+      expect(descartados.every((r) => r.estado == 'descartado'), isTrue);
+      expect(
+        abiertos.length + descartados.length,
+        lessThan((await servicio.getReportes()).length),
+      );
+    });
+
+    test('cambiarEstadoReporte mueve el reporte entre filtros', () async {
+      final abiertos = await servicio.getReportes(estado: 'abierto');
+      final objetivo = abiertos.first;
+
+      final cambiado = await servicio.cambiarEstadoReporte(
+        id: objetivo.id,
+        estado: 'revisado',
+      );
+      expect(cambiado.estado, 'revisado');
+      expect(cambiado.id, objetivo.id);
+
+      final abiertosDespues = await servicio.getReportes(estado: 'abierto');
+      final revisados = await servicio.getReportes(estado: 'revisado');
+      expect(abiertosDespues.map((r) => r.id), isNot(contains(objetivo.id)));
+      expect(revisados.map((r) => r.id), contains(objetivo.id));
+    });
+
+    test('rechaza un estado que el backend no admite', () async {
+      final reportes = await servicio.getReportes();
+      await expectLater(
+        servicio.cambiarEstadoReporte(
+          id: reportes.first.id,
+          estado: 'inventado',
+        ),
+        throwsA(
+          isA<ApiExceptionMock>().having((e) => e.statusCode, 'codigo', 400),
+        ),
+      );
+    });
+
+    test('rechaza un reporte que no existe', () async {
+      await expectLater(
+        servicio.cambiarEstadoReporte(id: 'no-existe', estado: 'revisado'),
+        throwsA(
+          isA<ApiExceptionMock>().having((e) => e.statusCode, 'codigo', 404),
+        ),
       );
     });
   });

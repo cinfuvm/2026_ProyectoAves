@@ -93,6 +93,10 @@ class AuthService {
     final sesion = Usuario(
       nombre: identificador,
       user: identificador,
+      // El mock no tiene roles. Se devuelve `admin` para que se pueda abrir la
+      // pantalla de moderación sin backend, que en mock se llena con datos de
+      // ejemplo de `FotosServiceMock`.
+      rol: 'admin',
       token: 'mock-token-${DateTime.now().millisecondsSinceEpoch}',
     );
     await _guardarSesion(sesion);
@@ -162,15 +166,22 @@ class AuthService {
     // datos del usuario dentro.
     String identificador = user.trim();
     String nombre = identificador;
+    String rol = '';
     if (usuarioCrudo is Map<String, dynamic>) {
       final delServidor = (usuarioCrudo['user'] as String?) ?? '';
       if (delServidor.isNotEmpty) identificador = delServidor;
       nombre = identificador;
+      rol = (usuarioCrudo['rol'] as String?) ?? '';
     } else if (usuarioCrudo is String && usuarioCrudo.isNotEmpty) {
       nombre = usuarioCrudo;
       identificador = usuarioCrudo;
     }
-    return Usuario(nombre: nombre, user: identificador, token: token);
+    return Usuario(
+      nombre: nombre,
+      user: identificador,
+      rol: rol,
+      token: token,
+    );
   }
 
   Usuario _usuarioDesdeMe(List<int> cuerpo, String? token) {
@@ -183,6 +194,7 @@ class AuthService {
     return Usuario(
       nombre: user.isEmpty ? 'Usuario' : user,
       user: user,
+      rol: (datos['rol'] as String?) ?? '',
       token: token,
     );
   }

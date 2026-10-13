@@ -1,4 +1,5 @@
 import '../models/foto_publica.dart';
+import '../models/reporte_moderacion.dart';
 import 'fotos_service.dart';
 
 class FotosServiceMock implements FotosService {
@@ -153,6 +154,108 @@ class FotosServiceMock implements FotosService {
       );
     }
   }
+
+  @override
+  Future<List<ReporteModeracion>> getReportes({String? estado}) async {
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+    final filtrados = estado == null || estado.isEmpty
+        ? _reportes
+        : _reportes.where((reporte) => reporte.estado == estado).toList();
+    return List.unmodifiable(filtrados);
+  }
+
+  @override
+  Future<ReporteModeracion> cambiarEstadoReporte({
+    required String id,
+    required String estado,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    if (!estadosReporte.containsValue(estado)) {
+      throw ApiExceptionMock(
+        statusCode: 400,
+        message: 'Estado no reconocido: $estado.',
+      );
+    }
+    final indice = _reportes.indexWhere((reporte) => reporte.id == id);
+    if (indice < 0) {
+      throw ApiExceptionMock(statusCode: 404, message: 'El reporte no existe.');
+    }
+    final actualizado = _reportes[indice].copiarCon(estado: estado);
+    _reportes[indice] = actualizado;
+    return actualizado;
+  }
+
+  /// Reportes de ejemplo. En modo mock no hay backend, así que la pantalla de
+  /// moderación se llena con estos: uno por estado, para que se vea cómo se
+  /// ven los tres filtros.
+  static final List<ReporteModeracion> _semillaReportes = [
+    ReporteModeracion(
+      id: 'mock-r-3',
+      motivo: 'contenido_ofensivo',
+      estado: 'abierto',
+      detalle: 'El comentario de la foto tiene lenguaje ofensivo.',
+      creadoEn: DateTime.utc(2026, 10, 8, 9, 15),
+      reportadoPor: 'ana.aves',
+      avistamiento: const FotoReportada(
+        id: 'mock-1',
+        url: '$_urlBase/68-vultur-gryphus/image.jpg',
+        categoria: 'Rapaces',
+        autor: 'ana.aves',
+        lugar: 'Valle de Elqui',
+        comentario: 'Cóndor sobrevolando el cordón al atardecer.',
+      ),
+    ),
+    ReporteModeracion(
+      id: 'mock-r-2',
+      motivo: 'derechos_autor',
+      estado: 'abierto',
+      detalle: 'La imagen parece estar tomada de otro sitio.',
+      creadoEn: DateTime.utc(2026, 10, 5, 18, 40),
+      reportadoPor: 'pedro.pajaros',
+      avistamiento: const FotoReportada(
+        id: 'mock-4',
+        url: '$_urlBase/79-milvago-chimango/image.jpg',
+        categoria: 'Rapaces',
+        autor: 'juan.observador',
+        lugar: 'Parque Natural Los Arrayanes',
+        comentario: 'Tiuque posado esperando presas en el pastizal.',
+      ),
+    ),
+    ReporteModeracion(
+      id: 'mock-r-1',
+      motivo: 'imagen_enganosa',
+      estado: 'revisado',
+      detalle: 'La fecha del avistamiento no cuadra con la luz de la foto.',
+      creadoEn: DateTime.utc(2026, 9, 28, 12, 5),
+      reportadoPor: 'camila.wings',
+      avistamiento: const FotoReportada(
+        id: 'mock-7',
+        url: '$_urlBase/1-nothoprocta-perdicaria/image.jpg',
+        categoria: 'Terrestres',
+        autor: 'lucia.senderos',
+        lugar: 'Chiloé, sector de Chonchi',
+        comentario: 'Perdiz chilena cruzando el camino de tierra.',
+      ),
+    ),
+    ReporteModeracion(
+      id: 'mock-r-0',
+      motivo: 'no_es_ave',
+      estado: 'descartado',
+      detalle: '',
+      creadoEn: DateTime.utc(2026, 9, 20, 16, 0),
+      reportadoPor: 'roberto.mar',
+      avistamiento: const FotoReportada(
+        id: 'mock-6',
+        url: '$_urlBase/116-larus-dominicanus/image.jpg',
+        categoria: 'Marinas',
+        autor: 'roberto.mar',
+        lugar: 'Caleta Lo Rojas',
+        comentario: 'Gaviota dominicana sobrevolando las rocas.',
+      ),
+    ),
+  ];
+
+  final List<ReporteModeracion> _reportes = List.of(_semillaReportes);
 }
 
 class ApiExceptionMock implements Exception {
