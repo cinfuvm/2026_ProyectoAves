@@ -1,9 +1,9 @@
 defmodule AvesWeb.API.UserControllerTest do
   use AvesWeb.ConnCase
 
+  # El contrato (`birds_apis.yaml`) llama `user` al identificador público.
   @register_attrs %{
-    "email" => "ana@example.com",
-    "nickname" => "ana",
+    "user" => "ana.rios",
     "password" => "supersecret123",
     "password_confirmation" => "supersecret123"
   }
@@ -13,13 +13,12 @@ defmodule AvesWeb.API.UserControllerTest do
       conn = post(conn, ~p"/api/user/signin", @register_attrs)
 
       assert %{"user" => user, "token" => token} = json_response(conn, 201)
-      assert user["email"] == "ana@example.com"
-      assert user["nickname"] == "ana"
+      assert user["user"] == "ana.rios"
       assert user["rol"] == "usuario"
       assert is_binary(token)
     end
 
-    test "rechaza un email ya registrado con 422", %{conn: conn} do
+    test "rechaza un usuario ya registrado con 422", %{conn: conn} do
       post(conn, ~p"/api/user/signin", @register_attrs)
       conn = post(conn, ~p"/api/user/signin", @register_attrs)
 
@@ -33,6 +32,24 @@ defmodule AvesWeb.API.UserControllerTest do
 
       assert %{"errors" => _} = json_response(conn, 422)
     end
+
+    test "rechaza un usuario demasiado corto con 422", %{conn: conn} do
+      attrs = Map.put(@register_attrs, "user", "ab")
+      conn = post(conn, ~p"/api/user/signin", attrs)
+
+      assert %{"errors" => _} = json_response(conn, 422)
+    end
+
+    test "ignora el campo `email`", %{conn: conn} do
+      attrs =
+        @register_attrs
+        |> Map.delete("user")
+        |> Map.put("email", "ana.rios")
+
+      conn = post(conn, ~p"/api/user/signin", attrs)
+
+      assert %{"errors" => _} = json_response(conn, 422)
+    end
   end
 
   describe "POST /api/user/login" do
@@ -41,22 +58,22 @@ defmodule AvesWeb.API.UserControllerTest do
       :ok
     end
 
-    test "inicia sesión con email y password", %{conn: conn} do
+    test "inicia sesión con usuario y password", %{conn: conn} do
       conn =
         post(conn, ~p"/api/user/login", %{
-          "email" => "ana@example.com",
+          "user" => "ana.rios",
           "password" => "supersecret123"
         })
 
       assert %{"user" => user, "token" => token} = json_response(conn, 200)
-      assert user["email"] == "ana@example.com"
+      assert user["user"] == "ana.rios"
       assert is_binary(token)
     end
 
-    test "acepta el campo `user` como alias de email", %{conn: conn} do
+    test "el usuario no distingue mayúsculas", %{conn: conn} do
       conn =
         post(conn, ~p"/api/user/login", %{
-          "user" => "ana@example.com",
+          "user" => "ANA.RIOS",
           "password" => "supersecret123"
         })
 
@@ -67,8 +84,18 @@ defmodule AvesWeb.API.UserControllerTest do
     test "rechaza credenciales inválidas con 401", %{conn: conn} do
       conn =
         post(conn, ~p"/api/user/login", %{
-          "email" => "ana@example.com",
+          "user" => "ana.rios",
           "password" => "incorrecta"
+        })
+
+      assert %{"error" => _} = json_response(conn, 401)
+    end
+
+    test "ignora el campo `email` y responde 401", %{conn: conn} do
+      conn =
+        post(conn, ~p"/api/user/login", %{
+          "email" => "ana.rios",
+          "password" => "supersecret123"
         })
 
       assert %{"error" => _} = json_response(conn, 401)
@@ -100,8 +127,7 @@ defmodule AvesWeb.API.UserControllerTest do
         |> get(~p"/api/user/me")
 
       assert %{"user" => user} = json_response(conn, 200)
-      assert user["email"] == "ana@example.com"
-      assert user["nickname"] == "ana"
+      assert user["user"] == "ana.rios"
       assert user["rol"] == "usuario"
     end
 

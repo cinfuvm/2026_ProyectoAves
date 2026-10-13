@@ -6,21 +6,12 @@ import 'package:test/test.dart';
 void main() {
   group('mensajeAmigable — identidades ya registradas', () {
     // Ash devuelve `errors` como lista; las reglas aplican a los strings.
-    test('email duplicado.', () {
+    test('usuario duplicado.', () {
       const cuerpo =
-          '{"errors": ["Email has already been taken (for email)"]}';
+          '{"errors": ["Username has already been taken (for username)"]}';
       expect(
         mensajeAmigable(cuerpo),
-        equals('El email ya está registrado.'),
-      );
-    });
-
-    test('nickname duplicado.', () {
-      expect(
-        mensajeAmigable(
-          '{"errors": ["Nickname has already been taken (for nickname)"]}',
-        ),
-        equals('El nickname ya está en uso.'),
+        equals('El usuario ya está en uso.'),
       );
     });
 
@@ -34,7 +25,10 @@ void main() {
     test('en errores-map usa el campo "title" si existe.', () {
       final cuerpo = jsonEncode({
         'errors': [
-          {'title': 'must be unique', 'detail': 'Email has already been taken'},
+          {
+            'title': 'must be unique',
+            'detail': 'Username has already been taken',
+          },
         ],
       });
       expect(mensajeAmigable(cuerpo), equals('must be unique'));
@@ -43,18 +37,24 @@ void main() {
 
   group('mensajeAmigable — argumentos requeridos', () {
     const casos = <String, String>{
-      'argument email is required': 'El email es obligatorio.',
-      'attribute email is required': 'El email es obligatorio.',
+      'argument username is required': 'El usuario es obligatorio.',
+      'attribute username is required': 'El usuario es obligatorio.',
       'argument password is required': 'La contraseña es obligatoria.',
       'argument password_confirmation is required':
           'Debes confirmar la contraseña.',
       'argument confirm_password is required': 'Debes confirmar la contraseña.',
-      'attribute nickname is required': 'El nickname es obligatorio.',
     };
 
     casos.forEach((entrada, salida) {
       test('"$entrada" -> "$salida".', () {
-        expect(mensajeAmigable(jsonEncode({'errors': [entrada]})), salida);
+        expect(
+          mensajeAmigable(
+            jsonEncode({
+              'errors': [entrada],
+            }),
+          ),
+          salida,
+        );
       });
     });
   });
@@ -73,10 +73,22 @@ void main() {
       );
     });
 
-    test('quita el breadcrumb "Invalid value provided for email:".', () {
+    test('quita el breadcrumb "Invalid value provided for username:".', () {
       const cuerpo =
-          '{"errors": ["Invalid value provided for email: no-es-un-email"]}';
-      expect(mensajeAmigable(cuerpo), equals('no-es-un-email'));
+          '{"errors": '
+          '["Invalid value provided for username: no-es-un-usuario"]}';
+      expect(mensajeAmigable(cuerpo), equals('no-es-un-usuario'));
+    });
+
+    test('devuelve el mensaje de longitud del usuario.', () {
+      const cuerpo =
+          '{"errors": '
+          '["Invalid value provided for username: '
+          'should have at least 3 character(s)."]}';
+      expect(
+        mensajeAmigable(cuerpo),
+        equals('should have at least 3 character(s).'),
+      );
     });
   });
 
@@ -91,7 +103,11 @@ void main() {
 
     test('devuelve null si la lista de errores queda vacía tras filtrar.', () {
       expect(
-        mensajeAmigable(jsonEncode({'errors': <dynamic>[<String, String>{}]})),
+        mensajeAmigable(
+          jsonEncode({
+            'errors': <dynamic>[<String, String>{}],
+          }),
+        ),
         isNull,
       );
     });

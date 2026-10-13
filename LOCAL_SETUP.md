@@ -75,7 +75,7 @@ $env:PORT = '4001'; mix phx.server
   es el 4000).
 - En dev escucha en **todas las interfaces** (`config/dev.exs`, `ip: {0,0,0,0}`)
   para que el emulador y un celular físico puedan alcanzarlo por la IP de LAN.
-- Usuarios de prueba: `emulador@aves.cl` y `demo@aves.cl`, contraseña
+- Usuarios de prueba: `emulador` y `demo`, contraseña
   `secret123` (los crea `priv/repo/seeds.exs`).
 
 Comprobar que responde antes de seguir:
@@ -233,15 +233,15 @@ flutter run -d windows --dart-define=BFF_ACTIVO=true --dart-define=BFF_URL=http:
 
 ## 7. Flujo end-to-end de autenticación
 
-1. Registro: `POST /api/user/signin` con `email`, `nickname`, `password`,
+1. Registro: `POST /api/user/signin` con `user`, `password`,
    `confirm_password` → `{data:{token, user}}`.
-2. Login: `POST /api/user/login` con `email`, `password` → `{data:{token, user}}`.
+2. Login: `POST /api/user/login` con `user`, `password` → `{data:{token, user}}`.
 3. Sesión: `GET /api/user/me` con `Authorization: Bearer <token>` → `{user:{...}}`.
 4. Logout: `DELETE /api/user/logout` con el Bearer → revoca el token.
 
 El BFF **fija la forma** de esas respuestas para la app móvil: login y signin
-salen siempre como `{data:{token, user:{email, nickname}}}` y `me` como
-`{user:{email, nickname}}`, aunque el backend cambie de forma por su
+salen siempre como `{data:{token, user:{user}}}` y `me` como
+`{user:{user}}`, aunque el backend cambie de forma por su
 coordinación con web. Así, un cambio de forma allá solo se arregla en el BFF.
 
 ## 8. Flujo de fotos (`/images`)

@@ -20,7 +20,7 @@ conexión indica un problema de red):
 
 ```powershell
 Invoke-WebRequest -Uri "http://127.0.0.1:4001/api/user/login" -Method POST `
-  -Body '{"email":"a@b.cl","password":"x"}' -ContentType 'application/json'
+  -Body '{"user":"test","password":"x"}' -ContentType 'application/json'
 ```
 
 La app móvil no habla nunca directamente con el backend, solo con el BFF.
@@ -60,20 +60,22 @@ Request:
 
 ```json
 {
-  "email": "test@aves.cl",
-  "nickname": "test",
+  "user": "test",
   "password": "12345678",
   "confirm_password": "12345678"
 }
 ```
 
-- Acepta `user` como alias de `email`.
+- El identificador se llama `user` en el JSON (nombre del contrato
+  `birds_apis.yaml`) y `username` dentro de la base de datos, porque `user` es
+  palabra reservada de Postgres.
+- De 3 a 30 caracteres; no distingue mayúsculas.
 - Acepta `password_confirmation` como alias de `confirm_password`.
 - Respuesta `201`:
 
 ```json
 {
-  "user": { "id": "...", "email": "test@aves.cl", "nickname": "test", "rol": "usuario" },
+  "user": { "id": "...", "user": "test", "rol": "usuario" },
   "token": "..."
 }
 ```
@@ -85,7 +87,7 @@ Request:
 Request:
 
 ```json
-{ "email": "test@aves.cl", "password": "12345678" }
+{ "user": "test", "password": "12345678" }
 ```
 
 Respuesta `200`: misma estructura `user` + `token`.
@@ -104,7 +106,7 @@ Header: `Authorization: Bearer <token>`.
 Respuesta:
 
 ```json
-{ "user": { "id": "...", "email": "test@aves.cl", "nickname": "test", "rol": "usuario" } }
+{ "user": { "id": "...", "user": "test", "rol": "usuario" } }
 ```
 
 Respuesta `401` si el token falta o es inválido.
@@ -118,8 +120,8 @@ estable** para la app:
 
 | Ruta | Forma que recibe la app |
 |---|---|
-| `POST /api/user/signin`, `POST /api/user/login` | `{data: {token, user: {email, nickname}}}` |
-| `GET /api/user/me` | `{user: {email, nickname}}` |
+| `POST /api/user/signin`, `POST /api/user/login` | `{data: {token, user: {user}}}` |
+| `GET /api/user/me` | `{user: {user}}` |
 
 Si el backend manda otra forma, se arregla **solo en el BFF** (ver
 `normalizarSesion` / `normalizarUsuario` en `bff/lib/backend.dart`). Sin token
@@ -171,12 +173,12 @@ backend, sustituye `http://127.0.0.1:4000` por `http://127.0.0.1:4001`.
 # Registrar
 curl.exe -X POST http://127.0.0.1:4000/api/user/signin `
   -H "Content-Type: application/json" `
-  -d '{"email":"test@aves.cl","nickname":"test","password":"12345678","confirm_password":"12345678"}'
+  -d '{"user":"test","password":"12345678","confirm_password":"12345678"}'
 
 # Login
 curl.exe -X POST http://127.0.0.1:4000/api/user/login `
   -H "Content-Type: application/json" `
-  -d '{"email":"test@aves.cl","password":"12345678"}'
+  -d '{"user":"test","password":"12345678"}'
 
 # Perfil (reemplaza <TOKEN>)
 curl.exe http://127.0.0.1:4000/api/user/me `

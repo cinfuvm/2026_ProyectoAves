@@ -65,22 +65,24 @@ class AuthService {
   }
 
   Future<Usuario> iniciarSesion({
-    required String email,
+    required String usuario,
     required String password,
   }) async {
     if (ApiConfig.usarMock) {
-      return _iniciarSesionMock(email: email, password: password);
+      return _iniciarSesionMock(usuario: usuario, password: password);
     }
-    return _iniciarSesionBff(user: email.trim(), password: password);
+    return _iniciarSesionBff(user: usuario.trim(), password: password);
   }
 
   Future<Usuario> _iniciarSesionMock({
-    required String email,
+    required String usuario,
     required String password,
   }) async {
-    final emailNormalizado = email.trim().toLowerCase();
-    if (!emailNormalizado.contains('@') || !emailNormalizado.contains('.')) {
-      throw const FormatException('Ingresa un correo válido.');
+    final identificador = usuario.trim().toLowerCase();
+    if (identificador.length < 3 || identificador.length > 30) {
+      throw const FormatException(
+        'El usuario debe tener entre 3 y 30 caracteres.',
+      );
     }
     if (password.trim().length < 4) {
       throw const FormatException(
@@ -88,14 +90,13 @@ class AuthService {
       );
     }
 
-    final nombre = emailNormalizado.split('@').first;
-    final usuario = Usuario(
-      nombre: nombre.isEmpty ? 'Usuario' : nombre,
-      email: emailNormalizado,
+    final sesion = Usuario(
+      nombre: identificador,
+      user: identificador,
       token: 'mock-token-${DateTime.now().millisecondsSinceEpoch}',
     );
-    await _guardarSesion(usuario);
-    return usuario;
+    await _guardarSesion(sesion);
+    return sesion;
   }
 
   Future<Usuario> _iniciarSesionBff({
@@ -105,7 +106,7 @@ class AuthService {
     final cliente = ApiClient();
     try {
       final respuesta = await cliente.postJson('/api/user/login', {
-        'email': user.trim(),
+        'user': user.trim(),
         'password': password,
       });
       final sesion = _parsearSesion(respuesta.bodyBytes, user);
@@ -124,15 +125,12 @@ class AuthService {
     required String confirmacion,
   }) async {
     if (ApiConfig.usarMock) {
-      return _iniciarSesionMock(email: user, password: password);
+      return _iniciarSesionMock(usuario: user, password: password);
     }
     final cliente = ApiClient();
     try {
-      final correo = user.trim();
-      final nickname = correo.contains('@') ? correo.split('@').first : correo;
       final respuesta = await cliente.postJson('/api/user/signin', {
-        'email': correo,
-        'nickname': nickname,
+        'user': user.trim(),
         'password': password,
         'confirm_password': confirmacion,
       });
@@ -160,16 +158,19 @@ class AuthService {
       throw const FormatException('El servidor no devolvió un token.');
     }
     final usuarioCrudo = sesion['user'];
-    String email = user;
-    String nombre = user;
+    // `user` puede venir como string (identificador) o como objeto con los
+    // datos del usuario dentro.
+    String identificador = user.trim();
+    String nombre = identificador;
     if (usuarioCrudo is Map<String, dynamic>) {
-      email = (usuarioCrudo['email'] as String?) ?? user;
-      final nickname = usuarioCrudo['nickname'] as String?;
-      nombre = (nickname != null && nickname.isNotEmpty) ? nickname : email;
+      final delServidor = (usuarioCrudo['user'] as String?) ?? '';
+      if (delServidor.isNotEmpty) identificador = delServidor;
+      nombre = identificador;
     } else if (usuarioCrudo is String && usuarioCrudo.isNotEmpty) {
       nombre = usuarioCrudo;
+      identificador = usuarioCrudo;
     }
-    return Usuario(nombre: nombre, email: email, token: token);
+    return Usuario(nombre: nombre, user: identificador, token: token);
   }
 
   Usuario _usuarioDesdeMe(List<int> cuerpo, String? token) {
@@ -178,11 +179,10 @@ class AuthService {
     if (datos is! Map<String, dynamic>) {
       throw const FormatException('Respuesta de usuario no válida.');
     }
-    final email = (datos['email'] as String?) ?? '';
-    final nickname = datos['nickname'] as String?;
+    final user = (datos['user'] as String?) ?? '';
     return Usuario(
-      nombre: (nickname != null && nickname.isNotEmpty) ? nickname : email,
-      email: email,
+      nombre: user.isEmpty ? 'Usuario' : user,
+      user: user,
       token: token,
     );
   }

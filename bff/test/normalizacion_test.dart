@@ -25,13 +25,13 @@ void main() {
     test('plana: {token,user:{...}} pasa a {data:{token,user}}.', () {
       final cuerpo = jsonEncode({
         'token': 'abc',
-        'user': {'email': 'a@b.cl', 'nickname': 'a'},
+        'user': {'id': '1', 'user': 'ana.rios', 'rol': 'usuario'},
       });
       final data = _data(normalizarSesion(cuerpo));
       expect(data['token'], equals('abc'));
       expect(
         data['user'] as Map<String, dynamic>,
-        equals({'email': 'a@b.cl', 'nickname': 'a'}),
+        equals({'user': 'ana.rios'}),
       );
     });
 
@@ -39,29 +39,32 @@ void main() {
       final cuerpo = jsonEncode({
         'data': {
           'token': 'abc',
-          'user': {'email': 'a@b.cl', 'nickname': 'a'},
+          'user': {'user': 'ana.rios'},
         },
       });
       expect(_data(normalizarSesion(cuerpo))['token'], equals('abc'));
     });
 
-    test('user como string usa el mismo valor de email y nickname.', () {
+    test('user como string se queda en user.', () {
       final cuerpo = jsonEncode({'token': 'abc', 'user': 'pepe'});
       expect(
         _userDeSesion(normalizarSesion(cuerpo)),
-        equals({'email': 'pepe', 'nickname': 'pepe'}),
+        equals({'user': 'pepe'}),
       );
     });
 
-    test('sin nickname se usa el email.', () {
-      final cuerpo = jsonEncode({
+    test('tolera un backend viejo que aún manda email o nickname.', () {
+      final conEmail = jsonEncode({
         'token': 'abc',
         'user': {'email': 'a@b.cl'},
       });
-      expect(
-        _userDeSesion(normalizarSesion(cuerpo))['nickname'],
-        equals('a@b.cl'),
-      );
+      expect(_userDeSesion(normalizarSesion(conEmail))['user'], 'a@b.cl');
+
+      final conNickname = jsonEncode({
+        'token': 'abc',
+        'user': {'nickname': 'ana'},
+      });
+      expect(_userDeSesion(normalizarSesion(conNickname))['user'], 'ana');
     });
 
     test('devuelve null si no hay token (la respuesta pasa tal cual).', () {
@@ -79,24 +82,42 @@ void main() {
   });
 
   group('normalizarUsuario', () {
-    test('devuelve solo {user:{email,nickname}}, sin campos extra.', () {
+    test('devuelve solo {user:{user}}, sin campos extra.', () {
       final cuerpo = jsonEncode({
-        'user': {'email': 'a@b.cl', 'nickname': 'a'},
-        'id': 'x',
+        'user': {'id': '1', 'user': 'ana.rios', 'rol': 'usuario'},
+        'extra': 'x',
       });
       expect(
         normalizarUsuario(cuerpo),
         equals({
-          'user': {'email': 'a@b.cl', 'nickname': 'a'},
+          'user': {'user': 'ana.rios'},
         }),
       );
     });
 
-    test('user sin nickname cae al email.', () {
-      final cuerpo = jsonEncode({
-        'user': {'email': 'a@b.cl'},
-      });
-      expect(_user(normalizarUsuario(cuerpo))['nickname'], equals('a@b.cl'));
+    test('tolera un backend viejo que aún manda email o nickname.', () {
+      final conEmail = normalizarUsuario(
+        jsonEncode({
+          'user': {'email': 'a@b.cl'},
+        }),
+      );
+      expect(_user(conEmail)['user'], equals('a@b.cl'));
+
+      final conNickname = normalizarUsuario(
+        jsonEncode({
+          'user': {'nickname': 'ana'},
+        }),
+      );
+      expect(_user(conNickname)['user'], equals('ana'));
+    });
+
+    test('devuelve user vacío si el objeto no trae identificador.', () {
+      final sinIdentificador = normalizarUsuario(
+        jsonEncode({
+          'user': {'rol': 'usuario'},
+        }),
+      );
+      expect(_user(sinIdentificador)['user'], equals(''));
     });
 
     test('devuelve null si no hay objeto user.', () {

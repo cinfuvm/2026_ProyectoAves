@@ -61,14 +61,14 @@ void main() {
       await _cargar(tester, pulsos: 15);
 
       final campos = find.byType(TextFormField);
-      await tester.enterText(campos.at(0), 'emulador@aves.cl');
+      await tester.enterText(campos.at(0), 'emulador');
       await tester.enterText(campos.at(1), 'secret123');
       await tester.tap(find.text('Entrar'));
       await _cargar(tester, pulsos: 30);
 
-      // El backend real devuelve el correo que se usó para entrar.
+      // El backend real devuelve el usuario con el que se entró.
       expect(find.text('Cerrar sesión'), findsOneWidget);
-      expect(find.text('emulador@aves.cl'), findsOneWidget);
+      expect(find.text('emulador'), findsOneWidget);
     });
 
     test('colección, subida multipart y reporte', () async {
@@ -79,10 +79,10 @@ void main() {
       const categoria = 'AveE2E';
 
       final usuario = await AuthService().iniciarSesion(
-        email: 'emulador@aves.cl',
+        usuario: 'emulador',
         password: 'secret123',
       );
-      expect(usuario.email, equals('emulador@aves.cl'));
+      expect(usuario.user, equals('emulador'));
       expect(usuario.token, isNotEmpty);
 
       final servicio = FotosServiceBff();

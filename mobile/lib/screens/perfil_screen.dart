@@ -65,9 +65,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
     await _authService.cerrarSesion();
     if (!mounted) return;
     setState(() => _usuario = null);
-    ScaffoldMessenger.maybeOf(
-      context,
-    )?.showSnackBar(const SnackBar(content: Text('Sesión cerrada.')));
+    ScaffoldMessenger.maybeOf(context)
+        ?.showSnackBar(const SnackBar(content: Text('Sesión cerrada.')));
   }
 
   @override
@@ -103,14 +102,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
             const SizedBox(height: 12),
             Text(
               _usuario == null ? 'Sin sesión' : _usuario!.nombre,
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.headlineSmall
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
-            if (_usuario != null) ...[
-              const SizedBox(height: 6),
-              Text(_usuario!.email),
-            ],
             const SizedBox(height: 16),
             Text(
               'Reportes guardados en este dispositivo: ${widget.reportesGuardados}',

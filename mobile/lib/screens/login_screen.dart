@@ -15,7 +15,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formularioKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _usuarioController = TextEditingController();
   final _passwordController = TextEditingController();
   final _authService = AuthService();
   bool _cargando = false;
@@ -23,7 +23,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _usuarioController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -36,7 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
     });
     try {
       await _authService.iniciarSesion(
-        email: _emailController.text,
+        usuario: _usuarioController.text,
         password: _passwordController.text,
       );
       if (mounted) Navigator.pop(context, true);
@@ -109,14 +109,21 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 24),
                     TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
+                      controller: _usuarioController,
+                      keyboardType: TextInputType.text,
                       textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(labelText: 'Correo'),
-                      validator: (valor) =>
-                          valor == null || valor.trim().isEmpty
-                          ? 'Ingresa tu correo'
-                          : null,
+                      autofillHints: const [AutofillHints.username],
+                      decoration: const InputDecoration(labelText: 'Usuario'),
+                      // El backend admite de 3 a 30 caracteres (ver
+                      // `Aves.Accounts.User`); mejor avisar antes de enviar.
+                      validator: (valor) {
+                        final texto = valor?.trim() ?? '';
+                        if (texto.isEmpty) return 'Ingresa tu usuario';
+                        if (texto.length < 3 || texto.length > 30) {
+                          return 'Debe tener entre 3 y 30 caracteres';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 14),
                     TextFormField(

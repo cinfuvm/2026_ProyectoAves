@@ -103,14 +103,14 @@ Future<List<int>> _cuerpoBytes(Request request) async {
 }
 
 Response _noPermitido() => Response.json(
-      statusCode: 405,
-      body: {'message': 'Método no permitido'},
-    );
+  statusCode: 405,
+  body: {'message': 'Método no permitido'},
+);
 
 Response _backendNoDisponible() => Response.json(
-      statusCode: 502,
-      body: {'message': 'El servidor no está disponible'},
-    );
+  statusCode: 502,
+  body: {'message': 'El servidor no está disponible'},
+);
 
 /// Las respuestas exitosas pasan tal cual; los errores 4xx/5xx se traducen
 /// a mensajes amigables (elimina los "Bread Crumbs" de Ash).
@@ -197,18 +197,16 @@ String? _textoLegible(dynamic elemento) {
 
   // Reglas conocidas del backend (Ash devuelve mensajes con breadcrumb).
   if (texto.contains('has already been taken')) {
-    if (texto.contains('for email')) return 'El email ya está registrado.';
-    if (texto.contains('for nickname')) return 'El nickname ya está en uso.';
+    if (texto.contains('for username')) return 'El usuario ya está en uso.';
     return 'El valor ya está registrado.';
   }
   const requeridos = <String, String>{
-    'argument email is required': 'El email es obligatorio.',
-    'attribute email is required': 'El email es obligatorio.',
+    'argument username is required': 'El usuario es obligatorio.',
+    'attribute username is required': 'El usuario es obligatorio.',
     'argument password is required': 'La contraseña es obligatoria.',
     'argument password_confirmation is required':
         'Debes confirmar la contraseña.',
     'argument confirm_password is required': 'Debes confirmar la contraseña.',
-    'attribute nickname is required': 'El nickname es obligatorio.',
   };
   for (final entrada in requeridos.entries) {
     if (texto.contains(entrada.key)) return entrada.value;
@@ -246,7 +244,7 @@ String? _textoLegible(dynamic elemento) {
 // shape estable para la app, así un cambio de forma solo toca el BFF.
 // ---------------------------------------------------------------------------
 
-/// `login`/`signin` → `{"data": {"token": "...", "user": {"email","nickname"}}}`.
+/// `login`/`signin` → `{"data": {"token": "...", "user": {"user": "..."}}}`.
 ///
 /// Devuelve `null` si no hay token, y en ese caso la respuesta pasa tal cual.
 Map<String, dynamic>? normalizarSesion(String cuerpo) {
@@ -266,7 +264,7 @@ Map<String, dynamic>? normalizarSesion(String cuerpo) {
   };
 }
 
-/// `GET /api/user/me` → `{"user": {"email": "...", "nickname": "..."}}`.
+/// `GET /api/user/me` → `{"user": {"user": "..."}}`.
 Map<String, dynamic>? normalizarUsuario(String cuerpo) {
   final json = _comoMapa(_decodificar(cuerpo));
   if (json == null) return null;
@@ -277,18 +275,17 @@ Map<String, dynamic>? normalizarUsuario(String cuerpo) {
   return {'user': _usuarioNormalizado(datos)};
 }
 
-/// `user` puede venir como string o como objeto, con o sin `nickname`.
+/// `user` puede venir como string o como objeto con el identificador dentro.
+///
+/// El backend lo manda como `user`; se toleran `email` y `nickname` por si
+/// alguna versión vieja aún los emite.
 Map<String, dynamic> _usuarioNormalizado(dynamic usuario) {
-  if (usuario is String) {
-    return {'email': usuario, 'nickname': usuario};
-  }
+  if (usuario is String) return {'user': usuario};
+
   final mapa = _comoMapa(usuario) ?? const <String, dynamic>{};
-  final email = mapa['email'] as String? ?? '';
-  final nickname = mapa['nickname'] as String? ?? '';
-  return {
-    'email': email,
-    'nickname': nickname.isNotEmpty ? nickname : email,
-  };
+  final identificador = mapa['user'] ?? mapa['email'] ?? mapa['nickname'];
+
+  return {'user': identificador is String ? identificador : ''};
 }
 
 dynamic _decodificar(String cuerpo) {

@@ -13,7 +13,7 @@ class RegistroScreen extends StatefulWidget {
 
 class _RegistroScreenState extends State<RegistroScreen> {
   final _formularioKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _usuarioController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmacionController = TextEditingController();
   final _authService = AuthService();
@@ -22,7 +22,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _usuarioController.dispose();
     _passwordController.dispose();
     _confirmacionController.dispose();
     super.dispose();
@@ -36,7 +36,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
     });
     try {
       await _authService.registrarse(
-        user: _emailController.text,
+        user: _usuarioController.text,
         password: _passwordController.text,
         confirmacion: _confirmacionController.text,
       );
@@ -52,11 +52,12 @@ class _RegistroScreenState extends State<RegistroScreen> {
     }
   }
 
-  String? _validarEmail(String? valor) {
+  // El backend admite de 3 a 30 caracteres (ver `Aves.Accounts.User`).
+  String? _validarUsuario(String? valor) {
     final texto = valor?.trim() ?? '';
-    if (texto.isEmpty) return 'Ingresa tu correo';
-    if (!texto.contains('@') || !texto.contains('.')) {
-      return 'Ingresa un correo válido';
+    if (texto.isEmpty) return 'Ingresa tu usuario';
+    if (texto.length < 3 || texto.length > 30) {
+      return 'Debe tener entre 3 y 30 caracteres';
     }
     return null;
   }
@@ -126,11 +127,12 @@ class _RegistroScreenState extends State<RegistroScreen> {
                     ),
                     const SizedBox(height: 24),
                     TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
+                      controller: _usuarioController,
+                      keyboardType: TextInputType.text,
                       textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(labelText: 'Correo'),
-                      validator: _validarEmail,
+                      autofillHints: const [AutofillHints.newUsername],
+                      decoration: const InputDecoration(labelText: 'Usuario'),
+                      validator: _validarUsuario,
                     ),
                     const SizedBox(height: 14),
                     TextFormField(
@@ -194,7 +196,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Tu apodo se creará a partir del correo (parte antes de la @).',
+                      'Tu usuario será tu identificador público en la bitácora.',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodySmall
                           ?.copyWith(color: marca.textoSecundario),

@@ -236,7 +236,7 @@ defmodule AvesWeb.API.ImageController do
       fecha: params["fecha"],
       comentario: params["comentario"],
       autor_id: actor(conn).id,
-      autor_nombre: actor(conn).nickname
+      autor_nombre: actor(conn).username
     }
 
     case Ash.create(Image, attrs, actor: actor(conn), authorize?: true) do

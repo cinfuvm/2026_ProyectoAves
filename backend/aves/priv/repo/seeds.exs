@@ -12,35 +12,33 @@ alias Aves.Accounts.User
 
 contrasena = "secret123"
 
-usuarios = [
-  %{email: "emulador@aves.cl", nickname: "emulador"},
-  %{email: "demo@aves.cl", nickname: "demo"}
-]
+usuarios = ["emulador", "demo"]
 
 for usuario <- usuarios do
   cambios =
     Ash.Changeset.for_create(
       User,
       :register_with_password,
-      Map.merge(usuario, %{
+      %{
+        username: usuario,
         password: contrasena,
         password_confirmation: contrasena
-      })
+      }
     )
 
   # Los seeds corren sin actor, así que se omite la autorización: es una
   # operación de sistema, no una petición de usuario.
   case Ash.create(cambios, authorize?: false) do
     {:ok, creado} ->
-      IO.puts("Usuario creado: #{creado.email} (#{creado.nickname})")
+      IO.puts("Usuario creado: #{creado.username}")
 
     {:error, %Ash.Error.Invalid{errors: errores}} ->
       IO.puts(
-        "Usuario #{usuario.email} ya existía: " <>
+        "Usuario #{usuario} ya existía: " <>
           Enum.join(Enum.map(errores, &Exception.message/1), ", ")
       )
 
     {:error, error} ->
-      IO.puts("Usuario #{usuario.email} no creado: #{Exception.message(error)}")
+      IO.puts("Usuario #{usuario} no creado: #{Exception.message(error)}")
   end
 end

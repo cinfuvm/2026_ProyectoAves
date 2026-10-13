@@ -1,4 +1,13 @@
 defmodule Aves.Accounts.User do
+  @moduledoc """
+  Usuario de la aplicación, con autenticación por usuario y contraseña.
+
+  El identificador público es `username` y se envía en el JSON como `user`,
+  que es el nombre que usa el contrato (`birds_apis.yaml`). Se llama `username`
+  y no `user` dentro de la base de datos porque `user` es palabra reservada de
+  Postgres y obligaría a comillas en cada consulta cruda.
+  """
+
   use Ash.Resource,
     otp_app: :aves,
     domain: Aves.Accounts,
@@ -9,9 +18,9 @@ defmodule Aves.Accounts.User do
   authentication do
     strategies do
       password :password do
-        identity_field :email
+        identity_field :username
         hashed_password_field :hashed_password
-        register_action_accept [:nickname]
+        register_action_accept [:username]
       end
     end
 
@@ -55,14 +64,10 @@ defmodule Aves.Accounts.User do
   attributes do
     uuid_primary_key :id
 
-    attribute :email, :ci_string do
+    attribute :username, :ci_string do
       allow_nil? false
       public? true
-    end
-
-    attribute :nickname, :string do
-      allow_nil? false
-      public? true
+      constraints min_length: 3, max_length: 30
     end
 
     attribute :hashed_password, :string do
@@ -82,7 +87,6 @@ defmodule Aves.Accounts.User do
   end
 
   identities do
-    identity :unique_email, [:email]
-    identity :unique_nickname, [:nickname]
+    identity :unique_username, [:username]
   end
 end

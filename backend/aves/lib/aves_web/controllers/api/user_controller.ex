@@ -55,12 +55,11 @@ defmodule AvesWeb.API.UserController do
 
   defp strategy, do: Info.strategy!(User, :password)
 
-  # Acepta `user` como alias de `email` para mantener compatibilidad con el
-  # contrato inicial (birs_user_apis.yaml usaba el campo `user`).
+  # El contrato (`birds_apis.yaml`) llama `user` al identificador público; en
+  # la base de datos ese campo es `username`.
   defp register_params(params) do
     %{
-      "email" => params["email"] || params["user"],
-      "nickname" => params["nickname"],
+      "username" => params["user"],
       "password" => params["password"],
       "password_confirmation" => params["password_confirmation"] || params["confirm_password"]
     }
@@ -68,7 +67,7 @@ defmodule AvesWeb.API.UserController do
 
   defp sign_in_params(params) do
     %{
-      "email" => params["email"] || params["user"],
+      "username" => params["user"],
       "password" => params["password"]
     }
   end
@@ -83,8 +82,7 @@ defmodule AvesWeb.API.UserController do
   defp user_json(user) do
     %{
       id: user.id,
-      email: to_string(user.email),
-      nickname: user.nickname,
+      user: to_string(user.username),
       rol: to_string(user.rol)
     }
   end
