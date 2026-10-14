@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: birs_user_apis
-  version: 1.1.0
+  version: 1.2.0
 paths:
   /api/user/signin:
     post:
@@ -82,6 +82,39 @@ paths:
                     $ref: '#/components/schemas/User'
         '401':
           description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      servers:
+        - url: http://127.0.0.1:4000
+    patch:
+      summary: Editar perfil del usuario autenticado
+      description: Actualiza el nickname y/o email del usuario asociado al bearer token.
+      tags:
+        - API users
+      security:
+        - bearerAuth: []
+      requestBody:
+        $ref: '#/components/requestBodies/updateProfile'
+      responses:
+        '200':
+          description: Perfil actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Datos inválidos (nickname/email duplicado, etc.)
           content:
             application/json:
               schema:
@@ -225,6 +258,17 @@ components:
       example:
         email: ana@example.com
         password: contraseña_generica1
+    UpdateProfileRequest:
+      type: object
+      properties:
+        nickname:
+          type: string
+        email:
+          type: string
+          format: email
+      minProperties: 1
+      example:
+        nickname: ana_nueva
     Error:
       type: object
       properties:
@@ -248,6 +292,13 @@ components:
           schema:
             $ref: '#/components/schemas/LoginRequest'
       description: Credenciales de acceso
+      required: true
+    updateProfile:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UpdateProfileRequest'
+      description: Campos a actualizar del perfil
       required: true
   securitySchemes:
     bearerAuth:
