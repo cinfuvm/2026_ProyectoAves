@@ -2,7 +2,7 @@
 
 > Resumen de la implementación realizada hasta ahora.
 > **Última actualización:** 2026-10-14
-> **Issues trabajados:** #9 — Registro e inicio de sesión (RF-01, RF-02) · #10 — Roles de usuario (RF-03).
+> **Issues trabajados:** #9 — Registro e inicio de sesión (RF-01, RF-02) · #10 — Roles de usuario (RF-03) · #11 — Perfil de usuario (RF-04).
 > La base de autenticación (bearer) de #9 la reutilizan #10 y #11.
 
 ## Contexto
@@ -51,6 +51,7 @@
 | `POST` | `/api/user/login` | inicio de sesión | `200` `{user, token}` · `401` credenciales inválidas |
 | `DELETE` | `/api/user/logout` | cierre de sesión | `204` (revoca el bearer) |
 | `GET` | `/api/user/me` | perfil autenticado | `200` `{user}` · `401` sin token |
+| `PATCH` | `/api/user/me` | editar perfil (ver §6) | `200` `{user}` · `401` · `422` |
 
 - El controlador **no reimplementa auth**: delega en `AshAuthentication.Strategy.action/3`
   (`:register`, `:sign_in`), por lo que las mismas acciones sirven para el futuro dashboard web.
@@ -167,31 +168,77 @@ alta se hace con un bypass controlado:
 
 ---
 
-## 6. Archivos involucrados
+## 6. Perfil de usuario (RF-04 / issue #11)
+
+**Archivos:** `aves/lib/aves/accounts/user.ex`,
+`aves/lib/aves_web/controllers/api/user_controller.ex`, `aves/lib/aves_web/router.ex`
+
+- **Ver** el perfil: `GET /api/user/me` (ya existente desde #9).
+- **Editar** el perfil: `PATCH /api/user/me`, que actualiza `nickname` y/o `email`
+  de forma parcial. El resto de campos (`rol`, `password`, …) se ignora aunque el
+  cliente los envíe.
+
+Acción nueva:
+
+```elixir
+update :update_profile do
+  description "Actualiza el perfil del propio usuario (nickname/email)."
+  accept [:nickname, :email]
+  require_atomic? false
+end
+```
+
+Policy nueva (se limita por **nombre de acción**, no por `action_type(:update)`,
+para que un usuario no pueda invocarse `:assign_role` y auto-promoverse):
+
+```elixir
+policy [action(:update_profile), expr(id == ^actor(:id))] do
+  authorize_if always()
+end
+```
+
+**Contrato:**
+```jsonc
+// PATCH /api/user/me   (Authorization: Bearer <token>)
+{ "nickname": "ana_nueva", "email": "ana@nuevo.com" }   // parcial, cualquiera de los dos
+
+// 200
+{ "user": { "id": "...", "email": "...", "nickname": "...", "rol": "usuario" } }
+```
+
+> La unicidad de `email`/`nickname` la garantizan las identidades del recurso →
+> `422` si ya están en uso.
+
+---
+
+## 7. Archivos involucrados
 
 ```
 backend/
 ├── avances.md                                  ← este documento
 └── aves/
     ├── lib/aves/accounts.ex                    (modificado — create_admin/1)
-    ├── lib/aves/accounts/user.ex               (modificado — roles y policies)
+    ├── lib/aves/accounts/user.ex               (modificado — roles, policies y update_profile)
     ├── lib/aves_web/auth_plug.ex               (nuevo en #9)
-    ├── lib/aves_web/controllers/api/user_controller.ex   (nuevo en #9)
-    ├── lib/aves_web/router.ex                  (modificado en #9)
-    ├── lib/mix/tasks/aves.create_admin.ex      (nuevo)
-    ├── test/aves/accounts/user_policies_test.exs          (nuevo)
-    ├── test/aves_web/controllers/api/user_controller_test.exs (nuevo en #9)
+    ├── lib/aves_web/controllers/api/user_controller.ex   (nuevo en #9; update_me en #11)
+    ├── lib/aves_web/router.ex                  (modificado en #9; ruta PATCH en #11)
+    ├── lib/mix/tasks/aves.create_admin.ex      (nuevo en #10)
+    ├── test/aves/accounts/user_policies_test.exs          (nuevo en #10; +update_profile en #11)
+    ├── test/aves_web/controllers/api/user_controller_test.exs (nuevo en #9; +PATCH en #11)
     └── priv/repo/migrations/20261009122556_add_user_auth_fields.exs (nuevo en #9)
 ```
 
 ---
 
-## 7. Verificación realizada
+## 8. Verificación realizada
 
-- `mix precommit` → **30 tests pasan** (15 de autenticación de #9 + 15 de roles de #10).
+- `mix precommit` → **40 tests pasan** (15 de autenticación de #9 + 15 de roles de #10 + 10 de perfil de #11).
 - **Matriz de roles** cubierta por tests (`Ash.can?`): usuario no puede asignar roles ni
   eliminar; moderador elimina solo a `usuario` (no a otros moderadores ni admins);
   admin puede todo; invitado sin acceso.
+- **Perfil (#11)** cubierto por tests: el usuario actualiza su `nickname`/`email`,
+  no puede editar el perfil de otro, un `usuario` no puede auto-invocar `assign_role`,
+  y se ignora el intento de cambiar `rol` por el body (`422` en duplicados).
 - **Prueba HTTP real** (servidor levantado + curl), ciclo completo del token:
 
   | Paso | Resultado |
@@ -207,7 +254,7 @@ backend/
 
 ---
 
-## 8. Cómo levantar el backend
+## 9. Cómo levantar el backend
 
 ```bash
 # 1. Base de datos (desde la raíz del repo)
@@ -224,7 +271,7 @@ mix aves.create_admin admin@example.com admin una-clave-segura
 
 ---
 
-## 9. Decisiones de diseño
+## 10. Decisiones de diseño
 
 - **PK UUID** en todo el modelo (consistencia con el scaffold; IDs no adivinables en la API pública).
 - **Login por `email`**; `nickname` es una segunda identidad única (login por cualquiera de los dos queda como mejora futura).
@@ -233,14 +280,15 @@ mix aves.create_admin admin@example.com admin una-clave-segura
 - **Opción A** para exponer auth: controlador Phoenix (control explícito del token en la respuesta) en lugar de rutas de AshJsonApi.
 - **Autorización por roles con policies de Ash** (no en el controlador): el rol se evalúa con `actor_attribute_equals/2` y `expr(...)`, de modo que las mismas reglas valen para REST y para el dashboard LiveView.
 - **Bypass controlado para el bootstrap**: `create_admin` usa `authorize?: false` porque ninguna policy puede autorizar la creación del primer admin.
+- **Perfil editable = `nickname` + `email`** vía `PATCH /api/user/me`; la contraseña y el rol no se editan por aquí. La policy se limita por **nombre de acción** (`action(:update_profile)`) para no habilitar `:assign_role` a un usuario común.
 
 ---
 
-## 10. Pendientes / siguientes pasos
+## 11. Pendientes / siguientes pasos
 
-- **#11 Perfil de usuario:** edición de perfil (`PATCH/PUT /api/user/me`); el usuario ya puede leer su propio perfil por policy.
 - **Endpoints/dashboard de administración:** listar usuarios, asignar rol (`assign_role`) y eliminar usuarios desde REST/LiveView, reutilizando las acciones y policies ya definidas.
 - **Permisos de publicaciones/colecciones/reportes:** aplicar el mismo patrón de roles cuando existan esos recursos (#13/#14).
 - **Login del dashboard web:** por sesión en LiveView (no bearer), reutilizando las mismas acciones.
 - **Contrato `/images`:** actualizar body/respuestas y `POST /reportes` en sus issues (#13/#14).
 - **Métricas (admin):** "acceso a métricas de datos" queda para la feature de métricas.
+- **Cambio de contraseña:** si se requiere, exponerlo como flujo aparte (acción de AshAuthentication).
