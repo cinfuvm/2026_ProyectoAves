@@ -8,6 +8,11 @@ defmodule AvesWeb.API.UserControllerTest do
     "password_confirmation" => "supersecret123"
   }
 
+  defp authed(token) do
+    build_conn()
+    |> put_req_header("authorization", "Bearer #{token}")
+  end
+
   describe "POST /api/user/signin" do
     test "registra un usuario y devuelve un bearer token", %{conn: conn} do
       conn = post(conn, ~p"/api/user/signin", @register_attrs)
@@ -116,6 +121,72 @@ defmodule AvesWeb.API.UserControllerTest do
         conn
         |> put_req_header("authorization", "Bearer token.invalido.aqui")
         |> get(~p"/api/user/me")
+
+      assert %{"error" => _} = json_response(conn, 401)
+    end
+  end
+
+  describe "PATCH /api/user/me" do
+    setup %{conn: conn} do
+      conn = post(conn, ~p"/api/user/signin", @register_attrs)
+      %{"token" => token} = json_response(conn, 201)
+      %{token: token}
+    end
+
+    test "actualiza el nickname del propio usuario", %{token: token} do
+      conn = patch(authed(token), ~p"/api/user/me", %{"nickname" => "ana_nueva"})
+
+      assert %{"user" => user} = json_response(conn, 200)
+      assert user["nickname"] == "ana_nueva"
+      assert user["email"] == "ana@example.com"
+      assert user["rol"] == "usuario"
+    end
+
+    test "actualiza el email del propio usuario", %{token: token} do
+      conn = patch(authed(token), ~p"/api/user/me", %{"email" => "nueva@example.com"})
+
+      assert %{"user" => user} = json_response(conn, 200)
+      assert user["email"] == "nueva@example.com"
+      assert user["nickname"] == "ana"
+    end
+
+    test "ignora el intento de cambiar el rol", %{token: token} do
+      conn = patch(authed(token), ~p"/api/user/me", %{"nickname" => "ana2", "rol" => "admin"})
+
+      assert %{"user" => user} = json_response(conn, 200)
+      assert user["nickname"] == "ana2"
+      assert user["rol"] == "usuario"
+    end
+
+    test "rechaza un nickname ya usado con 422", %{token: token, conn: conn} do
+      post(conn, ~p"/api/user/signin", %{
+        "email" => "beto@example.com",
+        "nickname" => "beto",
+        "password" => "supersecret123",
+        "password_confirmation" => "supersecret123"
+      })
+
+      conn = patch(authed(token), ~p"/api/user/me", %{"nickname" => "beto"})
+
+      assert %{"errors" => errors} = json_response(conn, 422)
+      assert errors != []
+    end
+
+    test "rechaza un email ya usado con 422", %{token: token, conn: conn} do
+      post(conn, ~p"/api/user/signin", %{
+        "email" => "beto@example.com",
+        "nickname" => "beto",
+        "password" => "supersecret123",
+        "password_confirmation" => "supersecret123"
+      })
+
+      conn = patch(authed(token), ~p"/api/user/me", %{"email" => "beto@example.com"})
+
+      assert %{"errors" => _} = json_response(conn, 422)
+    end
+
+    test "sin token devuelve 401", %{conn: conn} do
+      conn = patch(conn, ~p"/api/user/me", %{"nickname" => "intruso"})
 
       assert %{"error" => _} = json_response(conn, 401)
     end

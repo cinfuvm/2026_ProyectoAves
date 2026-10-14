@@ -50,6 +50,12 @@ defmodule Aves.Accounts.User do
       accept [:rol]
       require_atomic? false
     end
+
+    update :update_profile do
+      description "Actualiza el perfil del propio usuario (nickname/email)."
+      accept [:nickname, :email]
+      require_atomic? false
+    end
   end
 
   policies do
@@ -64,6 +70,11 @@ defmodule Aves.Accounts.User do
 
     policy [action_type(:read), expr(id == ^actor(:id))] do
       description "Un usuario autenticado puede leer su propio perfil."
+      authorize_if always()
+    end
+
+    policy [action(:update_profile), expr(id == ^actor(:id))] do
+      description "Un usuario autenticado puede editar su propio perfil."
       authorize_if always()
     end
 

@@ -119,6 +119,33 @@ defmodule Aves.Accounts.UserPoliciesTest do
     end
   end
 
+  describe "update :update_profile" do
+    test "un usuario puede editar su propio perfil" do
+      user = create_user(:usuario)
+
+      assert Ash.can?({user, :update_profile}, user)
+    end
+
+    test "un usuario no puede editar el perfil de otro" do
+      user = create_user(:usuario)
+      other = create_user(:usuario)
+
+      refute Ash.can?({other, :update_profile}, user)
+    end
+
+    test "un invitado no puede editar perfiles" do
+      user = create_user(:usuario)
+
+      refute Ash.can?({user, :update_profile}, nil)
+    end
+
+    test "un usuario no puede auto-asignarse un rol vía assign_role" do
+      user = create_user(:usuario)
+
+      refute Ash.can?({user, :assign_role}, user)
+    end
+  end
+
   describe "create_admin/1" do
     test "crea un usuario administrador nuevo" do
       assert {:ok, user} =

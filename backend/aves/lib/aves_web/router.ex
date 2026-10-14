@@ -41,6 +41,7 @@ defmodule AvesWeb.Router do
     pipe_through [:api_auth]
 
     get "/user/me", UserController, :me
+    patch "/user/me", UserController, :update_me
   end
 
   scope "/", AvesWeb do
