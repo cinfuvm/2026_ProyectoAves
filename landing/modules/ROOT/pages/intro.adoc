@@ -16,28 +16,22 @@
     RF-03: Roles: usuario, moderador, administrador, con acceso al dashboard solo para los dos últimos.
     RF-05: CRUD completo de aves (administrador).
     RF-16: Gestión de usuarios (ver, editar, suspender).
+    RF-18: Landing page que invite a instalar la app móvil.
 
 * ❌ Requisitos por Completar
 
     RF-14: Cola de reportes para moderadores, con acciones de aprobar o retirar la foto.
     RF-17: Gestión de aves y de colecciones personales de avistamiento.
-    RF-18: Landing page que invite a instalar la app móvil.
 
 * 🛠️ Requisitos en Desarrollo
 
-    ---
+    - Elixir 29+
+    - Erlang 12+
+    - Phoenix 17+
 
 == Integrantes
 
     * Vicente Araya (Lider)
     * Daniel Castro
     * Sebastian Hugueño
-
-== Prerequisitos
-
-* POR DEFINIR
-
-== Installacion
-
-* POR DEFINIR
 
