@@ -31,13 +31,13 @@ Cada issue del proyecto indica en su descripción el RF que cubre.
 Para levantar la app móvil en local (emulador o celular físico) y ejecutarla
 con `flutter run`, sigue [`mobile/readme.md`](mobile/readme.md).
 
-La documentación se escribe con [Antora](https://antora.org/) en la carpeta `docs/`.
+La documentación se escribe con [Antora](https://antora.org/) en la carpeta `docs/`, que reúne todo el proyecto: requisitos funcionales y documentación de la aplicación móvil.
 
-Para generarla en local (requiere Node.js 18 o superior):
+Para generarla en local (requiere Node.js 18 o superior, y Java 21 para renderizar los diagramas C4):
 
 ```
-npm install
-npx antora antora-playbook.yml
+npm ci
+npm run docs
 ```
 
 El sitio queda en `build/site/index.html`.

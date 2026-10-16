@@ -72,4 +72,4 @@ La arquitectura objetivo debe actualizarse como una version nueva de este docume
 
 == Reproduccion de diagramas
 
-Las fuentes PlantUML se mantienen en `modules/ROOT/partials/` y usan C4-PlantUML 2.12.0. Para generar los SVG y el sitio HTML completo, desde el directorio `docs/` ejecuta `npm ci` una vez y luego `npm run build`. La compilacion renderiza los diagramas con Java local y descarga la interfaz Antora y la libreria C4 fijada a una version; el codigo de los diagramas no se envia a un servicio de renderizado externo.
+Las fuentes PlantUML se mantienen en `modules/ROOT/partials/` y usan C4-PlantUML 2.12.0. Para generar los SVG y el sitio HTML completo, desde la raiz del repositorio ejecuta `npm ci` una vez y luego `npm run docs`. La compilacion renderiza los diagramas con Java local y descarga la interfaz Antora y la libreria C4 fijada a una version; el codigo de los diagramas no se envia a un servicio de renderizado externo.

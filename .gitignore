@@ -2,6 +2,10 @@
 node_modules/
 build/
 
+# Sitio Antora y diagramas generados
+docs/_build/
+docs/modules/ROOT/images/mobile-c4-*.svg
+
 # Sistema
 .DS_Store
 Thumbs.db

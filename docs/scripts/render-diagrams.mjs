@@ -30,7 +30,7 @@ if (!javaDirectory) {
   throw new Error('Java no esta disponible. Instala Java 21 o configura JAVA_HOME.')
 }
 
-const cliPath = resolve(docsDir, 'node_modules/plantuml-cli/index.js')
+const cliPath = resolve(docsDir, '../node_modules/plantuml-cli/index.js')
 const result = spawnSync(
   process.execPath,
   [

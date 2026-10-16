@@ -7,7 +7,10 @@
     "doc": "docs"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "docs:diagrams": "node docs/scripts/render-diagrams.mjs",
+    "docs:site": "antora antora-playbook.yml",
+    "docs": "npm run docs:diagrams && npm run docs:site"
   },
   "repository": {
     "type": "git",
@@ -23,7 +26,8 @@
   "homepage": "https://github.com/cinfuvm/2026_ProyectoAves#readme",
   "devDependencies": {
     "@antora/cli": "^3.2.1",
-    "@antora/site-generator": "^3.2.1"
+    "@antora/site-generator": "^3.2.1",
+    "plantuml-cli": "^1.2026.8"
   },
   "dependencies": {
     "abort-controller": "^3.0.0",

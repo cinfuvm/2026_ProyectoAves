@@ -16,10 +16,10 @@ El componente sigue la estructura Antora recomendada por https://github.com/Ninj
 
 == Compilacion
 
-Este directorio es un componente Antora con su playbook local. Desde `docs/`, ejecuta `npm ci` para instalar las herramientas y `npm run build` para generar el sitio HTML en `docs/_build/site/`. La compilacion incluye los diagramas C4 renderizados como SVG localmente.
+Esta documentacion es parte del sitio Antora del proyecto, dentro de la seccion *Aplicacion movil*. Desde la raiz del repositorio, ejecuta `npm ci` para instalar las herramientas y `npm run docs` para generar el sitio HTML en `build/site/`. La compilacion incluye los diagramas C4 renderizados como SVG localmente.
 
 Tambien puedes abrir los archivos `.adoc` en VS Code y usar el comando `AsciiDoc: Open Preview` para leer cada documento.
 
 == Responsabilidad
 
-La documentacion de esta carpeta cubre solo mobile. El liderazgo tecnico mobile indicado para el proyecto es Maximiliano. El equipo mobile debe validar los requisitos y criterios con gestion, y acordar contratos de API con backend antes de presentar las funciones de red como disponibles.
+La documentacion de esta seccion cubre solo mobile. El liderazgo tecnico mobile indicado para el proyecto es Maximiliano. El equipo mobile debe validar los requisitos y criterios con gestion, y acordar contratos de API con backend antes de presentar las funciones de red como disponibles.

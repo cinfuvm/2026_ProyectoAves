@@ -22,7 +22,7 @@ Catálogo de aves de Chile + bitácora personal de avistamientos + colección, c
 
 - Proyecto 2026_ProyectoAves con cuatro equipos: Backend (API REST BFF en Elixir Phoenix, pendiente de reconstruir), Dashboard web (LiveView de administración y moderación), Móvil (esta app Flutter), y Gestión y documentación.
 - Cada issue del proyecto indica en su descripción el RF que cubre; el detalle está en `docs/modules/ROOT/pages/requisitos.adoc`.
-- Documentación escrita con Antora en `docs/` y generada con `npx antora antora-playbook.yml` (salida en `build/site/`).
+- Documentación escrita con Antora en un único sitio `docs/` (requisitos del proyecto y sección *Aplicación móvil*) y generada con `npm run docs` desde la raíz (salida en `build/site/`).
 - Desarrollo y verificación de la app en Android (emulador/dispositivo); autenticación actualmente demo local en `SharedPreferences` hasta que exista el BFF.
 - El catálogo se carga en tiempo de ejecución desde el índice y las fichas JSON de Aves de Chile (uvm.neocities.org/aves); las fichas enlazan al artículo fuente.
 

@@ -73,11 +73,11 @@ Este registro resume los cambios de la solucion mobile y su documentacion que se
 
 == Documentacion y build del sitio
 
-* Se agrego el componente Antora mobile con PRD, arquitectura C4, plan UAT y este registro de cambios.
+* Se agrego al sitio Antora del proyecto la seccion de documentacion mobile con PRD, arquitectura C4, plan UAT y este registro de cambios.
 * Los diagramas C4 se mantienen como fuentes PlantUML en `modules/ROOT/partials/`; el build genera SVG localmente con PlantUML y Java.
-* Se agregaron un playbook Antora local, dependencias npm fijadas y un lockfile para producir el sitio HTML.
-* El contenido generado en `_build/`, las dependencias instaladas y los SVG producidos por el script de build no son fuentes y se excluyen de Git.
-* En VS Code se puede leer cada `.adoc` con la extension AsciiDoc. El sitio completo se compila con `npm ci` y `npm run build` desde `docs/`.
+* El build mobile se integro en el playbook y el package-lock de la raiz del repositorio; no hay un proyecto npm ni un sitio separados.
+* El contenido generado en `build/` y `docs/_build/`, las dependencias instaladas y los SVG producidos por el script de build no son fuentes y se excluyen de Git.
+* En VS Code se puede leer cada `.adoc` con la extension AsciiDoc. El sitio completo se compila con `npm ci` y `npm run docs` desde la raiz del repositorio.
 
 == Limites confirmados
 

@@ -88,11 +88,11 @@ El documento **Documento Proyecto 2** define el alcance general, los requisitos 
 
 ## Documentación mobile
 
-El PRD, la arquitectura C4/PlantUML, el plan de pruebas UAT y el registro de cambios están en [docs/](docs/). Para generar el sitio HTML completo con Antora, ejecuta desde esa carpeta:
+El PRD, la arquitectura C4/PlantUML, el plan de pruebas UAT y el registro de cambios están en [`docs/`](../docs/), dentro de la sección *Aplicación móvil* del sitio del proyecto. Para generar el sitio HTML completo con Antora, ejecuta desde la raíz del repositorio:
 
 ```bash
 npm ci
-npm run build
+npm run docs
 ```
 
-La salida está en `docs/_build/site/bitacora-mobile/0.1/index.html`. Para los diagramas C4, el build requiere Java disponible o la variable `JAVA_HOME`; los SVG se generan localmente y no se envían a un servicio de renderizado.
+La salida está en `build/site/index.html`. Para los diagramas C4, el build requiere Java disponible o la variable `JAVA_HOME`; los SVG se generan localmente y no se envían a un servicio de renderizado.
