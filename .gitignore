@@ -1,2 +1,7 @@
-  node_modules/
-  build/
+# Dependencias y artefactos generados
+node_modules/
+build/
+
+# Sistema
+.DS_Store
+Thumbs.db
