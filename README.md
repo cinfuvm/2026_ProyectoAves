@@ -1,6 +1,6 @@
 # Bitácora de Aves
 
-Sistema de administración de datos de aves de Chile y bitácora de avistamientos por usuario. Incluye una API REST (Elixir Phoenix), un dashboard web de administración (LiveView) y una aplicación móvil para Android e iOS.
+Sistema de administración de datos de aves de Chile y bitácora de avistamientos por usuario. Incluye una aplicación móvil para Android, iOS y Windows. La API REST (Elixir Phoenix) y el dashboard web de administración (LiveView) están pendientes de reconstrucción.
 
 ## Requisitos funcionales
 
@@ -28,8 +28,8 @@ Cada issue del proyecto indica en su descripción el RF que cubre.
 
 ## Documentación
 
-Para levantar el proyecto en local (BFF, backend y app móvil) y probarlo desde
-el emulador o un celular, sigue [`LOCAL_SETUP.md`](LOCAL_SETUP.md).
+Para levantar la app móvil en local (emulador o celular físico) y ejecutarla
+con `flutter run`, sigue [`mobile/readme.md`](mobile/readme.md).
 
 La documentación se escribe con [Antora](https://antora.org/) en la carpeta `docs/`.
 

@@ -20,7 +20,7 @@ Catálogo de aves de Chile + bitácora personal de avistamientos + colección, c
 
 ## Operating Context
 
-- Proyecto 2026_ProyectoAves con cuatro equipos: Backend (API REST BFF en Elixir Phoenix), Dashboard web (LiveView de administración y moderación), Móvil (esta app Flutter), y Gestión y documentación.
+- Proyecto 2026_ProyectoAves con cuatro equipos: Backend (API REST BFF en Elixir Phoenix, pendiente de reconstruir), Dashboard web (LiveView de administración y moderación), Móvil (esta app Flutter), y Gestión y documentación.
 - Cada issue del proyecto indica en su descripción el RF que cubre; el detalle está en `docs/modules/ROOT/pages/requisitos.adoc`.
 - Documentación escrita con Antora en `docs/` y generada con `npx antora antora-playbook.yml` (salida en `build/site/`).
 - Desarrollo y verificación de la app en Android (emulador/dispositivo); autenticación actualmente demo local en `SharedPreferences` hasta que exista el BFF.
@@ -45,9 +45,9 @@ Catálogo de aves de Chile + bitácora personal de avistamientos + colección, c
 
 ## Evidence on Hand
 
-- `README.md` (requisitos RF-01–RF-20 y equipos), `mobile/README.md` (alcance y estado de la app), `docs/readme.md` (plan del BFF y flujo de autenticación futura).
+- `README.md` (requisitos RF-01–RF-20 y equipos), `mobile/README.md` (alcance y estado de la app).
 - `docs/modules/ROOT/pages/requisitos.adoc` con los 20 requisitos funcionales.
-- `birds_apis.yaml` (especificación OpenAPI) y `backend/` planificado.
+- `birds_apis.yaml` (especificación OpenAPI). La carpeta `backend/` y el BFF fueron retirados del repositorio y están pendientes de reconstrucción.
 - Catálogo de 216 especies cargado desde Aves de Chile en tiempo de ejecución.
 - Ausencias que el trabajo futuro no debe inventar: usuarios reales, métricas de uso, testimonios, contenido moderado o datos de lanzamiento.
 
