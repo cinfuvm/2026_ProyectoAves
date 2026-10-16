@@ -1,11 +1,12 @@
 # Landing
 
-To start your Phoenix server:
+Para iniciar el servidor Phoenix:
 
-* Run `mix setup` to install and setup dependencies
-* Start Phoenix endpoint with `mix phx.server` or inside IEx with `iex -S mix phx.server`
+* Ejecuta ```mix``` setup para instalar y configurar las dependencias
 
-Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
+* Inicia el endpoint de Phoenix con ```mix phx.server``` o dentro de IEx con ```iex -S mix phx.server```
+
+Ahora puedes visitar ```localhost:4000``` desde tu navegador.
 
 Ready to run in production? Please [check our deployment guides](https://phoenix.hexdocs.pm/deployment.html).
 
