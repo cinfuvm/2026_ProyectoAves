@@ -1,0 +1,58 @@
+  /users/{id_usuario}:
+    get:
+      summary: "Obtener perfil de un usuario (Solo Administrador)"
+      parameters:
+        - name: id_usuario
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Datos del usuario obtenidos."
+        '404':
+          description: "Usuario no encontrado."
+
+    put:
+      summary: "Actualizar datos o rol de un usuario (Solo Administrador)"
+      description: "Permite modificar los campos del usuario por defecto, incluyendo el cambio de rol ('user', 'moderator', 'admin')."
+      parameters:
+        - name: id_usuario
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  properties:
+                    nickname:
+                      type: string
+                      example: "marcelo_aves"
+                    rol:
+                      type: string
+                      enum: [user, moderator, admin]
+                      example: "moderator"
+      responses:
+        '200':
+          description: "Usuario actualizado con éxito."
+        '422':
+          description: "Error en los datos enviados."
+
+    delete:
+      summary: "Eliminar o banear una cuenta (Solo Administrador / Moderador)"
+      parameters:
+        - name: id_usuario
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: "Cuenta eliminada correctamente del sistema."

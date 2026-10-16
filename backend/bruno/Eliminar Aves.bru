@@ -1,0 +1,15 @@
+meta {
+  name: Eliminar Ave
+  type: http
+  seq: 4
+}
+
+delete {
+  url: http://localhost:4000/api/birds/1
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: token_simulado_administrador_2026
+}
