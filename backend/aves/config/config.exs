@@ -71,7 +71,7 @@ config :spark,
 config :aves,
   ecto_repos: [Aves.Repo],
   generators: [timestamp_type: :utc_datetime],
-  ash_domains: [Aves.Accounts]
+  ash_domains: [Aves.Accounts, Aves.Catalog, Aves.Bitacora, Aves.Moderation]
 
 # Configure the endpoint
 config :aves, AvesWeb.Endpoint,
