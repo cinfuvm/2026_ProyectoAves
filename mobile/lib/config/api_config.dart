@@ -11,15 +11,15 @@ class ApiConfig {
   }
 
   static const bool _mockForzado = bool.fromEnvironment('MOCK_BFF');
-  // La app habla con el BFF de verdad salvo que se pida lo contrario, así que
-  // un `flutter run` a secas ya usa la API real.
+  // Por defecto la app corre en mock (sesión local y fotos de ejemplo), así un
+  // `flutter run` a secas funciona sin ningún servidor. Cuando exista el BFF,
+  // se enciende con `--dart-define=BFF_ACTIVO=true`.
   static const bool _bffActivo = bool.fromEnvironment(
     'BFF_ACTIVO',
-    defaultValue: true,
+    defaultValue: false,
   );
 
-  /// `MOCK_BFF=true` fuerza el mock; `BFF_ACTIVO=false` sigue funcionando
-  /// por si hay algo escrito con el valor anterior del flag.
+  /// `MOCK_BFF=true` fuerza el mock aunque `BFF_ACTIVO=true`.
   static bool get usarMock => _mockForzado || !_bffActivo;
 
   static const Duration tiempoLimite = Duration(seconds: 15);
