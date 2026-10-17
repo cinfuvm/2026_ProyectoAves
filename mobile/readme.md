@@ -88,7 +88,7 @@ El documento **Documento Proyecto 2** define el alcance general, los requisitos 
 
 ## Documentación mobile
 
-El PRD, la arquitectura C4/PlantUML, el plan de pruebas UAT y el registro de cambios están en [`docs/`](../docs/), dentro de la sección *Aplicación móvil* del sitio del proyecto. Para generar el sitio HTML completo con Antora, ejecuta desde la raíz del repositorio:
+El PRD, la arquitectura C4/PlantUML, el plan de pruebas UAT y el registro de cambios están en [`docs/`](./docs/), como componente Antora autocontenido de esta app. Para generar el sitio HTML, ejecuta desde la raíz del repositorio:
 
 ```bash
 npm ci

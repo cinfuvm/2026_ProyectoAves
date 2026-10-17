@@ -21,8 +21,8 @@ Catálogo de aves de Chile + bitácora personal de avistamientos + colección, c
 ## Operating Context
 
 - Proyecto 2026_ProyectoAves con cuatro equipos: Backend (API REST BFF en Elixir Phoenix, pendiente de reconstruir), Dashboard web (LiveView de administración y moderación), Móvil (esta app Flutter), y Gestión y documentación.
-- Cada issue del proyecto indica en su descripción el RF que cubre; el detalle está en `docs/modules/ROOT/pages/requisitos.adoc`.
-- Documentación escrita con Antora en un único sitio `docs/` (requisitos del proyecto y sección *Aplicación móvil*) y generada con `npm run docs` desde la raíz (salida en `build/site/`).
+- Cada issue del proyecto indica en su descripción el RF que cubre; el detalle lo lleva el equipo de gestión y documentación en su propio componente, que esta rama no construye.
+- Documentación escrita con Antora en `mobile/docs/` (PRD, arquitectura C4, plan UAT y registro de cambios) y generada con `npm run docs` desde la raíz (salida en `build/site/`).
 - Desarrollo y verificación de la app en Android (emulador/dispositivo); autenticación actualmente demo local en `SharedPreferences` hasta que exista el BFF.
 - El catálogo se carga en tiempo de ejecución desde el índice y las fichas JSON de Aves de Chile (uvm.neocities.org/aves); las fichas enlazan al artículo fuente.
 
@@ -46,7 +46,7 @@ Catálogo de aves de Chile + bitácora personal de avistamientos + colección, c
 ## Evidence on Hand
 
 - `README.md` (requisitos RF-01–RF-20 y equipos), `mobile/README.md` (alcance y estado de la app).
-- `docs/modules/ROOT/pages/requisitos.adoc` con los 20 requisitos funcionales.
+- `mobile/docs/modules/ROOT/pages/` con el PRD, la arquitectura, el plan UAT y el registro de cambios; los 20 requisitos funcionales los publica el equipo en su propio componente.
 - `birds_apis.yaml` (especificación OpenAPI). La carpeta `backend/` y el BFF fueron retirados del repositorio y están pendientes de reconstrucción.
 - Catálogo de 216 especies cargado desde Aves de Chile en tiempo de ejecución.
 - Ausencias que el trabajo futuro no debe inventar: usuarios reales, métricas de uso, testimonios, contenido moderado o datos de lanzamiento.

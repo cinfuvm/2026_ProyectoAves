@@ -86,4 +86,4 @@ La arquitectura objetivo debe actualizarse como una versión nueva de este docum
 
 ## Reproducción de diagramas
 
-Las fuentes PlantUML se mantienen en `docs/modules/ROOT/partials/` (`mobile-c4-context.puml`, `mobile-c4-containers.puml`) y usan C4-PlantUML 2.12.0. Para generar los SVG y el sitio HTML completo, desde la raíz del repositorio ejecuta `npm ci` una vez y luego `npm run docs`. La compilación renderiza los diagramas con Java local y descarga la interfaz Antora y la librería C4 fijada a una versión; el código de los diagramas no se envía a un servicio de renderizado externo.
+Las fuentes PlantUML se mantienen en `mobile/docs/modules/ROOT/partials/` (`mobile-c4-context.puml`, `mobile-c4-containers.puml`) y usan C4-PlantUML 2.12.0. Para generar los SVG y el sitio HTML completo, desde la raíz del repositorio ejecuta `npm ci` una vez y luego `npm run docs`. La compilación renderiza los diagramas con Java local y descarga la interfaz Antora y la librería C4 fijada a una versión; el código de los diagramas no se envía a un servicio de renderizado externo.

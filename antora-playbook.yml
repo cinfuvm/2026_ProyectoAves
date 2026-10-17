@@ -1,15 +1,13 @@
 site:
-  title: Bitácora de Aves
-  start_page: bitacora-aves::index.adoc
+  title: Bitácora de Aves — Móvil
+  start_page: bitacora-aves-mobile::index.adoc
 content:
   sources:
     - url: .
       branches: HEAD
-      # Dos componentes desde este mismo repositorio: el sitio del equipo y
-      # la documentación móvil autocontenida en mobile/docs/.
-      start_paths:
-        - docs
-        - mobile/docs
+      # docs/ queda como placeholder reservado para el equipo; esta rama solo
+      # construye el componente de la app movil, autocontenido en mobile/docs/.
+      start_path: mobile/docs
 ui:
   bundle:
     url: https://gitlab.com/antora/antora-ui-default/-/jobs/artifacts/HEAD/raw/build/ui-bundle.zip?job=bundle-stable

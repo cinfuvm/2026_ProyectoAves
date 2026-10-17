@@ -100,8 +100,8 @@ Este registro resume los cambios de la solución mobile y su documentación que 
 ### Autocontención del dominio mobile (nuevo)
 
 - La documentación AsciiDoc mobile se movió de `docs/modules/ROOT/pages/` a `mobile/docs/`, que ahora es un componente Antora propio (`bitacora-aves-mobile`) contenido dentro de `mobile/`.
-- El playbook de la raíz publica los dos componentes en un solo sitio con `start_paths: [docs, mobile/docs]`. Los xrefs cruzados usan `bitacora-aves::` hacia el equipo y `bitacora-aves-mobile::` hacia mobile.
-- `docs/modules/ROOT/nav.adoc` dejó de listar las páginas móviles: ahora apunta al componente móvil con un solo enlace, de modo que `nav.adoc` e `index.adoc` vuelven a ser exclusivos del equipo y mobile deja de chocar con sus ramas.
+- `docs/` de la raíz quedó como placeholder reservado para el equipo; esta rama solo construye `mobile/docs/` y el playbook apunta con `start_path: mobile/docs` al componente `bitacora-aves-mobile`.
+- Los archivos del equipo que había en `docs/` (`antora.yml`, `nav.adoc`, `index.adoc` y `requisitos.adoc`) se retiran de esta rama: mobile deja de editarlos y por eso deja de chocar con las ramas del equipo.
 - Se movieron también a `mobile/` los archivos de dominio que estaban en la raíz: `PRODUCT.md`, `DESIGN.md`, `birds_apis.yaml`, `scripts/mock_backend.dart` (ahora en `mobile/scripts/`) y esta carpeta de notas (antes `docs/mobile/`).
 - `mobile/docs/` no lleva playbook ni dependencias npm propias: el build es el de la raíz, y `npm run docs:diagrams` invoca a `mobile/docs/scripts/render-diagrams.mjs`.
 

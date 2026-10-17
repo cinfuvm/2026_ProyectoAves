@@ -1,3 +1,0 @@
-* xref:index.adoc[Inicio]
-* xref:requisitos.adoc[Requisitos funcionales]
-* xref:bitacora-aves-mobile::index.adoc[Aplicación móvil]
