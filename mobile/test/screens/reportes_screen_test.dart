@@ -4,6 +4,8 @@ import 'package:bitacora_aves/screens/reportes_screen.dart';
 import 'package:bitacora_aves/services/fotos_service_mock.dart';
 import 'package:bitacora_aves/theme/app_theme.dart';
 
+import '../ayuda/google_fonts_test_helper.dart';
+
 /// El mock tarda 350 ms en «red» y 300 ms en «escribir». `pumpAndSettle` no
 /// sirve aquí porque la pantalla usa un `CircularProgressIndicator` que nunca
 /// acaba, así que se avanza el reloj a mano.
@@ -14,6 +16,8 @@ Future<void> _pumpHasta(WidgetTester tester, Duration espera) async {
 }
 
 void main() {
+  setUpAll(prepararGoogleFontsParaTests);
+
   Future<WidgetTester> abrir(WidgetTester tester) async {
     tester.view.physicalSize = const Size(1200, 2400);
     tester.view.devicePixelRatio = 3;

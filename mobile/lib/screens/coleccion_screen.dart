@@ -6,16 +6,16 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/ave_catalogo.dart';
 import '../models/avistamiento_propio.dart';
 import '../models/categoria_ave.dart';
+import '../models/filtro_coleccion.dart';
 import '../models/foto_guardada.dart';
 import '../theme/app_theme.dart';
 import '../widgets/boton_reportar.dart';
+import '../widgets/hoja_filtros_coleccion.dart';
 import '../widgets/texto_expandible.dart';
 import '../widgets/visor_foto.dart';
 
-const _tiposColeccion = ['Todo', 'Aves guardadas', 'Mis avistamientos'];
-
 /// Sección de colección local: avistamientos propios y aves guardadas,
-/// con filtros por tipo y categoría.
+/// con filtros por tipo, categoría y búsqueda.
 class ColeccionScreen extends StatelessWidget {
   const ColeccionScreen({
     super.key,
@@ -24,11 +24,9 @@ class ColeccionScreen extends StatelessWidget {
     required this.fotosGuardadas,
     required this.avistamientosPropios,
     required this.avesCargadas,
-    required this.filtroTipo,
-    required this.filtroCategoria,
+    required this.filtro,
     required this.onReintentarCarga,
-    required this.onFiltroTipoChanged,
-    required this.onFiltroCategoriaChanged,
+    required this.onFiltroChanged,
     required this.onQuitarAvistamiento,
     required this.onAvistamientoQuitado,
     required this.onQuitarFoto,
@@ -43,11 +41,9 @@ class ColeccionScreen extends StatelessWidget {
   final List<FotoGuardada> fotosGuardadas;
   final List<AvistamientoPropio> avistamientosPropios;
   final List<AveCatalogo> avesCargadas;
-  final String filtroTipo;
-  final String filtroCategoria;
+  final FiltroColeccion filtro;
   final VoidCallback onReintentarCarga;
-  final ValueChanged<String> onFiltroTipoChanged;
-  final ValueChanged<String> onFiltroCategoriaChanged;
+  final ValueChanged<FiltroColeccion> onFiltroChanged;
   final Future<bool> Function(AvistamientoPropio avistamiento)
   onQuitarAvistamiento;
   final ValueChanged<AvistamientoPropio> onAvistamientoQuitado;
@@ -93,29 +89,13 @@ class ColeccionScreen extends StatelessWidget {
       );
     }
 
-    final categoriasDisponibles = <String>{
-      ...avesCargadas.map((ave) => categoriaGeneralAves(ave.categoria)),
-      ...fotosGuardadas.map((foto) => categoriaGeneralAves(foto.categoria)),
-      ...avistamientosPropios.map(_categoriaAvistamiento),
-    }..removeWhere((categoria) => categoria.trim().isEmpty);
-    categoriasDisponibles.remove('Todas');
-    final categoriasColeccion = [
-      'Todas',
-      ...categoriasDisponibles.toList()..sort(),
-    ];
-
-    final fotosVisibles = filtroTipo == 'Mis avistamientos'
-        ? const <FotoGuardada>[]
-        : fotosGuardadas.where((foto) {
-            return filtroCategoria == 'Todas' ||
-                foto.categoria == filtroCategoria;
-          }).toList();
-    final avistamientosVisibles = filtroTipo == 'Aves guardadas'
-        ? const <AvistamientoPropio>[]
-        : avistamientosPropios.where((avistamiento) {
-            final categoria = _categoriaAvistamiento(avistamiento);
-            return filtroCategoria == 'Todas' || categoria == filtroCategoria;
-          }).toList();
+    final aplicador = AplicadorFiltrosColeccion(
+      fotos: fotosGuardadas,
+      avistamientos: avistamientosPropios,
+      categoriaDeAvistamiento: _categoriaAvistamiento,
+    );
+    final fotosVisibles = aplicador.fotosVisibles(filtro);
+    final avistamientosVisibles = aplicador.avistamientosVisibles(filtro);
 
     return ListView(
       padding: const EdgeInsets.all(20),
@@ -126,32 +106,7 @@ class ColeccionScreen extends StatelessWidget {
               ?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: _construirFiltroColeccion(
-                context,
-                icono: Icons.photo_library_outlined,
-                etiqueta: 'Mostrar',
-                seleccionado: filtroTipo,
-                opciones: _tiposColeccion,
-                onSeleccionar: onFiltroTipoChanged,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _construirFiltroColeccion(
-                context,
-                icono: Icons.category_outlined,
-                etiqueta: 'Categoría',
-                seleccionado: filtroCategoria,
-                opciones: categoriasColeccion,
-                onSeleccionar: onFiltroCategoriaChanged,
-              ),
-            ),
-          ],
-        ),
+        _construirBarraFiltros(context, aplicador: aplicador),
         const SizedBox(height: 16),
         if (fotosGuardadas.isEmpty && avistamientosPropios.isEmpty)
           Padding(
@@ -239,61 +194,85 @@ class ColeccionScreen extends StatelessWidget {
     );
   }
 
-  Widget _construirFiltroColeccion(
+  /// Una sola fila compacta: el botón que abre la hoja de filtros y, al lado,
+  /// los filtros activos como chips que se quitan al tocar la ✕.
+  Widget _construirBarraFiltros(
     BuildContext context, {
-    required IconData icono,
-    required String etiqueta,
-    required String seleccionado,
-    required List<String> opciones,
-    required ValueChanged<String> onSeleccionar,
+    required AplicadorFiltrosColeccion aplicador,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final marca = context.marca;
+    final estiloChip = TextStyle(
+      color: marca.chipTexto,
+      fontWeight: FontWeight.w600,
+      fontSize: 12,
+    );
+
+    final resumenes = <Widget>[
+      if (filtro.tipo != FiltroColeccion.tipoPorDefecto)
+        _chipResumen(context, filtro.tipo, () {
+          onFiltroChanged(filtro.copiarCon(tipo: FiltroColeccion.tipoPorDefecto));
+        }),
+      if (filtro.categoria != FiltroColeccion.categoriaPorDefecto)
+        _chipResumen(context, filtro.categoria, () {
+          onFiltroChanged(
+            filtro.copiarCon(categoria: FiltroColeccion.categoriaPorDefecto),
+          );
+        }),
+      if (filtro.busqueda.trim().isNotEmpty)
+        _chipResumen(context, '“${filtro.busqueda.trim()}”', () {
+          onFiltroChanged(filtro.copiarCon(busqueda: ''));
+        }),
+    ];
+
+    return Row(
       children: [
-        Row(
-          children: [
-            Icon(icono, size: 17, color: PaletaAves.violeta),
-            const SizedBox(width: 7),
-            Text(
-              etiqueta,
-              style: Theme.of(context).textTheme.labelLarge
-                  ?.copyWith(fontWeight: FontWeight.w700),
-            ),
-          ],
-        ),
-        const SizedBox(height: 7),
-        SizedBox(
-          height: 38,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: opciones.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 8),
-            itemBuilder: (context, index) {
-              final opcion = opciones[index];
-              final estaSeleccionada = opcion == seleccionado;
-              final marca = context.marca;
-              return ChoiceChip(
-                label: Text(opcion),
-                selected: estaSeleccionada,
-                showCheckmark: false,
-                visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                side: BorderSide(
-                  color: estaSeleccionada ? PaletaAves.morado : marca.chipBorde,
-                ),
-                backgroundColor: marca.chipFondo,
-                selectedColor: PaletaAves.morado,
-                labelStyle: TextStyle(
-                  color: estaSeleccionada ? Colors.white : marca.chipTexto,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                ),
-                onSelected: (_) => onSeleccionar(opcion),
-              );
-            },
+        ActionChip(
+          avatar: const Icon(Icons.tune, size: 17),
+          label: Text(
+            filtro.ejesActivos == 0
+                ? 'Filtrar'
+                : 'Filtrar (${filtro.ejesActivos})',
+          ),
+          visualDensity: VisualDensity.compact,
+          side: BorderSide(color: marca.chipBorde),
+          backgroundColor: marca.chipFondo,
+          labelStyle: estiloChip,
+          onPressed: () => mostrarHojaFiltrosColeccion(
+            context,
+            filtro: filtro,
+            aplicador: aplicador,
+            onFiltroChanged: onFiltroChanged,
           ),
         ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: resumenes.isEmpty
+              ? const SizedBox.shrink()
+              : Wrap(spacing: 6, runSpacing: 6, children: resumenes),
+        ),
       ],
+    );
+  }
+
+  Widget _chipResumen(
+    BuildContext context,
+    String etiqueta,
+    VoidCallback onQuitar,
+  ) {
+    final marca = context.marca;
+    return InputChip(
+      label: Text(etiqueta, maxLines: 1, overflow: TextOverflow.ellipsis),
+      onDeleted: onQuitar,
+      deleteIcon: const Icon(Icons.close, size: 15),
+      visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      side: BorderSide(color: marca.chipBorde),
+      backgroundColor: marca.chipFondo,
+      labelStyle: TextStyle(
+        color: marca.chipTexto,
+        fontWeight: FontWeight.w600,
+        fontSize: 12,
+      ),
     );
   }
 

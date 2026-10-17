@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/ave_catalogo.dart';
 import '../models/avistamiento_propio.dart';
+import '../models/filtro_coleccion.dart';
 import '../models/foto_guardada.dart';
 import '../models/foto_publica.dart';
 import '../models/reporte_foto.dart';
@@ -20,6 +21,7 @@ import '../services/subidas_pendientes_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/dialogo_reporte.dart';
 import '../widgets/formulario_avistamiento_dialog.dart';
+import '../widgets/logo_marca.dart';
 import 'catalogo_screen.dart';
 import 'coleccion_screen.dart';
 import 'explorar_screen.dart';
@@ -59,8 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _errorColeccion;
   String _consulta = '';
   String _categoriaSeleccionada = 'Todas';
-  String _filtroTipoColeccion = 'Todo';
-  String _filtroCategoriaColeccion = 'Todas';
+  FiltroColeccion _filtroColeccion = const FiltroColeccion();
   String? _nombreInicio;
   final List<FotoPublica> _fotosFeedInicio = [];
   bool _cargandoFeedInicio = true;
@@ -74,7 +75,11 @@ class _HomeScreenState extends State<HomeScreen> {
     _cargarSesionInicio();
     _cargarFeedInicio();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _recuperarImagenPerdida();
+      // retrieveLostData() es exclusivo de Android (fotos perdidas si el SO
+      // mata la actividad). En escritorio/web/iOS lanza UnimplementedError.
+      if (Platform.isAndroid) {
+        _recuperarImagenPerdida();
+      }
       _reintentarSubidasPendientes();
     });
   }
@@ -509,6 +514,8 @@ class _HomeScreenState extends State<HomeScreen> {
       _mostrarErrorAvistamiento(
         error.message ?? 'El selector de imágenes no está disponible.',
       );
+    } on UnimplementedError {
+      // Plataforma sin soporte de "datos perdidos": no hay nada que recuperar.
     }
   }
 
@@ -789,21 +796,12 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: PaletaAves.amarillo,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(
-                Icons.flutter_dash_rounded,
-                color: PaletaAves.morado,
-                size: 25,
-              ),
-            ),
+            const LogoMarca(tamano: 38),
             const SizedBox(width: 10),
-            const Text('Bitácora de Aves'),
+            const Text(
+              'CORON',
+              style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 1),
+            ),
           ],
         ),
         flexibleSpace: SizedBox(
@@ -1181,17 +1179,11 @@ class _HomeScreenState extends State<HomeScreen> {
       fotosGuardadas: _fotosGuardadas,
       avistamientosPropios: _avistamientosPropios,
       avesCargadas: _avesCargadas,
-      filtroTipo: _filtroTipoColeccion,
-      filtroCategoria: _filtroCategoriaColeccion,
+      filtro: _filtroColeccion,
       onReintentarCarga: _reintentarCargarColeccion,
-      onFiltroTipoChanged: (valor) {
+      onFiltroChanged: (filtro) {
         setState(() {
-          _filtroTipoColeccion = valor;
-        });
-      },
-      onFiltroCategoriaChanged: (valor) {
-        setState(() {
-          _filtroCategoriaColeccion = valor;
+          _filtroColeccion = filtro;
         });
       },
       onQuitarAvistamiento: _quitarAvistamiento,

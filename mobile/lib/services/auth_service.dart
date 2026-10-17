@@ -65,25 +65,53 @@ class AuthService {
   }
 
   Future<Usuario> iniciarSesion({
-    required String usuario,
+    required String correo,
     required String password,
   }) async {
     if (ApiConfig.usarMock) {
-      return _iniciarSesionMock(usuario: usuario, password: password);
+      return _iniciarSesionMock(correo: correo, password: password);
     }
-    return _iniciarSesionBff(user: usuario.trim(), password: password);
+    return _iniciarSesionBff(email: correo.trim(), password: password);
   }
 
   Future<Usuario> _iniciarSesionMock({
-    required String usuario,
+    required String correo,
     required String password,
   }) async {
-    final identificador = usuario.trim().toLowerCase();
-    if (identificador.length < 3 || identificador.length > 30) {
+    // El mock no tiene registro de usuarios: al entrar con el correo, ese
+    // correo es el identificador que se muestra en el perfil.
+    final identificador = correo.trim().toLowerCase();
+    if (!_esCorreo(identificador)) {
+      throw const FormatException('Ingresa un correo válido.');
+    }
+    return _guardarSesionMock(identificador: identificador, password: password);
+  }
+
+  Future<Usuario> _registrarseMock({
+    required String user,
+    required String email,
+    required String password,
+  }) async {
+    final nombreUsuario = user.trim();
+    // El backend admite de 3 a 30 caracteres (ver `Aves.Accounts.User`).
+    if (nombreUsuario.length < 3 || nombreUsuario.length > 30) {
       throw const FormatException(
         'El usuario debe tener entre 3 y 30 caracteres.',
       );
     }
+    final identificador = email.trim().toLowerCase();
+    if (!_esCorreo(identificador)) {
+      throw const FormatException('Ingresa un correo válido.');
+    }
+    // Al registrarse se conserva el usuario elegido, que es el identificador
+    // público; el correo queda como forma de volver a entrar.
+    return _guardarSesionMock(identificador: nombreUsuario, password: password);
+  }
+
+  Future<Usuario> _guardarSesionMock({
+    required String identificador,
+    required String password,
+  }) async {
     if (password.trim().length < 4) {
       throw const FormatException(
         'La contraseña debe tener al menos 4 caracteres.',
@@ -103,17 +131,21 @@ class AuthService {
     return sesion;
   }
 
+  static final RegExp _patronCorreo = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+
+  bool _esCorreo(String valor) => _patronCorreo.hasMatch(valor);
+
   Future<Usuario> _iniciarSesionBff({
-    required String user,
+    required String email,
     required String password,
   }) async {
     final cliente = ApiClient();
     try {
       final respuesta = await cliente.postJson('/api/user/login', {
-        'user': user.trim(),
+        'email': email,
         'password': password,
       });
-      final sesion = _parsearSesion(respuesta.bodyBytes, user);
+      final sesion = _parsearSesion(respuesta.bodyBytes, email);
       await _guardarSesion(sesion);
       return sesion;
     } on ApiException catch (error) {
@@ -125,20 +157,26 @@ class AuthService {
 
   Future<Usuario> registrarse({
     required String user,
+    required String email,
     required String password,
     required String confirmacion,
   }) async {
     if (ApiConfig.usarMock) {
-      return _iniciarSesionMock(usuario: user, password: password);
+      return _registrarseMock(
+        user: user,
+        email: email,
+        password: password,
+      );
     }
     final cliente = ApiClient();
     try {
       final respuesta = await cliente.postJson('/api/user/signin', {
         'user': user.trim(),
+        'email': email.trim(),
         'password': password,
         'confirm_password': confirmacion,
       });
-      final sesion = _parsearSesion(respuesta.bodyBytes, user);
+      final sesion = _parsearSesion(respuesta.bodyBytes, user.trim());
       await _guardarSesion(sesion);
       return sesion;
     } on ApiException catch (error) {

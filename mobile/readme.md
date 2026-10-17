@@ -30,7 +30,7 @@ El proyecto se encuentra en etapa de prototipo con integración inicial del BFF.
 - Guardado de aves del catálogo en Colección, con copia local de la imagen y opción para quitarla.
 - Registro de una foto propia desde la cámara o la galería. El formulario solicita nombre del ave, lugar, fecha y comentario; el nombre científico y la categoría son opcionales. Si hay sesión iniciada, la app intenta subir el avistamiento al BFF y lo encola para reintentar si no hay conexión.
 - Botón superpuesto en las imágenes para reportarlas seleccionando uno o más motivos; los motivos se mapean al enum del contrato (`no_es_ave`, etc.) y, con sesión, se envían al servidor.
-- Autenticación con modo mock por defecto y soporte real para `POST /user/login` y `POST /user/signin` (JWT) cuando el BFF esté disponible.
+- Autenticación con modo mock por defecto y soporte real para `POST /user/login` y `POST /user/signin` (JWT) cuando el BFF esté disponible. El registro pide usuario, correo y contraseña; el inicio de sesión entra con correo y contraseña.
 
 El catálogo se obtiene en tiempo de ejecución desde el índice y las fichas JSON de [Aves de Chile](https://uvm.neocities.org/aves/). La app agrupa los órdenes taxonómicos en categorías generales: Terrestres, Acuáticas, Rapaces, Marinas y Otras. Las imágenes del catálogo se descargan al guardarlas; el nombre científico y la categoría que se ingresan para una observación propia no son obligatorios. Se debe consultar el sitio fuente para sus créditos y condiciones de uso.
 

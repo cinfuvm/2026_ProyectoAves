@@ -4,6 +4,7 @@ import '../config/api_config.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/aparicion_diferida.dart';
+import '../widgets/logo_marca.dart';
 import 'registro_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -15,7 +16,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formularioKey = GlobalKey<FormState>();
-  final _usuarioController = TextEditingController();
+  final _correoController = TextEditingController();
   final _passwordController = TextEditingController();
   final _authService = AuthService();
   bool _cargando = false;
@@ -23,7 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
-    _usuarioController.dispose();
+    _correoController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -36,7 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
     });
     try {
       await _authService.iniciarSesion(
-        usuario: _usuarioController.text,
+        correo: _correoController.text,
         password: _passwordController.text,
       );
       if (mounted) Navigator.pop(context, true);
@@ -57,6 +58,16 @@ class _LoginScreenState extends State<LoginScreen> {
       MaterialPageRoute(builder: (_) => const RegistroScreen()),
     );
     if (creado == true && mounted) Navigator.pop(context, true);
+  }
+
+  // El acceso es por correo y contraseña; se avisa antes de enviar.
+  String? _validarCorreo(String? valor) {
+    final texto = valor?.trim() ?? '';
+    if (texto.isEmpty) return 'Ingresa tu correo';
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(texto)) {
+      return 'Ingresa un correo válido';
+    }
+    return null;
   }
 
   @override
@@ -94,36 +105,19 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: PaletaAves.amarillo,
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: const Icon(
-                        Icons.flutter_dash_rounded,
-                        color: PaletaAves.morado,
-                        size: 34,
-                      ),
-                    ),
+                    const LogoMarca(tamano: 56),
                     const SizedBox(height: 24),
                     TextFormField(
-                      controller: _usuarioController,
-                      keyboardType: TextInputType.text,
+                      controller: _correoController,
+                      keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
-                      autofillHints: const [AutofillHints.username],
-                      decoration: const InputDecoration(labelText: 'Usuario'),
-                      // El backend admite de 3 a 30 caracteres (ver
-                      // `Aves.Accounts.User`); mejor avisar antes de enviar.
-                      validator: (valor) {
-                        final texto = valor?.trim() ?? '';
-                        if (texto.isEmpty) return 'Ingresa tu usuario';
-                        if (texto.length < 3 || texto.length > 30) {
-                          return 'Debe tener entre 3 y 30 caracteres';
-                        }
-                        return null;
-                      },
+                      autofillHints: const [AutofillHints.email],
+                      decoration: const InputDecoration(
+                        labelText: 'Correo electrónico',
+                      ),
+                      // Se entra con el correo del registro, no con el usuario
+                      // (ver el esquema `LogIn` de `birds_apis.yaml`).
+                      validator: _validarCorreo,
                     ),
                     const SizedBox(height: 14),
                     TextFormField(
@@ -205,7 +199,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ApiConfig.usarMock
                           ? 'Sesión de demostración. Activa el BFF con '
                                 '--dart-define=MOCK_BFF=false para usar la API real.'
-                          : 'Conectado al servidor de Bitácora de Aves.',
+                          : 'Conectado al servidor de CORON.',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodySmall
                           ?.copyWith(color: marca.textoSecundario),

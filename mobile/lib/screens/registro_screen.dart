@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/aparicion_diferida.dart';
+import '../widgets/logo_marca.dart';
 
 class RegistroScreen extends StatefulWidget {
   const RegistroScreen({super.key});
@@ -14,6 +15,7 @@ class RegistroScreen extends StatefulWidget {
 class _RegistroScreenState extends State<RegistroScreen> {
   final _formularioKey = GlobalKey<FormState>();
   final _usuarioController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmacionController = TextEditingController();
   final _authService = AuthService();
@@ -23,6 +25,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
   @override
   void dispose() {
     _usuarioController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     _confirmacionController.dispose();
     super.dispose();
@@ -37,6 +40,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
     try {
       await _authService.registrarse(
         user: _usuarioController.text,
+        email: _emailController.text,
         password: _passwordController.text,
         confirmacion: _confirmacionController.text,
       );
@@ -58,6 +62,16 @@ class _RegistroScreenState extends State<RegistroScreen> {
     if (texto.isEmpty) return 'Ingresa tu usuario';
     if (texto.length < 3 || texto.length > 30) {
       return 'Debe tener entre 3 y 30 caracteres';
+    }
+    return null;
+  }
+
+  // El correo es la forma de entrar: tiene que quedar bien desde el registro.
+  String? _validarCorreo(String? valor) {
+    final texto = valor?.trim() ?? '';
+    if (texto.isEmpty) return 'Ingresa tu correo';
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(texto)) {
+      return 'Ingresa un correo válido';
     }
     return null;
   }
@@ -112,19 +126,7 @@ class _RegistroScreenState extends State<RegistroScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: PaletaAves.amarillo,
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: const Icon(
-                        Icons.person_add_alt_1_outlined,
-                        color: PaletaAves.morado,
-                        size: 34,
-                      ),
-                    ),
+                    const LogoMarca(tamano: 56),
                     const SizedBox(height: 24),
                     TextFormField(
                       controller: _usuarioController,
@@ -133,6 +135,17 @@ class _RegistroScreenState extends State<RegistroScreen> {
                       autofillHints: const [AutofillHints.newUsername],
                       decoration: const InputDecoration(labelText: 'Usuario'),
                       validator: _validarUsuario,
+                    ),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.email],
+                      decoration: const InputDecoration(
+                        labelText: 'Correo electrónico',
+                      ),
+                      validator: _validarCorreo,
                     ),
                     const SizedBox(height: 14),
                     TextFormField(
@@ -196,7 +209,8 @@ class _RegistroScreenState extends State<RegistroScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Tu usuario será tu identificador público en la bitácora.',
+                      'Tu usuario será tu identificador público y tu correo la '
+                      'forma de entrar a la bitácora.',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodySmall
                           ?.copyWith(color: marca.textoSecundario),

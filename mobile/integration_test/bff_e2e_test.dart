@@ -62,12 +62,13 @@ void main() {
       await _cargar(tester, pulsos: 15);
 
       final campos = find.byType(TextFormField);
-      await tester.enterText(campos.at(0), 'emulador');
+      await tester.enterText(campos.at(0), 'emulador@ejemplo.cl');
       await tester.enterText(campos.at(1), 'secret123');
       await tester.tap(find.text('Entrar'));
       await _cargar(tester, pulsos: 30);
 
-      // El backend real devuelve el usuario con el que se entró.
+      // El backend devuelve el identificador público (`user`), no el correo
+      // con el que se entró.
       expect(find.text('Cerrar sesión'), findsOneWidget);
       expect(find.text('emulador'), findsOneWidget);
     });
@@ -80,7 +81,7 @@ void main() {
       const categoria = 'AveE2E';
 
       final usuario = await AuthService().iniciarSesion(
-        usuario: 'emulador',
+        correo: 'emulador@ejemplo.cl',
         password: 'secret123',
       );
       expect(usuario.user, equals('emulador'));

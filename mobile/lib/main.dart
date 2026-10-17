@@ -65,7 +65,7 @@ class _BitacoraAvesAppState extends State<BitacoraAvesApp> {
     return MaterialApp(
       scaffoldMessengerKey: _mensajeroKey,
       debugShowCheckedModeBanner: false,
-      title: 'Bitácora de Aves',
+      title: 'CORON',
       themeMode: _modoOscuro ? ThemeMode.dark : ThemeMode.light,
       theme: AppTheme.claro(),
       darkTheme: AppTheme.oscuro(),
