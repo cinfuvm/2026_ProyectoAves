@@ -79,6 +79,14 @@ Este registro resume los cambios de la solucion mobile y su documentacion que se
 * El contenido generado en `build/` y `docs/_build/`, las dependencias instaladas y los SVG producidos por el script de build no son fuentes y se excluyen de Git.
 * En VS Code se puede leer cada `.adoc` con la extension AsciiDoc. El sitio completo se compila con `npm ci` y `npm run docs` desde la raiz del repositorio.
 
+=== Autocontencion del dominio mobile (nuevo)
+
+* La documentacion AsciiDoc mobile dejo de vivir en `docs/modules/ROOT/pages/` y ahora esta en `mobile/docs/`, que es un componente Antora propio (`bitacora-aves-mobile`) contenido dentro de `mobile/`.
+* El playbook de la raiz publica los dos componentes en un solo sitio con `start_paths: [docs, mobile/docs]`. Los xrefs cruzados usan `bitacora-aves::` hacia el equipo y `bitacora-aves-mobile::` hacia mobile.
+* `docs/modules/ROOT/nav.adoc` dejo de listar las paginas moviles: ahora apunta al componente movil con un solo enlace, de modo que `nav.adoc` e `index.adoc` vuelven a ser exclusivos del equipo y mobile deja de chocar con sus ramas al fusionar.
+* `mobile/docs/` no lleva playbook ni dependencias npm propias: el build es el de la raiz y `npm run docs:diagrams` invoca a `mobile/docs/scripts/render-diagrams.mjs`.
+* Tambien se movieron a `mobile/` los archivos de dominio que estaban en la raiz: `PRODUCT.md`, `DESIGN.md`, `birds_apis.yaml` y `scripts/mock_backend.dart` (ahora en `mobile/scripts/`).
+
 == Limites confirmados
 
 La autenticacion real, la subida de fotos y los reportes dependen del BFF Phoenix que esta en desarrollo por el equipo backend; hasta entonces la app opera en modo mock. La app no implementa comentarios, chat, seguimiento de perfiles ni popularidad basada en vistas. Aves de Chile es una fuente externa del catalogo y no la fuente de contribuciones de la comunidad. Consultar xref:mobile-architecture.adoc[Arquitectura mobile] para limites de datos y privacidad, y xref:mobile-contrato.adoc[Extensiones al contrato] para los cambios pendientes en la API.
