@@ -82,10 +82,18 @@ class _FormularioAvistamientoDialogState
                 TextFormField(
                   controller: _nombreAveController,
                   textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Nombre del ave',
                     hintText: 'Ej. Chucao (o "Ave sin identificar")',
-                    prefixIcon: Icon(Icons.flutter_dash_rounded),
+                    prefixIcon: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Image.asset(
+                        'assets/logo_isotipo.png',
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, _, _) =>
+                            const Icon(Icons.flutter_dash_rounded),
+                      ),
+                    ),
                   ),
                   validator: (valor) => valor == null || valor.trim().isEmpty
                       ? 'Indica el nombre del ave o escribe "Ave sin identificar".'

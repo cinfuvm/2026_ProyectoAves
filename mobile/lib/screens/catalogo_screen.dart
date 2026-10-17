@@ -427,7 +427,7 @@ class _TarjetaAve extends StatelessWidget {
                         color: marca.placeholder,
                         child: const Center(
                           child: Icon(
-                            Icons.flutter_dash_rounded,
+                            Icons.image_not_supported_outlined,
                             size: 48,
                             color: PaletaAves.violeta,
                           ),
@@ -462,7 +462,7 @@ class _TarjetaAve extends StatelessWidget {
                         color: marca.placeholder,
                         child: const Center(
                           child: Icon(
-                            Icons.flutter_dash_rounded,
+                            Icons.image_not_supported_outlined,
                             size: 48,
                             color: PaletaAves.violeta,
                           ),
