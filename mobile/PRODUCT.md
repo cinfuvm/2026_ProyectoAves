@@ -12,7 +12,7 @@ Personas que observan y fotografían aves en Chile (aficionados a la observació
 
 ## Product Purpose
 
-Sistema "Bitácora de Aves": administrar datos de aves de Chile y llevar una bitácora de avistamientos por usuario, con una experiencia móvil inspirada en una red social de fotografía (sin chat ni seguimiento de perfiles). El proyecto nace como trabajo de curso con ambición de publicarse después. Éxito: entregar los requisitos funcionales RF-01 a RF-20 con calidad, manteniendo una base que permita el lanzamiento futuro.
+Sistema "CORON: Bitácora de Aves": administrar datos de aves de Chile y llevar una bitácora de avistamientos por usuario, con una experiencia móvil inspirada en una red social de fotografía (sin chat ni seguimiento de perfiles). El proyecto nace como trabajo de curso con ambición de publicarse después. Éxito: entregar los requisitos funcionales RF-01 a RF-20 con calidad, manteniendo una base que permita el lanzamiento futuro.
 
 ## Positioning
 
@@ -39,7 +39,7 @@ Catálogo de aves de Chile + bitácora personal de avistamientos + colección, c
 
 ## Brand Commitments
 
-- Nombre: "Bitácora de Aves"; referencia de proyecto base declarada: "Aves de Chile".
+- Nombre: "CORON: Bitácora de Aves"; referencia de proyecto base declarada: "Aves de Chile".
 - Experiencia visual inspirada en una red social de fotografía, sin funciones de chat ni seguimiento de perfiles.
 - Interfaz y contenido en español (Chile).
 

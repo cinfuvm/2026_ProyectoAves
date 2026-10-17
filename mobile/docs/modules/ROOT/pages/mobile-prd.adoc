@@ -1,11 +1,11 @@
-= PRD - Aplicacion mobile Bitacora de Aves
-:description: Requisitos de producto, alcance y criterios de aceptacion para la solucion mobile Flutter.
+= PRD - Aplicacion mobile CORON: Bitacora de Aves
+:description: Requisitos de producto, alcance y criterios de aceptacion para la solucion mobile Flutter CORON: Bitacora de Aves.
 :toc:
 :toclevels: 3
 
 == 1. Resumen de la solucion
 
-Bitacora de Aves Mobile es una aplicacion Flutter para que una persona registre encuentros con aves, guarde imagenes y consulte sus registros desde una interfaz movil. El valor principal de la version objetivo es facilitar que la comunidad aporte observaciones e imagenes, y que esas contribuciones puedan integrarse posteriormente con un backend y herramientas de gestion.
+CORON: Bitacora de Aves Mobile es una aplicacion Flutter para que una persona registre encuentros con aves, guarde imagenes y consulte sus registros desde una interfaz movil. El valor principal de la version objetivo es facilitar que la comunidad aporte observaciones e imagenes, y que esas contribuciones puedan integrarse posteriormente con un backend y herramientas de gestion.
 
 El repositorio implementa un *prototipo mobile local*. Permite guardar fotos y sus datos en el dispositivo y explorar el catalogo de 216 especies consultado desde https://uvm.neocities.org/aves/[Aves de Chile]. No hay actualmente cuentas, feed remoto de aportes comunitarios, API propia, sincronizacion entre dispositivos, envio de reportes a moderacion ni conteo de popularidad. El catalogo externo no debe confundirse con la fuente objetivo del contenido comunitario.
 

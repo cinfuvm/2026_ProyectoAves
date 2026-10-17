@@ -1,6 +1,6 @@
 # Plan de pruebas y UAT · Mobile
 
-> Plan manual de pruebas de aceptación para el prototipo Flutter Bitácora de Aves.
+> Plan manual de pruebas de aceptación para el prototipo Flutter CORON: Bitácora de Aves.
 > Fuente AsciiDoc: `mobile/docs/modules/ROOT/pages/mobile-uat.adoc`.
 
 ## 1. Objetivo

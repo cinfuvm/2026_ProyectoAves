@@ -1,7 +1,7 @@
-= Bitácora de Aves — Móvil
-:description: Documentación del producto, arquitectura y aceptación de la aplicación móvil Bitácora de Aves.
+= CORON: Bitácora de Aves — Móvil
+:description: Documentación del producto, arquitectura y aceptación de la aplicación móvil CORON: Bitácora de Aves.
 
-Bitácora de Aves es una aplicación Flutter para registrar observaciones de aves y conservar una colección personal en el dispositivo.
+CORON: Bitácora de Aves es una aplicación Flutter para registrar observaciones de aves y conservar una colección personal en el dispositivo.
 
 Esta documentación describe *la solución móvil y su estado en el prototipo del repositorio*. No afirma que exista una API propia, sincronización de usuarios ni moderación remota: esos servicios requieren integración con los equipos backend y dashboard.
 

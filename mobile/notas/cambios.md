@@ -1,6 +1,6 @@
 # Registro de cambios mobile
 
-> Cambios funcionales y documentales de la aplicación mobile Bitácora de Aves.
+> Cambios funcionales y documentales de la aplicación mobile CORON: Bitácora de Aves.
 > Fuente AsciiDoc: `mobile/docs/modules/ROOT/pages/mobile-changes.adoc`.
 
 Este registro resume los cambios de la solución mobile y su documentación que se encuentran en el repositorio. Para el alcance vigente, estados de implementación y criterios de aceptación, consultar el [[prd]] y el [[uat]].

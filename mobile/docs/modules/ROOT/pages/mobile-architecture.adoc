@@ -1,5 +1,5 @@
 = Arquitectura mobile
-:description: Arquitectura C4 en PlantUML de la aplicacion Flutter Bitacora de Aves.
+:description: Arquitectura C4 en PlantUML de la aplicacion Flutter CORON: Bitacora de Aves.
 :toc:
 :toclevels: 2
 
@@ -11,11 +11,11 @@ El usuario del producto objetivo aportara la mayor parte de las imagenes. En el 
 
 == C4 - Contexto
 
-image::mobile-c4-context.svg[Diagrama C4 de contexto de Bitacora de Aves Mobile]
+image::mobile-c4-context.svg[Diagrama C4 de contexto de CORON: Bitacora de Aves]
 
 == C4 - Contenedores mobile
 
-image::mobile-c4-containers.svg[Diagrama C4 de contenedores de Bitacora de Aves Mobile]
+image::mobile-c4-containers.svg[Diagrama C4 de contenedores de CORON: Bitacora de Aves]
 
 == Limites y responsabilidades
 

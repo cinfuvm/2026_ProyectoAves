@@ -1,5 +1,5 @@
 site:
-  title: Bitácora de Aves — Móvil
+  title: "CORON: Bitácora de Aves"
   start_page: bitacora-aves-mobile::index.adoc
 content:
   sources:

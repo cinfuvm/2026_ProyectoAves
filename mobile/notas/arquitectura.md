@@ -1,6 +1,6 @@
 # Arquitectura mobile
 
-> Arquitectura C4 en PlantUML de la aplicación Flutter Bitácora de Aves.
+> Arquitectura C4 en PlantUML de la aplicación Flutter CORON: Bitácora de Aves.
 > Fuente AsciiDoc: `mobile/docs/modules/ROOT/pages/mobile-architecture.adoc`.
 
 ## Alcance y estado
@@ -11,11 +11,11 @@ El usuario del producto objetivo aportará la mayor parte de las imágenes. En e
 
 ## C4 · Contexto
 
-![Diagrama C4 de contexto de Bitácora de Aves Mobile](../modules/ROOT/images/mobile-c4-context.svg)
+![Diagrama C4 de contexto de CORON: Bitácora de Aves](../modules/ROOT/images/mobile-c4-context.svg)
 
 ## C4 · Contenedores mobile
 
-![Diagrama C4 de contenedores de Bitácora de Aves Mobile](../modules/ROOT/images/mobile-c4-containers.svg)
+![Diagrama C4 de contenedores de CORON: Bitácora de Aves](../modules/ROOT/images/mobile-c4-containers.svg)
 
 ## Límites y responsabilidades
 

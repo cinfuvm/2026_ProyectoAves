@@ -1,5 +1,5 @@
 = Plan de pruebas y UAT - Mobile
-:description: Plan manual de pruebas de aceptacion para el prototipo Flutter Bitacora de Aves.
+:description: Plan manual de pruebas de aceptacion para el prototipo Flutter CORON: Bitacora de Aves.
 :toc:
 :toclevels: 3
 

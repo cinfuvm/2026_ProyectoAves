@@ -1,4 +1,4 @@
-# Bitácora de Aves
+# CORON: Bitácora de Aves
 
 Sistema de administración de datos de aves de Chile y bitácora de avistamientos por usuario. Incluye una aplicación móvil para Android, iOS y Windows. La API REST (Elixir Phoenix) y el dashboard web de administración (LiveView) están pendientes de reconstrucción.
 

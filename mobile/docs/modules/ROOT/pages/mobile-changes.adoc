@@ -1,5 +1,5 @@
 = Registro de cambios mobile
-:description: Cambios funcionales y documentales de la aplicacion mobile Bitacora de Aves.
+:description: Cambios funcionales y documentales de la aplicacion mobile CORON: Bitacora de Aves.
 :toc:
 :toclevels: 2
 

@@ -1,13 +1,13 @@
 @startuml
 !includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/release/v2.12.0/C4_Container.puml
 
-title Bitacora de Aves Mobile - Contenedores actuales
+title CORON: Bitacora de Aves - Contenedores actuales
 
 Person(usuario, "Observador de aves")
 System_Ext(aveschile, "Aves de Chile", "Indice, fichas e imagenes JSON en uvm.neocities.org/aves.")
 System_Ext(so, "Camara y galeria del dispositivo", "Selector nativo de imagenes.")
 
-System_Boundary(mobile, "Aplicacion mobile Bitacora de Aves") {
+System_Boundary(mobile, "Aplicacion mobile CORON: Bitacora de Aves") {
   Container(app, "Aplicacion Flutter", "Flutter / Dart", "UI, navegacion, formularios, filtros y coordinacion de operaciones.")
   ContainerDb(preferencias, "Preferencias locales", "shared_preferences / JSON", "Metadatos de aves guardadas, observaciones propias y reportes locales.")
   Container(archivos, "Archivos privados de imagen", "Directorio de documentos", "Copias locales de imagenes seleccionadas o guardadas.")

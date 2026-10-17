@@ -1,9 +1,9 @@
-# Bitácora de Aves · Documentación mobile
+# CORON: Bitácora de Aves · Documentación mobile
 
 > [!info] Nota de lectura
 > Esta carpeta `mobile/notas/` es la copia en **Markdown** de la documentación mobile, pensada para leerla en **Obsidian**. Las fuentes originales en AsciiDoc siguen en `mobile/docs/modules/ROOT/pages/` y son las que compila el sitio Antora (`npm run docs`). Cuando algo cambie, actualiza primero aquí y luego la fuente `.adoc`.
 
-Bitácora de Aves es una aplicación Flutter para registrar observaciones de aves y conservar una colección personal en el dispositivo.
+CORON: Bitácora de Aves es una aplicación Flutter para registrar observaciones de aves y conservar una colección personal en el dispositivo.
 
 Esta documentación describe **la solución mobile y su estado en el prototipo del repositorio**. No afirma que exista una API propia, sincronización de usuarios ni moderación remota: esos servicios requieren integración con los equipos backend y dashboard.
 

@@ -1,6 +1,6 @@
-# 🐦 Bitácora de Aves
+# 🐦 CORON: Bitácora de Aves
 
-Aplicación móvil del proyecto **Bitácora de Aves**, orientada a compartir fotografías de aves chilenas y a construir colecciones personales de observaciones. Este repositorio contiene el boceto inicial del frontend mobile, desarrollado con Flutter.
+Aplicación móvil del proyecto **CORON: Bitácora de Aves**, orientada a compartir fotografías de aves chilenas y a construir colecciones personales de observaciones. Este repositorio contiene el boceto inicial del frontend mobile, desarrollado con Flutter.
 
 La propuesta toma como referencia el proyecto base **Aves de Chile** y plantea una experiencia visual inspirada en una red social de fotografía, sin funciones de chat ni seguimiento de perfiles.
 

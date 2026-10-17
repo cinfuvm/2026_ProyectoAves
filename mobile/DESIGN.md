@@ -1,5 +1,5 @@
 ---
-name: Bitácora de Aves
+name: CORON: Bitácora de Aves
 description: Sistema visual móvil — fotografía de aves chilenas con morado de cordillera, amarillo de sol y serif con carácter.
 colors:
   violeta-cordillera: "#5B2D91"
@@ -89,7 +89,7 @@ components:
     padding: "6px 16px"
 ---
 
-# Design System: Bitácora de Aves
+# Design System: CORON: Bitácora de Aves
 
 ## Overview
 
