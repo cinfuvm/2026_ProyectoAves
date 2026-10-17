@@ -1,12 +1,11 @@
 site:
-  title: "CORON: Bitácora de Aves"
+  title: "CORON: Bitǭcora de Aves"
   start_page: bitacora-aves-mobile::index.adoc
 content:
   sources:
-    - url: .
+    - url: ..
       branches: HEAD
-      # docs/ queda como placeholder reservado para el equipo; esta rama solo
-      # construye el componente de la app movil, autocontenido en mobile/docs/.
+      # El repositorio git esta en la raiz; el componente movil vive en mobile/docs.
       start_path: mobile/docs
 ui:
   bundle:

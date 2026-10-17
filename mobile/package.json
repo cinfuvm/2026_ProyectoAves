@@ -1,0 +1,17 @@
+{
+  "name": "bitacora_aves_docs",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Herramientas de documentacion Antora de la app movil CORON.",
+  "license": "ISC",
+  "scripts": {
+    "docs:diagrams": "node docs/scripts/render-diagrams.mjs",
+    "docs:site": "antora antora-playbook.yml",
+    "docs": "npm run docs:diagrams && npm run docs:site"
+  },
+  "devDependencies": {
+    "@antora/cli": "^3.2.1",
+    "@antora/site-generator": "^3.2.1",
+    "plantuml-cli": "^1.2026.8"
+  }
+}

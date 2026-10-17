@@ -38,10 +38,11 @@ La documentación se escribe con [Antora](https://antora.org/) y vive en `mobile
 Para generarla en local (requiere Node.js 18 o superior, y Java 21 para renderizar los diagramas C4):
 
 ```
+cd mobile
 npm ci
 npm run docs
 ```
 
-El sitio queda en `build/site/index.html`.
+El sitio queda en `mobile/build/site/index.html`.
 
 Para agregar una página, crea un archivo `.adoc` en `mobile/docs/modules/ROOT/pages/` y agrégalo a `mobile/docs/modules/ROOT/nav.adoc`.

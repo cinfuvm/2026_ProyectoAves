@@ -14,7 +14,7 @@
 - App contra BFF real: `cd mobile && flutter run --dart-define=BFF_ACTIVO=true --dart-define=BFF_URL=http://10.0.2.2:4000`
 - Mock del backend Phoenix: `cd mobile && dart scripts/mock_backend.dart` (puerto 4001 por defecto; `--port N`)
 - Integración (dispositivo/emulador): `cd mobile && flutter test integration_test -d <dispositivo> --dart-define=BFF_ACTIVO=true`
-- Docs: `npm ci` (Node 18+) y `npm run docs`; salida en `build/site/index.html`
+- Docs: `cd mobile && npm ci` (Node 18+) y `npm run docs`; salida en `mobile/build/site/index.html`
 
 ## Gotchas
 - `flutter analyze` excluye `build/`, `android/`, `ios/`, `web/`, `windows/`, `macos/`, `linux/`.

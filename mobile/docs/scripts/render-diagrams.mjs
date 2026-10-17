@@ -32,7 +32,7 @@ if (!javaDirectory) {
 
 // Las dependencias npm viven en la raiz del monorepo, no en mobile/:
 // docsDir es mobile/docs, asi que hay que subir dos niveles.
-const cliPath = resolve(docsDir, '../../node_modules/plantuml-cli/index.js')
+const cliPath = resolve(docsDir, '../node_modules/plantuml-cli/index.js')
 const result = spawnSync(
   process.execPath,
   [
