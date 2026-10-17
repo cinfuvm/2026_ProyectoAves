@@ -11,18 +11,19 @@ Verificar manualmente que la app mobile cumple los criterios de aceptacion defin
 
 === Incluido
 
-* Inicio (panel de bienvenida y resumen), Buscar, navegacion y estados de carga/error del catalogo externo de Aves de Chile.
+* Inicio (panel de bienvenida y resumen), Buscar, Explorar (feed comunitario), navegacion y estados de carga/error del catalogo externo de Aves de Chile.
 * Reorganizacion de navegacion y contenido al usar la app en orientacion horizontal.
 * Busqueda, categorias generales, guardado y eliminacion de aves de catalogo.
 * Seleccion de imagen, formulario de observacion propia, persistencia y eliminacion.
-* Filtros combinados de tipo y categoria en Coleccion.
-* Registro local de reportes y mensajes que describen correctamente su estado.
+* Filtros combinados de tipo, categoria y texto libre en Coleccion.
+* Reportes: persistencia local siempre, y envio al BFF cuando la foto pertenece al feed; pantalla de moderacion con rol `admin`.
+* Autenticacion (login, registro, sesion y cierre) en modo mock y en modo BFF.
 * Manejo de cancelacion, permisos, red y fallos de almacenamiento.
 
 === Excluido / no aceptable como disponible hoy
 
 * Feed comunitario y subida/reportes reales contra el BFF: se prueban en modo mock (UAT-13..UAT-15); la integracion real (UAT-16) requiere el backend Phoenix disponible.
-* Moderacion desde dashboard, notificaciones de estado de reporte.
+* Moderacion desde dashboard web (la moderacion se atiende desde la app), notificaciones push de estado de reporte.
 * Popularidad basada en vistas, comentarios, chat y seguimiento de perfiles.
 * Certificacion iOS: ejecutar estos casos en iOS solo despues de configurar y validar ese target en un Mac.
 
@@ -72,13 +73,13 @@ Estados sugeridos: `No ejecutado`, `Aprobado`, `Fallido`, `Bloqueado`. Registrar
 *Precondiciones:* app instalada.
 
 . Abrir la app.
-. Navegar por Inicio, Buscar, Coleccion y Perfil.
-. Deslizar horizontalmente entre las cuatro secciones y comprobar que la barra inferior actualiza la seleccion.
+. Navegar por Inicio, Buscar, Explorar, Coleccion y Perfil.
+. Deslizar horizontalmente entre las cinco secciones y comprobar que la barra inferior actualiza la seleccion.
 . Alternar tema claro/oscuro y volver a Coleccion.
 . Girar el dispositivo a orientacion horizontal y cambiar de seccion desde la navegacion lateral.
 . Reducir el ancho de la ventana por debajo de 600 dp y comprobar que vuelve la barra inferior; volver a ampliarlo.
 
-*Esperado:* en ventanas de menos de 600 dp se conserva la barra inferior; desde 600 dp se usa navegacion lateral, que permite desplazarse si la altura disponible es reducida. En apaisado la cabecera y las tarjetas del catalogo reducen su altura; la imagen y los datos del ave aparecen lado a lado, y Agregar foto pasa a la barra superior para no cubrir el contenido. El contenido se centra con un ancho maximo en ventanas amplias para conservar la legibilidad. Las cuatro secciones siguen accesibles; los filtros horizontales de Buscar y Coleccion siguen desplazandose sin cambiar de seccion; el tema cambia y no aparece una pantalla roja ni error de runtime.
+*Esperado:* en ventanas de menos de 600 dp se conserva la barra inferior; desde 600 dp se usa navegacion lateral, que permite desplazarse si la altura disponible es reducida. En apaisado la cabecera y las tarjetas del catalogo reducen su altura; la imagen y los datos del ave aparecen lado a lado, y Agregar foto pasa a la barra superior para no cubrir el contenido. El contenido se centra con un ancho maximo en ventanas amplias para conservar la legibilidad. Las cinco secciones siguen accesibles; los filtros horizontales de Buscar y Coleccion siguen desplazandose sin cambiar de seccion; el tema cambia y no aparece una pantalla roja ni error de runtime.
 
 *Resultado/evidencia:* pendiente de ejecucion.
 
@@ -203,7 +204,7 @@ Estados sugeridos: `No ejecutado`, `Aprobado`, `Fallido`, `Bloqueado`. Registrar
 . Abrir Perfil y revisar el contador.
 . Reiniciar la app y comprobar que el contador persiste.
 
-*Esperado:* el reporte se conserva localmente y la interfaz aclara que aun no se envia a moderacion. No se afirma que gestion/backend lo recibio.
+*Esperado:* el reporte se conserva localmente en cualquier caso. Si la foto viene del feed comunitario, el envio al BFF se confirma con la respuesta del servidor y el reporte aparece en la pantalla de moderacion; si es una foto local, la interfaz aclara que no se envia a moderacion. No se afirma que gestion/backend recibio un reporte que quedo solo en el dispositivo.
 
 *Resultado/evidencia:* pendiente de ejecucion.
 
@@ -237,18 +238,18 @@ Estados sugeridos: `No ejecutado`, `Aprobado`, `Fallido`, `Bloqueado`. Registrar
 *Resultado/evidencia:* pendiente de ejecucion.
 
 [[uat-12]]
-=== UAT-12 - Verificacion de limites del prototipo
+=== UAT-12 - Verificacion de limites del alcance
 
 *Prioridad:* P1
 
 *Precondiciones:* build candidato.
 
-. Confirmar que no se solicita login ni se presenta sincronizacion de registros.
+. Confirmar que no se ofrece sincronizacion de registros entre dispositivos ni conteo de popularidad.
 . Guardar una observacion propia y revisar que se muestra en el mismo dispositivo.
-. Crear un reporte y revisar el mensaje de no envio a moderacion.
+. Crear un reporte sobre una foto local y revisar el mensaje de no envio a moderacion.
 . Comprobar que las fichas del catalogo enlazan a Aves de Chile y que no se presenta como API propia del proyecto.
 
-*Esperado:* la app no presenta funcionalidades de backend aun no integradas como disponibles. El comportamiento local queda explicado en interfaz/documentacion.
+*Esperado:* la app no presenta fuera de alcance (sincronizacion, popularidad, dashboard web) como disponible. Las capacidades remotas se declaran segun el modo activo: mock por defecto, BFF con `BFF_ACTIVO=true`. El comportamiento local queda explicado en interfaz/documentacion.
 
 *Resultado/evidencia:* pendiente de ejecucion.
 
@@ -360,9 +361,9 @@ Para cada caso fallido:
 |Maximiliano (segun asignacion del proyecto)
 |Pendiente
 
-|Backend (para alcance de integracion futura)
+|Backend (para alcance de integracion)
 |Jose Luis (segun asignacion del proyecto)
-|Pendiente y fuera de aceptacion del prototipo local
+|Pendiente; valida la integracion real con el BFF
 
 |===
 

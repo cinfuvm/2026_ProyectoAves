@@ -5,48 +5,47 @@
 
 == 1. Resumen de la solucion
 
-CORON: Bitacora de Aves Mobile es una aplicacion Flutter para que una persona registre encuentros con aves, guarde imagenes y consulte sus registros desde una interfaz movil. El valor principal de la version objetivo es facilitar que la comunidad aporte observaciones e imagenes, y que esas contribuciones puedan integrarse posteriormente con un backend y herramientas de gestion.
+CORON: Bitacora de Aves Mobile es una aplicacion Flutter para que una persona registre encuentros con aves, guarde imagenes y consulte sus registros desde una interfaz movil. El valor principal de la version objetivo es facilitar que la comunidad aporte observaciones e imagenes, y que esas contribuciones se compartan con moderacion a traves del backend del proyecto.
 
-El repositorio implementa un *prototipo mobile local*. Permite guardar fotos y sus datos en el dispositivo y explorar el catalogo de 216 especies consultado desde https://uvm.neocities.org/aves/[Aves de Chile]. No hay actualmente cuentas, feed remoto de aportes comunitarios, API propia, sincronizacion entre dispositivos, envio de reportes a moderacion ni conteo de popularidad. El catalogo externo no debe confundirse con la fuente objetivo del contenido comunitario.
+El repositorio implementa una *aplicacion mobile* que trabaja contra dos fuentes distintas: el catalogo externo de https://uvm.neocities.org/aves/[Aves de Chile] para las fichas de especies, y el BFF propio (Elixir Phoenix) para cuentas, publicacion de imagenes, feed comunitario y reportes. El BFF se consume en dos modos: *local* (mock, el valor por defecto) y *remoto* (`--dart-define=BFF_ACTIVO=true`), de modo que la app arranca sin servidor. No hay sincronizacion entre dispositivos ni conteo de popularidad. El catalogo externo no debe confundirse con la fuente del contenido comunitario.
 
 === Problema y oportunidad
 
-Las observaciones de aves suelen quedar dispersas entre fotografias y notas. Una bitacora movil puede asociar una imagen con especie, lugar, fecha y comentario, y ofrecer una forma sencilla de revisar el historial. A futuro, la contribucion comunitaria necesita servicios de backend y procesos de moderacion para ser compartida de forma segura.
+Las observaciones de aves suelen quedar dispersas entre fotografias y notas. Una bitacora movil puede asociar una imagen con especie, lugar, fecha y comentario, y ofrecer una forma sencilla de revisar el historial. La contribucion comunitaria necesita moderacion para ser compartida de forma segura; por eso el envio de reportes forma parte del alcance actual y no de un entregable futuro.
 
 === Usuarios y actores
 
-* *Observador/a de aves:* registra y consulta sus observaciones, explora especies y administra su coleccion local.
-* *Equipo de gestion y moderacion:* requiere reportes utilizables y trazables; el prototipo solo almacena reportes localmente y no satisface el flujo remoto.
-* *Backend:* futuro proveedor de identidad, API, almacenamiento compartido y reglas de negocio.
-* *Dashboard:* futura herramienta web para gestion y moderacion; fuera del alcance de esta solucion mobile.
+* *Observador/a de aves:* registra y consulta sus observaciones, explora el feed comunitario, administra su coleccion local y se autentica con una cuenta.
+* *Moderador/a:* entra con rol `admin` y atiende los reportes desde la pantalla de moderacion de la app.
+* *Equipo de gestion:* requiere reportes utilizables y trazables; se envian al BFF con su estado.
+* *Backend:* proveedor de identidad, API y almacenamiento compartido; su contrato esta en `birds_apis.yaml` y aun puede cambiar.
+* *Dashboard:* herramienta web para gestion y moderacion; fuera del alcance de esta solucion mobile.
 
 === Objetivos de producto
 
 . Permitir registrar una observacion propia con fotografia y datos contextuales.
 . Mantener los registros propios accesibles despues de reiniciar la aplicacion.
 . Permitir explorar y filtrar los registros de la coleccion.
-. Facilitar el descubrimiento de especies con el catalogo externo mientras se define el contrato de datos definitivo.
-. Preparar una arquitectura mobile que pueda integrarse con la API y los procesos de moderacion del proyecto.
+. Facilitar el descubrimiento de especies con el catalogo externo.
+. Compartir aportes con la comunidad y atender reportes de moderacion a traves del BFF.
 
 === Fuera de alcance del prototipo actual
 
-* Autenticacion, perfiles persistentes en servidor y permisos por rol.
-* Publicacion o consulta de fotos aportadas por otros usuarios.
 * Sincronizacion, copias de seguridad o migracion de registros entre dispositivos.
-* Envio de reportes o moderacion desde un dashboard.
+* Dashboard web de moderacion y gestion; la moderacion se atiende desde la app.
 * Conteo de vistas, ranking de popularidad, comentarios, chat o seguimiento de perfiles.
 * Taxonomia definitiva administrada por el backend.
 
 == 2. Requisitos funcionales
 
-Los estados indican la implementacion observada en el repositorio al redactar este documento: *Implementado local* significa que la funcion opera en el dispositivo; *Catalogo externo* indica una dependencia de Aves de Chile; *Pendiente de integracion* no debe presentarse como funcion ya disponible.
+Los estados indican la implementacion observada en el repositorio al redactar este documento: *Implementado local* significa que la funcion opera en el dispositivo; *Catalogo externo* indica una dependencia de Aves de Chile; *Implementado contra BFF* funciona en modo mock por defecto y contra el servidor con `--dart-define=BFF_ACTIVO=true`; *Pendiente de integracion* no debe presentarse como funcion ya disponible.
 
 [cols="1,3,2,1",options="header"]
 |===
 |ID |Requisito |Estado |Prioridad
 
 |MOB-FR-01
-|La app presenta navegacion entre Inicio, Buscar, Coleccion y Perfil.
+|La app presenta navegacion entre Inicio, Buscar, Explorar, Coleccion y Perfil.
 |Implementado local
 |Alta
 
@@ -76,7 +75,7 @@ Los estados indican la implementacion observada en el repositorio al redactar es
 |Alta
 
 |MOB-FR-07
-|La persona puede filtrar la coleccion por tipo de registro y categoria; los filtros se aplican en conjunto.
+|La persona puede filtrar la coleccion por tipo de registro, por categoria y por texto libre sobre nombre, cientifico, lugar y comentario; los filtros se aplican en conjunto.
 |Implementado local
 |Media
 
@@ -86,18 +85,18 @@ Los estados indican la implementacion observada en el repositorio al redactar es
 |Alta
 
 |MOB-FR-09
-|La persona puede reportar una imagen seleccionando uno o mas motivos y, opcionalmente, detallar Otro.
-|Solo persistencia local; no se envia a moderacion
+|La persona puede reportar una imagen seleccionando uno o mas motivos y, opcionalmente, detallar Otro. El reporte siempre se conserva en el dispositivo y, si la foto pertenece al feed remoto, se envia ademas al BFF.
+|Implementado local; envio al BFF para fotos del feed
 |Baja
 
 |MOB-FR-10
-|La app puede publicar observaciones propias y obtener aportes de otros usuarios mediante el backend acordado.
-|Pendiente de integracion; requiere contrato y API
+|La app publica observaciones propias y obtiene los aportes de otros usuarios en el feed *Explorar*, con paginacion.
+|Implementado contra BFF; mock por defecto
 |Alta para producto objetivo
 
 |MOB-FR-11
-|La app puede enviar reportes al servicio de moderacion y presentar su estado.
-|Pendiente de integracion
+|La app envia reportes al servicio de moderacion y presenta su estado desde la pantalla de moderacion.
+|Implementado contra BFF; acceso restringido a rol `admin`
 |Media
 
 |===
@@ -116,30 +115,31 @@ Los estados indican la implementacion observada en el repositorio al redactar es
 === Restricciones tecnicas actuales
 
 * Aplicacion desarrollada en Flutter y Dart; manifiesto con minimo de SDK Dart `^3.13.4`.
-* Paquetes principales: `image_picker`, `http`, `url_launcher`, `path_provider` y `shared_preferences`.
+* Paquetes principales: `image_picker`, `http`, `http_parser`, `url_launcher`, `path_provider`, `shared_preferences` y `google_fonts` (tipografia del tema).
 * La coleccion se guarda en preferencias locales y las imagenes en directorios de documentos de la app.
 * La consulta del catalogo depende de conectividad para obtener el indice y las fichas JSON de Aves de Chile; las fichas se solicitan en lotes limitados.
-* El README identifica Android como plataforma actualmente configurada; Android e iOS son objetivo de entrega, pero iOS necesita validacion especifica antes de declararse soportado.
-* No hay servicio de API propio conectado ni almacenamiento remoto.
+* Destinos de compilacion configurados: Android e iOS, ademas de Windows. Android y Windows tienen build verificado; iOS lleva solo el scaffolding y requiere validacion especifica antes de declararse soportado.
+* La app arranca en modo mock; el BFF real solo se activa en tiempo de compilacion con `--dart-define=BFF_ACTIVO=true --dart-define=BFF_URL=...`.
+* No hay almacenamiento remoto propio: las imagenes del feed viven en el BFF, no en un almacenamiento gestionado por mobile.
 
 === Dependencias y acuerdos entre equipos
 
-* Backend debe acordar autenticacion, contratos, validacion, limites de carga, almacenamiento de imagenes y errores de API.
-* Dashboard y gestion deben acordar motivos, estados y trazabilidad de reportes/moderacion.
-* El equipo mobile debe convertir esos contratos acordados en requisitos y pruebas antes de integrar.
+* Backend confirma autenticacion, contratos, validacion, limites de carga, almacenamiento de imagenes y errores de API; el cliente ya implementa sus endpoints pero el contrato puede cambiar.
+* Dashboard y gestion deben acordar motivos, estados y trazabilidad de reportes/moderacion. Hoy la app usa los estados `abierto`, `revisado` y `descartado`, que no coinciden con el enum `recibido|en_revision|resuelto|descartado` del contrato.
+* El equipo mobile debe mantener esos contratos acordados como requisitos y pruebas antes de cada integracion.
 * DevOps mantiene la publicacion de documentacion HTML; mobile mantiene sus fuentes AsciiDoc y diagramas.
 * El catalogo de Aves de Chile contiene informacion e imagenes externas; revisar los creditos y condiciones de uso publicados por la fuente antes de reutilizar sus recursos.
 
 == 4. Criterios de aceptacion
 
-La version prototipo mobile se acepta cuando se cumplen los criterios `MOB-AC-*`. Los requisitos que necesitan servidor se aceptan solo en una entrega posterior una vez aprobados los contratos de integracion.
+La version prototipo mobile se acepta cuando se cumplen los criterios `MOB-AC-*`. Los requisitos que dependen de servidor se verifican en modo remoto una vez aprobados los contratos de integracion.
 
 [cols="1,3,2",options="header"]
 |===
 |ID |Criterio verificable |Casos UAT
 
 |MOB-AC-01
-|La app inicia y permite navegar por sus cuatro secciones sin errores de runtime.
+|La app inicia y permite navegar por sus cinco secciones sin errores de runtime.
 |xref:mobile-uat.adoc#uat-01[UAT-01], xref:mobile-uat.adoc#uat-02[UAT-02]
 
 |MOB-AC-02
@@ -159,11 +159,11 @@ La version prototipo mobile se acepta cuando se cumplen los criterios `MOB-AC-*`
 |xref:mobile-uat.adoc#uat-06[UAT-06], xref:mobile-uat.adoc#uat-07[UAT-07]
 
 |MOB-AC-06
-|Los filtros Tipo y Categoria se combinan y muestran solo los registros coincidentes.
+|Los filtros Tipo, Categoria y texto se combinan y muestran solo los registros coincidentes.
 |xref:mobile-uat.adoc#uat-08[UAT-08]
 
 |MOB-AC-07
-|Un reporte seleccionado se conserva localmente, e informa que aun no se envio a moderacion.
+|Un reporte seleccionado se conserva localmente y, si la foto viene del feed remoto, se envia al BFF y aparece en moderacion.
 |xref:mobile-uat.adoc#uat-09[UAT-09]
 
 |MOB-AC-08
@@ -175,7 +175,7 @@ La version prototipo mobile se acepta cuando se cumplen los criterios `MOB-AC-*`
 |xref:mobile-uat.adoc#uat-11[UAT-11]
 
 |MOB-AC-10
-|Catalogo, reportes remotos, cuentas y sincronizacion permanecen identificados como no disponibles mientras no exista integracion backend.
+|La sincronizacion entre dispositivos y el conteo de popularidad permanecen identificados como no disponibles; el resto de capacidades remotas se declara segun el modo (mock o BFF) activo.
 |Revision de alcance; xref:mobile-uat.adoc#uat-12[UAT-12]
 
 |===
@@ -189,11 +189,13 @@ La version prototipo mobile se acepta cuando se cumplen los criterios `MOB-AC-*`
 . La app muestra el nuevo registro en Coleccion y confirma el guardado.
 . La persona puede filtrar o quitar ese registro.
 
+Si no hay conectividad, la publicacion al BFF queda en la cola de subidas pendientes y se reintenta despues; el registro local existe desde el primer momento.
+
 La implementacion del almacenamiento local y sus limites se muestra en xref:mobile-architecture.adoc[Arquitectura mobile]. Los pasos de aceptacion se describen en xref:mobile-uat.adoc[Plan de pruebas y UAT].
 
 == 6. Recursos de UX
 
-La interfaz del prototipo contiene una barra de navegacion inferior, tarjetas de imagen y formularios de registro/reporte. Los filtros de Coleccion presentan los controles *Mostrar* y *Categoria* en paralelo; las opciones pueden desplazarse horizontalmente en dispositivos estrechos. La implementacion actual sirve como referencia funcional, no como sistema visual definitivo.
+La interfaz contiene una barra de navegacion (rail en pantallas anchas, barra inferior en pantallas estrechas), tarjetas de imagen y formularios de registro/reporte. Los filtros de Coleccion viven en una hoja modal y combinan tres ejes: *Tipo* (Todo, Aves guardadas, Mis avistamientos), *Categoria* y un campo de *texto libre*; los ejes activos se muestran como chips removibles. El sistema visual si es definitivo: la guia de marca de CORON y la paleta `PaletaCoron` estan documentadas en `mobile/DESIGN.md` y aplicadas en `lib/theme/app_theme.dart`.
 
 No se incluye un enlace a un prototipo externo aprobado. Si el equipo adopta un diseno/wireframe oficial, agregarlo aqui y registrar su version para mantener trazabilidad entre diseno, implementacion y UAT.
 
@@ -210,18 +212,20 @@ No se incluye un enlace a un prototipo externo aprobado. Si el equipo adopta un 
 * Quitar una entrada y fallar al borrar el archivo debe distinguir el exito parcial del borrado completo.
 * Dos operaciones de guardado simultaneas no deben crear estados inconsistentes.
 * Escalado de fuente, teclado visible, pantalla pequena y tema oscuro pueden provocar overflow.
+* El BFF no responde o devuelve un error; la cola de subidas pendientes no debe duplicar aportes ni perder el registro local.
+* El contrato del BFF cambia de forma incompatible; el modo mock permite seguir verificando la app sin servidor.
 
 == 8. Dependencias de negocio
 
 * Gestion valida alcance, prioridad y definicion de listo.
 * Liderazgo mobile indicado: Maximiliano.
-* Backend confirma identidad, contratos y politicas antes de implementar aportes remotos.
+* Backend confirma identidad, contratos y politicas; el cliente ya los consume pero la aprobacion formal sigue pendiente.
 * Gestion/moderacion confirma taxonomia de categorias, reportes y proceso de atencion.
 * DevOps publica el sitio HTML de Antora desde las fuentes versionadas.
 
 == 9. Trazabilidad de implementacion
 
-La pantalla y el estado de los flujos se implementan actualmente en `lib/screens/home_screen.dart`; el arranque y tema se configuran en `lib/main.dart`. La informacion de estado de producto debe actualizarse cuando se integren servicios o cambien las capacidades mobile.
+Las pantallas se implementan en `lib/screens/` (`home_screen.dart` orquesta las cinco secciones); el arranque y tema se configuran en `lib/main.dart`; la capa de red vive en `lib/services/` (`auth_service.dart`, `fotos_service.dart` con variantes mock y BFF, `subidas_pendientes_service.dart`) y el modo se decide en `lib/config/api_config.dart`. La informacion de estado de producto debe actualizarse cuando cambien las capacidades mobile.
 
 == Referencia metodologica
 

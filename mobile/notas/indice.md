@@ -1,11 +1,11 @@
 # CORON: Bitácora de Aves · Documentación mobile
 
 > [!info] Nota de lectura
-> Esta carpeta `mobile/notas/` es la copia en **Markdown** de la documentación mobile, pensada para leerla en **Obsidian**. Las fuentes originales en AsciiDoc siguen en `mobile/docs/modules/ROOT/pages/` y son las que compila el sitio Antora (`npm run docs`). Cuando algo cambie, actualiza primero aquí y luego la fuente `.adoc`.
+> Esta carpeta `mobile/notas/` es la copia en **Markdown** de la documentación mobile, pensada para leerla en **Obsidian**. Las fuentes originales en AsciiDoc siguen en `mobile/docs/modules/ROOT/pages/` y son las que compila el sitio Antora (`npm run docs`). Cuando algo cambie, actualiza primero la fuente `.adoc` y luego esta copia.
 
-CORON: Bitácora de Aves es una aplicación Flutter para registrar observaciones de aves y conservar una colección personal en el dispositivo.
+CORON: Bitácora de Aves es una aplicación Flutter para registrar observaciones de aves, conservar una colección personal en el dispositivo y compartir aportes con la comunidad.
 
-Esta documentación describe **la solución mobile y su estado en el prototipo del repositorio**. No afirma que exista una API propia, sincronización de usuarios ni moderación remota: esos servicios requieren integración con los equipos backend y dashboard.
+Esta documentación describe **la solución mobile y su estado actual**. La app habla con el BFF propio (Elixir Phoenix) para cuentas, feed y moderación, en modo local (mock, por defecto) o remoto (`--dart-define=BFF_ACTIVO=true`). Lo que sí queda fuera del alcance declarado es la sincronización entre dispositivos, el conteo de popularidad y el dashboard web; la moderación se atiende desde la propia app.
 
 ## Notas
 
@@ -19,7 +19,7 @@ Esta documentación describe **la solución mobile y su estado en el prototipo d
 
 ## Autenticación actual
 
-El registro y el inicio de sesión ya existen en la app, con mock local por defecto y soporte real cuando haya BFF:
+El registro y el inicio de sesión ya existen en la app, con mock local por defecto y soporte real cuando el BFF está activo:
 
 - **Registro** (`RegistroScreen`): pide **usuario**, **correo electrónico** y **contraseña** (con confirmación). El usuario es el identificador público; el correo queda como forma de volver a entrar.
 - **Inicio de sesión** (`LoginScreen`): se entra con **correo** y **contraseña**. No se pide el nombre de usuario.
@@ -49,8 +49,14 @@ En el emulador de Android, `10.0.2.2` apunta al `localhost` de la máquina.
 
 ## Sitio Antora
 
-Desde la raíz del repositorio: `npm ci` y `npm run docs`. La salida queda en `build/site/`, incluidos los diagramas C4 renderizados como SVG localmente (requiere Java o `JAVA_HOME`). También puedes abrir los `.adoc` en VS Code con `AsciiDoc: Open Preview`.
+Este directorio (`mobile/docs/`) es un componente Antora autocontenido dentro de `mobile/`. No tiene playbook ni dependencias propias: el playbook de la raíz lo declara con `start_path: mobile/docs` y es lo único que construye esta rama.
+
+Desde la raíz del repositorio: `npm ci` y `npm run docs`. La salida queda en `build/site/`. Los diagramas C4 se renderizan como SVG con `npm run docs:diagrams`, que invoca a `mobile/docs/scripts/render-diagrams.mjs` (requiere Java o `JAVA_HOME`). También puedes abrir los `.adoc` en VS Code con `AsciiDoc: Open Preview`.
+
+## Relación con el resto del sitio
+
+Los requisitos funcionales del proyecto los publica el equipo en su propio componente (`docs/`), que esta rama no construye. Este componente solo cubre lo móvil.
 
 ## Responsabilidad
 
-La documentación de esta sección cubre solo mobile. El liderazgo técnico mobile indicado para el proyecto es Maximiliano. El equipo mobile debe validar los requisitos y criterios con gestión, y acordar contratos de API con backend antes de presentar las funciones de red como disponibles.
+La documentación de esta carpeta cubre solo mobile. El liderazgo técnico mobile indicado para el proyecto es Maximiliano. El equipo mobile debe validar los requisitos y criterios con gestión, y acordar contratos de API con backend antes de presentar las funciones de red como disponibles.

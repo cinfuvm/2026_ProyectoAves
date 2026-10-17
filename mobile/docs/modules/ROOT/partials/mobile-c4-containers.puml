@@ -6,17 +6,21 @@ title CORON: Bitacora de Aves - Contenedores actuales
 Person(usuario, "Observador de aves")
 System_Ext(aveschile, "Aves de Chile", "Indice, fichas e imagenes JSON en uvm.neocities.org/aves.")
 System_Ext(so, "Camara y galeria del dispositivo", "Selector nativo de imagenes.")
+System(bff, "BFF Phoenix", "Elixir / Phoenix", "API REST con JWT: cuentas, imagenes, feed paginado y reportes de moderacion. El equipo backend lo mantiene.")
 
 System_Boundary(mobile, "Aplicacion mobile CORON: Bitacora de Aves") {
-  Container(app, "Aplicacion Flutter", "Flutter / Dart", "UI, navegacion, formularios, filtros y coordinacion de operaciones.")
-  ContainerDb(preferencias, "Preferencias locales", "shared_preferences / JSON", "Metadatos de aves guardadas, observaciones propias y reportes locales.")
+  Container(app, "Aplicacion Flutter", "Flutter / Dart", "UI, navegacion de cinco secciones, formularios, filtros y coordinacion de operaciones.")
+  Container(red, "Capa de red", "dart:io / http", "Cliente del BFF con doble modo: mock por defecto y remoto con BFF_ACTIVO=true; incluye la cola de subidas pendientes.")
+  ContainerDb(preferencias, "Preferencias locales", "shared_preferences / JSON", "Metadatos de aves guardadas, observaciones propias, reportes locales y sesion JWT.")
   Container(archivos, "Archivos privados de imagen", "Directorio de documentos", "Copias locales de imagenes seleccionadas o guardadas.")
 }
 
 Rel(usuario, app, "Usa")
+Rel(app, red, "Delega autenticacion, feed, subidas y reportes")
+Rel(red, bff, "HTTPS / JSON + multipart")
 Rel(app, aveschile, "Obtiene indice, fichas e imagenes", "HTTPS / JSON")
 Rel(app, so, "Abre camara/galeria", "image_picker")
-Rel(app, preferencias, "Lee/escribe colecciones y reportes", "shared_preferences")
+Rel(app, preferencias, "Lee/escribe colecciones, reportes y sesion", "shared_preferences")
 Rel(app, archivos, "Copia, muestra y elimina imagenes", "path_provider / dart:io")
 
 SHOW_LEGEND()

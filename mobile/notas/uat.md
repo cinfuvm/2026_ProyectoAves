@@ -11,19 +11,19 @@ Verificar manualmente que la app mobile cumple los criterios de aceptación defi
 
 ### Incluido
 
-- Inicio (panel de bienvenida y resumen), Buscar, navegación y estados de carga/error del catálogo externo de Aves de Chile.
+- Inicio (panel de bienvenida y resumen), Buscar, Explorar (feed comunitario), navegación y estados de carga/error del catálogo externo de Aves de Chile.
 - Reorganización de navegación y contenido al usar la app en orientación horizontal.
 - Búsqueda, categorías generales, guardado y eliminación de aves de catálogo.
 - Selección de imagen, formulario de observación propia, persistencia y eliminación.
-- Filtros combinados de tipo, categoría y búsqueda en Colección, con sus conteos y chips-resumen.
-- Registro local de reportes y mensajes que describen correctamente su estado.
-- Registro con usuario + correo + contraseña e inicio de sesión con correo + contraseña (modo mock y, cuando exista BFF, contra el servidor).
+- Filtros combinados de tipo, categoría y texto libre en Colección, con sus conteos y chips-resumen.
+- Reportes: persistencia local siempre, y envío al BFF cuando la foto pertenece al feed; pantalla de moderación con rol `admin`.
+- Autenticación (login, registro, sesión y cierre) en modo mock y en modo BFF.
 - Manejo de cancelación, permisos, red y fallos de almacenamiento.
 
 ### Excluido / no aceptable como disponible hoy
 
 - Feed comunitario y subida/reportes reales contra el BFF: se prueban en modo mock (UAT-13..UAT-15); la integración real (UAT-16) requiere el backend Phoenix disponible.
-- Moderación desde dashboard, notificaciones de estado de reporte.
+- Moderación desde dashboard web (la moderación se atiende desde la app), notificaciones push de estado de reporte.
 - Popularidad basada en vistas, comentarios, chat y seguimiento de perfiles.
 - Certificación iOS: ejecutar estos casos en iOS solo después de configurar y validar ese target en un Mac.
 
@@ -74,12 +74,12 @@ Estados sugeridos: `No ejecutado`, `Aprobado`, `Fallido`, `Bloqueado`. Registrar
 
 1. Abrir la app.
 2. Navegar por Inicio, Buscar, Explorar, Colección y Perfil.
-3. Deslizar horizontalmente entre las secciones y comprobar que la barra inferior actualiza la selección.
+3. Deslizar horizontalmente entre las cinco secciones y comprobar que la barra inferior actualiza la selección.
 4. Alternar tema claro/oscuro y volver a Colección.
 5. Girar el dispositivo a orientación horizontal y cambiar de sección desde la navegación lateral.
 6. Reducir el ancho de la ventana por debajo de 600 dp y comprobar que vuelve la barra inferior; volver a ampliarlo.
 
-**Esperado:** en ventanas de menos de 600 dp se conserva la barra inferior; desde 600 dp se usa navegación lateral, que permite desplazarse si la altura disponible es reducida. En apaisado la cabecera y las tarjetas del catálogo reducen su altura; la imagen y los datos del ave aparecen lado a lado, y Agregar foto pasa a la barra superior para no cubrir el contenido. El contenido se centra con un ancho máximo en ventanas amplias para conservar la legibilidad. Las secciones siguen accesibles; los filtros horizontales de Buscar y Colección siguen desplazándose sin cambiar de sección; el tema cambia y no aparece una pantalla roja ni error de runtime.
+**Esperado:** en ventanas de menos de 600 dp se conserva la barra inferior; desde 600 dp se usa navegación lateral, que permite desplazarse si la altura disponible es reducida. En apaisado la cabecera y las tarjetas del catálogo reducen su altura; la imagen y los datos del ave aparecen lado a lado, y Agregar foto pasa a la barra superior para no cubrir el contenido. El contenido se centra con un ancho máximo en ventanas amplias para conservar la legibilidad. Las cinco secciones siguen accesibles; los filtros horizontales de Buscar y Colección siguen desplazándose sin cambiar de sección; el tema cambia y no aparece una pantalla roja ni error de runtime.
 
 **Resultado/evidencia:** pendiente de ejecución.
 
@@ -197,7 +197,7 @@ Estados sugeridos: `No ejecutado`, `Aprobado`, `Fallido`, `Bloqueado`. Registrar
 3. Abrir Perfil y revisar el contador.
 4. Reiniciar la app y comprobar que el contador persiste.
 
-**Esperado:** el reporte se conserva localmente y la interfaz aclara que aún no se envía a moderación. No se afirma que gestión/backend lo recibió.
+**Esperado:** el reporte se conserva localmente en cualquier caso. Si la foto viene del feed comunitario, el envío al BFF se confirma con la respuesta del servidor y el reporte aparece en la pantalla de moderación; si es una foto local, la interfaz aclara que no se envía a moderación. No se afirma que gestión/backend recibió un reporte que quedó solo en el dispositivo.
 
 **Resultado/evidencia:** pendiente de ejecución.
 
@@ -228,18 +228,18 @@ Estados sugeridos: `No ejecutado`, `Aprobado`, `Fallido`, `Bloqueado`. Registrar
 
 **Resultado/evidencia:** pendiente de ejecución.
 
-### UAT-12 - Verificación de límites del prototipo
+### UAT-12 - Verificación de límites del alcance
 
 **Prioridad:** P1
 
 **Precondiciones:** build candidato.
 
-1. Confirmar que la app no presenta sincronización de registros ni moderación remota como disponibles.
+1. Confirmar que no se ofrece sincronización de registros entre dispositivos ni conteo de popularidad.
 2. Guardar una observación propia y revisar que se muestra en el mismo dispositivo.
-3. Crear un reporte y revisar el mensaje de no envío a moderación.
+3. Crear un reporte sobre una foto local y revisar el mensaje de no envío a moderación.
 4. Comprobar que las fichas del catálogo enlazan a Aves de Chile y que no se presenta como API propia del proyecto.
 
-**Esperado:** la app no presenta funcionalidades de backend aún no integradas como disponibles. El comportamiento local queda explicado en interfaz/documentación.
+**Esperado:** la app no presenta fuera de alcance (sincronización, popularidad, dashboard web) como disponible. Las capacidades remotas se declaran según el modo activo: mock por defecto, BFF con `BFF_ACTIVO=true`. El comportamiento local queda explicado en interfaz/documentación.
 
 **Resultado/evidencia:** pendiente de ejecución.
 
@@ -349,7 +349,7 @@ Para cada caso fallido:
 |---|---|---|
 | Representante producto/gestión | Pendiente de asignación | Pendiente |
 | Líder técnico mobile | Maximiliano (según asignación del proyecto) | Pendiente |
-| Backend (para alcance de integración futura) | Jose Luis (según asignación del proyecto) | Pendiente y fuera de aceptación del prototipo local |
+| Backend (para alcance de integración) | Jose Luis (según asignación del proyecto) | Pendiente; valida la integración real con el BFF |
 
 La aprobación UAT aplica al build y alcance identificados, no a funcionalidades excluidas ni a versiones futuras.
 
