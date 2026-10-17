@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../models/avistamiento_propio.dart';
@@ -7,8 +9,13 @@ import '../models/categoria_ave.dart';
 ///
 /// Devuelve los [DatosAvistamiento] ingresados o `null` si se cancela.
 class FormularioAvistamientoDialog extends StatefulWidget {
-  const FormularioAvistamientoDialog({super.key, required this.formatearFecha});
+  const FormularioAvistamientoDialog({
+    super.key,
+    required this.rutaImagen,
+    required this.formatearFecha,
+  });
 
+  final String rutaImagen;
   final String Function(DateTime) formatearFecha;
 
   @override
@@ -79,21 +86,47 @@ class _FormularioAvistamientoDialogState
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Text(
+                  'Vista previa de la foto',
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: AspectRatio(
+                    aspectRatio: 16 / 10,
+                    child: Image.file(
+                      File(widget.rutaImagen),
+                      key: const ValueKey<String>(
+                        'vista-previa-foto-avistamiento',
+                      ),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => ColoredBox(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest,
+                        child: const Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.broken_image_outlined),
+                              SizedBox(height: 8),
+                              Text('No se pudo mostrar esta foto.'),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 TextFormField(
                   controller: _nombreAveController,
                   textCapitalization: TextCapitalization.words,
                   decoration: InputDecoration(
-                    labelText: 'Nombre del ave',
+                    labelText: 'Nombre del ave *',
                     hintText: 'Ej. Chucao (o "Ave sin identificar")',
-                    prefixIcon: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Image.asset(
-                        'assets/logo_isotipo.png',
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, _, _) =>
-                            const Icon(Icons.flutter_dash_rounded),
-                      ),
-                    ),
+                    prefixIcon: const Icon(Icons.label_outline),
                   ),
                   validator: (valor) => valor == null || valor.trim().isEmpty
                       ? 'Indica el nombre del ave o escribe "Ave sin identificar".'

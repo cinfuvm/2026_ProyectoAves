@@ -520,16 +520,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _procesarImagenSeleccionada(XFile imagen) async {
-    final datosAvistamiento = await _solicitarDatosAvistamiento();
+    final datosAvistamiento = await _solicitarDatosAvistamiento(
+      rutaImagen: imagen.path,
+    );
     if (!mounted || datosAvistamiento == null) return;
     await _guardarAvistamiento(imagen, datosAvistamiento);
   }
 
-  Future<DatosAvistamiento?> _solicitarDatosAvistamiento() async {
+  Future<DatosAvistamiento?> _solicitarDatosAvistamiento({
+    required String rutaImagen,
+  }) async {
     return showDialog<DatosAvistamiento>(
       context: context,
-      builder: (_) =>
-          FormularioAvistamientoDialog(formatearFecha: formatearFecha),
+      builder: (_) => FormularioAvistamientoDialog(
+        rutaImagen: rutaImagen,
+        formatearFecha: formatearFecha,
+      ),
     );
   }
 
