@@ -222,10 +222,18 @@ class InicioScreen extends StatelessWidget {
                 width: 1.5,
               ),
             ),
-            child: Icon(
-              Icons.flutter_dash_rounded,
-              size: esApaisada ? 34 : 50,
-              color: Colors.white,
+            child: Padding(
+              padding: EdgeInsets.all(esApaisada ? 11 : 17),
+              child: Image.asset(
+                'assets/logo_isotipo_pink.png',
+                fit: BoxFit.contain,
+                semanticLabel: 'Isotipo de CORON',
+                errorBuilder: (_, _, _) => const Icon(
+                  Icons.flutter_dash_rounded,
+                  size: 44,
+                  color: Colors.white,
+                ),
+              ),
             ),
           ),
         ],
