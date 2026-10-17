@@ -8,7 +8,7 @@
     "test": "npm run test:mobile",
     "test:mobile": "cd mobile && flutter analyze && flutter test",
     "test:all": "npm run test:mobile && npm run docs",
-    "docs:diagrams": "node docs/scripts/render-diagrams.mjs",
+    "docs:diagrams": "node mobile/docs/scripts/render-diagrams.mjs",
     "docs:site": "antora antora-playbook.yml",
     "docs": "npm run docs:diagrams && npm run docs:site"
   },

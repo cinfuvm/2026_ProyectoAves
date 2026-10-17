@@ -30,7 +30,9 @@ if (!javaDirectory) {
   throw new Error('Java no esta disponible. Instala Java 21 o configura JAVA_HOME.')
 }
 
-const cliPath = resolve(docsDir, '../node_modules/plantuml-cli/index.js')
+// Las dependencias npm viven en la raiz del monorepo, no en mobile/:
+// mobile/docs/scripts -> mobile/docs -> mobile -> raiz.
+const cliPath = resolve(docsDir, '../../../node_modules/plantuml-cli/index.js')
 const result = spawnSync(
   process.execPath,
   [

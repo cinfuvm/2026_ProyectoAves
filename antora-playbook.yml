@@ -5,7 +5,11 @@ content:
   sources:
     - url: .
       branches: HEAD
-      start_path: docs
+      # Dos componentes desde este mismo repositorio: el sitio del equipo y
+      # la documentación móvil autocontenida en mobile/docs/.
+      start_paths:
+        - docs
+        - mobile/docs
 ui:
   bundle:
     url: https://gitlab.com/antora/antora-ui-default/-/jobs/artifacts/HEAD/raw/build/ui-bundle.zip?job=bundle-stable

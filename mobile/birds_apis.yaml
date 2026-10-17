@@ -43,14 +43,22 @@ paths:
         '400':
           $ref: '#/components/responses/ValidacionFallida'
         '409':
-          description: El nombre de usuario ya existe.
+          description: El nombre de usuario o el correo ya existe.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-              example:
-                error: usuario_duplicado
-                message: El usuario 'ana' ya está registrado.
+              examples:
+                usuarioDuplicado:
+                  summary: Usuario repetido
+                  value:
+                    error: usuario_duplicado
+                    message: El usuario 'ana' ya está registrado.
+                emailDuplicado:
+                  summary: Correo repetido
+                  value:
+                    error: email_duplicado
+                    message: El correo 'ana.ruiz@ejemplo.cl' ya está registrado.
         '422':
           $ref: '#/components/responses/ValidacionFallida'
 
@@ -60,7 +68,8 @@ paths:
         - API users
       summary: Iniciar sesión
       description: |
-        Autentica a un usuario registrado y devuelve el token de sesión.
+        Autentica a un usuario registrado por su correo y contraseña, y devuelve
+        el token de sesión.
         Operación pública: no requiere cabecera `Authorization`.
       operationId: login
       security: []
@@ -208,29 +217,39 @@ components:
 
     LogIn:
       type: object
-      description: Credenciales de acceso.
+      description: |
+        Credenciales de acceso. Se entra con el correo con el que se registró
+        el usuario, no con el nombre de usuario.
       required:
-        - user
+        - email
         - password
       properties:
-        user:
+        email:
           type: string
-          example: anaruiz.aves
+          format: email
+          example: ana.ruiz@ejemplo.cl
         password:
           type: string
           format: password
 
     CrearUsuario:
       type: object
-      description: Datos de registro de un usuario nuevo.
+      description: Datos de registro de un usuario nuevo: nombre de usuario y correo.
       required:
         - user
+        - email
         - password
         - confirm_pasword
       properties:
         user:
           type: string
           minLength: 3
+          maxLength: 30
+          example: anaruiz.aves
+        email:
+          type: string
+          format: email
+          example: ana.ruiz@ejemplo.cl
         password:
           type: string
           format: password

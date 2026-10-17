@@ -7,10 +7,11 @@
 //   GET    /api/user/me      -> 200 {user:{id,user,rol}}       (requiere Bearer)
 //   DELETE /api/user/logout  -> 200 {message}
 //
-// El identificador se recibe y se devuelve como `user` en el JSON, el nombre
-// que fija el contrato `birds_apis.yaml` (en la base de datos es `username`).
-// No valida credenciales: devuelve el usuario que se le pidió, para que la app
-// muestre en el perfil lo mismo que se escribió en el formulario.
+// El identificador llega como `user` en el registro y como `email` en el
+// login, y se devuelve siempre como `user` en el JSON, el nombre que fija el
+// contrato `birds_apis.yaml` (en la base de datos es `username`).
+// No valida credenciales: devuelve el identificador que se le pidió, para que
+// la app muestre en el perfil lo mismo que se escribió en el formulario.
 //
 // Uso:
 //   dart scripts\mock_backend.dart              # 0.0.0.0:4001
@@ -125,16 +126,20 @@ Future<void> _manejar(HttpRequest req) async {
 /// leyendo el token. No hay sesiones: si reinicias el mock vuelve a `demo`.
 String _ultimo = 'demo';
 
-/// Lee `user` del cuerpo JSON de la petición. Si no lo trae, devuelve el
-/// último identificador entregado.
+/// Lee el identificador del cuerpo JSON: `user` (registro) o `email` (login).
+/// Si no trae ninguno, devuelve el último identificador entregado.
 String _identificador(String? cuerpo) {
   if (cuerpo == null || cuerpo.isEmpty) return _ultimo;
   try {
     final json = jsonDecode(cuerpo);
-    final valor = json is Map<String, dynamic> ? json['user'] : null;
-    if (valor is String && valor.trim().isNotEmpty) {
-      _ultimo = valor.trim();
-      return _ultimo;
+    if (json is Map<String, dynamic>) {
+      for (final campo in const ['user', 'email']) {
+        final valor = json[campo];
+        if (valor is String && valor.trim().isNotEmpty) {
+          _ultimo = valor.trim();
+          return _ultimo;
+        }
+      }
     }
   } on FormatException {
     // Sin cuerpo JSON se contesta con el último usuario entregado.

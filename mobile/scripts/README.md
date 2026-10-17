@@ -15,8 +15,9 @@ PostgreSQL. Reproduce las 4 rutas de autenticación que consume la app:
 | `GET` | `/api/user/me` | `200 {user:{id,user,rol}}` (requiere `Bearer`) |
 | `DELETE` | `/api/user/logout` | `200 {message}` |
 
-No valida credenciales: devuelve el usuario que se le pidió, para que el perfil
-muestre lo mismo que se escribió en el formulario. El identificador viaja como
+No valida credenciales: devuelve el identificador que se le pidió, para que el
+perfil muestre lo mismo que se escribió en el formulario. El registro lo trae
+como `user` y el login como `email`; la respuesta lo devuelve siempre como
 `user`, tal como fija `birds_apis.yaml`.
 
 ### Uso

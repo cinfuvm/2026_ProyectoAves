@@ -1,0 +1,31 @@
+= Bitácora de Aves — Móvil
+:description: Documentación del producto, arquitectura y aceptación de la aplicación móvil Bitácora de Aves.
+
+Bitácora de Aves es una aplicación Flutter para registrar observaciones de aves y conservar una colección personal en el dispositivo.
+
+Esta documentación describe *la solución móvil y su estado en el prototipo del repositorio*. No afirma que exista una API propia, sincronización de usuarios ni moderación remota: esos servicios requieren integración con los equipos backend y dashboard.
+
+El componente sigue la estructura Antora recomendada por https://github.com/NinjasCL/antora-docs-bootstrap[antora-docs-bootstrap]. El PRD y el plan UAT toman como referencia las guías de https://elixircl.github.io/elixir-fullstack/swe/prd.html[PRD] y https://elixircl.github.io/elixir-fullstack/swe/uat.html[UAT] del equipo.
+
+== Documentos
+
+* xref:mobile-prd.adoc[PRD móvil]: alcance, actores, requisitos, restricciones y criterios de aceptación.
+* xref:mobile-architecture.adoc[Arquitectura móvil]: diagramas C4 en PlantUML y límites de integración.
+* xref:mobile-uat.adoc[Plan de pruebas y UAT]: casos manuales, datos, evidencia y registro de resultados.
+* xref:mobile-changes.adoc[Registro de cambios]: resumen funcional y documental de los cambios móviles.
+
+== Compilación
+
+Este directorio es un componente Antora autocontenido dentro de `mobile/`. No tiene playbook ni dependencias propias: se publica junto con el sitio del proyecto porque la raíz declara `start_paths: [docs, mobile/docs]`.
+
+Desde la raíz del repositorio, ejecuta `npm ci` para instalar las herramientas y `npm run docs` para generar el sitio HTML en `build/site/`. Los diagramas C4 se renderizan como SVG con `npm run docs:diagrams`, que invoca a `mobile/docs/scripts/render-diagrams.mjs`.
+
+También puedes abrir los archivos `.adoc` en VS Code y usar el comando `AsciiDoc: Open Preview` para leer cada documento.
+
+== Relación con el resto del sitio
+
+El componente del equipo está en `xref:bitacora-aves::index.adoc[Bitácora de Aves]` y publica los requisitos funcionales en `xref:bitacora-aves::requisitos.adoc[Requisitos funcionales]`. Este componente no los duplica: solo cubre lo móvil.
+
+== Responsabilidad
+
+La documentación de esta carpeta cubre solo mobile. El liderazgo técnico móvil indicado para el proyecto es Maximiliano. El equipo mobile debe validar los requisitos y criterios con gestión, y acordar contratos de API con backend antes de presentar las funciones de red como disponibles.

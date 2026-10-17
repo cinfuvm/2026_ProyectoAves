@@ -1,12 +1,3 @@
 * xref:index.adoc[Inicio]
 * xref:requisitos.adoc[Requisitos funcionales]
-* Aplicación móvil
-** xref:mobile-index.adoc[Inicio móvil]
-** Producto
-*** xref:mobile-prd.adoc[PRD móvil]
-*** xref:mobile-uat.adoc[Plan de pruebas y UAT]
-*** xref:mobile-changes.adoc[Registro de cambios]
-** Arquitectura
-*** xref:mobile-architecture.adoc[Arquitectura móvil]
-** Integración
-*** xref:mobile-contrato.adoc[Extensiones al contrato API]
+* xref:bitacora-aves-mobile::index.adoc[Aplicación móvil]

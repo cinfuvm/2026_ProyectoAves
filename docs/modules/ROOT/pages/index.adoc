@@ -5,4 +5,4 @@ Sistema de administración de datos de aves y bitácora de avistamientos por usu
 == Contenido
 
 * xref:requisitos.adoc[Requisitos funcionales]
-* xref:mobile-index.adoc[Aplicación móvil]: PRD, arquitectura C4, plan de pruebas UAT y registro de cambios.
+* xref:bitacora-aves-mobile::index.adoc[Aplicación móvil]: PRD, arquitectura C4, plan de pruebas UAT y registro de cambios.

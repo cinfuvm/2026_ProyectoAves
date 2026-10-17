@@ -31,7 +31,10 @@ Cada issue del proyecto indica en su descripción el RF que cubre.
 Para levantar la app móvil en local (emulador o celular físico) y ejecutarla
 con `flutter run`, sigue [`mobile/readme.md`](mobile/readme.md).
 
-La documentación se escribe con [Antora](https://antora.org/) en la carpeta `docs/`, que reúne todo el proyecto: requisitos funcionales y documentación de la aplicación móvil.
+La documentación se escribe con [Antora](https://antora.org/) y vive en dos componentes que publica un solo sitio:
+
+- `docs/`: requisitos funcionales y contenido del equipo.
+- `mobile/docs/`: documentación de la aplicación móvil (PRD, arquitectura C4, plan de pruebas UAT y registro de cambios), autocontenida dentro de `mobile/`.
 
 Para generarla en local (requiere Node.js 18 o superior, y Java 21 para renderizar los diagramas C4):
 
@@ -42,4 +45,4 @@ npm run docs
 
 El sitio queda en `build/site/index.html`.
 
-Para agregar una página, crea un archivo `.adoc` en `docs/modules/ROOT/pages/` y agrégalo a `docs/modules/ROOT/nav.adoc`.
+Para agregar una página, crea un archivo `.adoc` en `docs/modules/ROOT/pages/` (o en `mobile/docs/modules/ROOT/pages/` si es de la app móvil) y agrégalo al `nav.adoc` de ese componente.

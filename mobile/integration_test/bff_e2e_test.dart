@@ -31,8 +31,8 @@ Future<bool> _saltarSiNoHayBff() async {
   } on Exception {
     markTestSkipped(
       'BFF no alcanzable en ${ApiConfig.urlBase}. '
-      'Arráncalo con scripts\\bff.ps1 (y el mock con '
-      'dart scripts\\mock_backend.dart).',
+      'Arranca el mock desde `mobile/` con '
+      '`dart scripts/mock_backend.dart`.',
     );
     return true;
   }
