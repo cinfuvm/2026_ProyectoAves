@@ -36,7 +36,7 @@ defmodule Aves.Accounts.User do
   end
 
   actions do
-    defaults [:read]
+    defaults [:read, :destroy]
 
     read :get_by_subject do
       description "Get a user by the subject claim in a JWT"
@@ -44,10 +44,51 @@ defmodule Aves.Accounts.User do
       get? true
       prepare AshAuthentication.Preparations.FilterBySubject
     end
+
+    update :assign_role do
+      description "Asigna el rol de un usuario (solo administradores)."
+      accept [:rol]
+      require_atomic? false
+    end
+
+    update :update_profile do
+      description "Actualiza el perfil del propio usuario (nickname/email)."
+      accept [:nickname, :email]
+      require_atomic? false
+    end
   end
 
   policies do
     bypass AshAuthentication.Checks.AshAuthenticationInteraction do
+      authorize_if always()
+    end
+
+    policy actor_attribute_equals(:rol, :admin) do
+      description "Los administradores tienen acceso total."
+      authorize_if always()
+    end
+
+    policy [action_type(:read), expr(id == ^actor(:id))] do
+      description "Un usuario autenticado puede leer su propio perfil."
+      authorize_if always()
+    end
+
+    policy [action(:update_profile), expr(id == ^actor(:id))] do
+      description "Un usuario autenticado puede editar su propio perfil."
+      authorize_if always()
+    end
+
+    policy [actor_attribute_equals(:rol, :moderador), action_type(:read)] do
+      description "Los moderadores pueden listar y leer usuarios."
+      authorize_if always()
+    end
+
+    policy [
+      actor_attribute_equals(:rol, :moderador),
+      action_type(:destroy),
+      expr(rol == :usuario)
+    ] do
+      description "Los moderadores pueden eliminar solo a usuarios con rol `usuario`."
       authorize_if always()
     end
   end

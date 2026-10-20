@@ -53,6 +53,27 @@ defmodule AvesWeb.API.UserController do
     json(conn, %{user: user_json(user)})
   end
 
+  @doc """
+  PATCH /api/user/me - Actualiza el perfil del usuario autenticado.
+
+  Acepta `nickname` y/o `email`; el resto de campos se ignora. Delega en la
+  acción `:update_profile` del recurso, por lo que las policies garantizan que
+  cada usuario solo edite su propio perfil.
+  """
+  def update_me(conn, params) do
+    actor = Ash.PlugHelpers.get_actor(conn)
+
+    case Ash.update(actor, profile_params(params), action: :update_profile, actor: actor) do
+      {:ok, user} ->
+        json(conn, %{user: user_json(user)})
+
+      {:error, error} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{errors: error_messages(error)})
+    end
+  end
+
   defp strategy, do: Info.strategy!(User, :password)
 
   # Acepta `user` como alias de `email` para mantener compatibilidad con el
@@ -71,6 +92,14 @@ defmodule AvesWeb.API.UserController do
       "email" => params["email"] || params["user"],
       "password" => params["password"]
     }
+  end
+
+  # Solo se aceptan los campos editables del perfil; ignora `rol`, `password`,
+  # etc. que el cliente pudiera enviar.
+  defp profile_params(params) do
+    [nickname: params["nickname"], email: params["email"]]
+    |> Enum.reject(fn {_field, value} -> is_nil(value) end)
+    |> Map.new()
   end
 
   defp auth_response(user) do
