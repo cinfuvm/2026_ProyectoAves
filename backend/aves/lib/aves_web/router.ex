@@ -42,6 +42,26 @@ defmodule AvesWeb.Router do
 
     get "/user/me", UserController, :me
     patch "/user/me", UserController, :update_me
+
+    # RF-08 / RF-09 / RF-10 - Personal sightings (bitacora)
+    post "/sightings", SightingController, :create
+    get "/sightings", SightingController, :index
+    patch "/sightings/:id", SightingController, :update
+    delete "/sightings/:id", SightingController, :delete
+
+    # RF-11 - Photos from other users (filterable)
+    get "/photos", PhotoController, :index
+
+    # RF-12 - Personal collection
+    get "/collection", CollectionController, :index
+    post "/collection", CollectionController, :create
+    delete "/collection/:id", CollectionController, :delete
+
+    # RF-13 / RF-14 - Reports and moderator queue
+    post "/reports", ReportController, :create
+    get "/reports", ReportController, :index
+    post "/reports/:id/approve", ReportController, :approve
+    post "/reports/:id/retire", ReportController, :retire
   end
 
   scope "/", AvesWeb do

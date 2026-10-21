@@ -35,3 +35,7 @@ aves-*.tar
 npm-debug.log
 /assets/node_modules/
 
+# Local development server logs.
+server.log
+*.log
+
