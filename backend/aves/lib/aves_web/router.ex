@@ -43,6 +43,20 @@ defmodule AvesWeb.Router do
     get "/user/me", UserController, :me
     patch "/user/me", UserController, :update_me
 
+    # RF-05 and RF-06
+    get "/birds/ranking", BirdController, :ranking # Ranking de aves más vistas
+
+    get "/birds", BirdController, :index
+    get "/birds/:id", BirdController, :show
+    post "/birds", BirdController, :create
+    patch "/birds/:id", BirdController, :update
+    delete "/birds/:id", BirdController, :delete
+
+    get "/categories", CategoryController, :index
+    post "/categories", CategoryController, :create
+    patch "/categories/:id", CategoryController, :update
+    delete "/categories/:id", CategoryController, :delete
+
     # RF-08 / RF-09 / RF-10 - Personal sightings (bitacora)
     post "/sightings", SightingController, :create
     get "/sightings", SightingController, :index

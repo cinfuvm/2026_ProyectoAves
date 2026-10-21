@@ -19,15 +19,30 @@ defmodule Aves.Catalog.Category do
     create :create do
       accept [:name]
     end
+<<<<<<< HEAD
   end
 
   policies do
     # Categories are public catalog data: any authenticated actor can read them.
+=======
+
+    update :update do
+      accept [:name]
+    end
+
+    destroy :destroy
+  end
+
+  policies do
+>>>>>>> feat/backend/marcelo
     policy action_type(:read) do
       authorize_if actor_present()
     end
 
+<<<<<<< HEAD
     # Only moderators and admins can manage the catalog.
+=======
+>>>>>>> feat/backend/marcelo
     policy action_type([:create, :update, :destroy]) do
       authorize_if expr(actor.rol in [:moderador, :admin])
     end
@@ -55,3 +70,7 @@ defmodule Aves.Catalog.Category do
     end
   end
 end
+<<<<<<< HEAD
+=======
+
+>>>>>>> feat/backend/marcelo

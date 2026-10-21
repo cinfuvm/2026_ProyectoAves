@@ -9,8 +9,18 @@ defmodule Aves.Catalog do
   use Ash.Domain,
     otp_app: :aves
 
+<<<<<<< HEAD
   resources do
     resource Aves.Catalog.Category
     resource Aves.Catalog.Bird
   end
+=======
+
+  resources do
+    resource Aves.Catalog.Category
+    resource Aves.Catalog.Bird
+    resource Aves.Catalog.BirdView
+  end
+
+>>>>>>> feat/backend/marcelo
 end

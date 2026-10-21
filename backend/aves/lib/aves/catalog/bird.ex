@@ -20,10 +20,15 @@ defmodule Aves.Catalog.Bird do
     create :create do
       accept [:name, :category_id]
     end
+
+    update :update do
+      accept [:name, :category_id]
+    end
+
+    destroy :destroy
   end
 
   policies do
-    # Birds are public catalog data: any authenticated actor can read them.
     policy action_type(:read) do
       authorize_if actor_present()
     end
