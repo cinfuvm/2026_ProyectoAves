@@ -1,4 +1,7 @@
 import Config
+config :aves, token_signing_secret: "h41WhB6MgmjMxAQqtrwd5/wLRuQa+emj"
+config :bcrypt_elixir, log_rounds: 1
+config :ash, policies: [show_policy_breakdowns?: true], disable_async?: true
 
 # Configure your database
 #
@@ -17,7 +20,7 @@ config :aves, Aves.Repo,
 # you can enable the server option below.
 config :aves, AvesWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
-  secret_key_base: "yyFVOatu9SjMasYtTanoc7AO8rCGAFzsvkrH9tg0zFEF0hIJgh1kfK8MDJu2tT6f",
+  secret_key_base: "r3IWMdu8xKAr9TOVyb4EsVsxIHyanwu5G8YfjKXcOx/02x8yeWOEr5HeBMlJyM++",
   server: false
 
 # In test we don't send emails
@@ -31,6 +34,10 @@ config :logger, level: :warning
 
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime
+
+# Enable helpful, but potentially expensive runtime checks
+config :phoenix_live_view,
+  enable_expensive_runtime_checks: true
 
 # Sort query params output of verified routes for robust url comparisons
 config :phoenix,

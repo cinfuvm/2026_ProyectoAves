@@ -1,22 +1,60 @@
 defmodule Aves.Catalog.Bird do
-  use Ecto.Schema
-  import Ecto.Changeset
+  @moduledoc """
+  A bird species. Minimal resource for the sightings/moderation requirements;
+  the full catalog CRUD (RF-05) and search (RF-06) live in their own issues.
+  """
+  use Ash.Resource,
+    otp_app: :aves,
+    domain: Aves.Catalog,
+    data_layer: AshPostgres.DataLayer,
+    authorizers: [Ash.Policy.Authorizer]
 
-
-  @primary_key {:id_ave, :id, autogenerate: true}
-
-  schema "ave" do
-    field :nombre_comun, :string
-    field :nombre_cientifico, :string
-
-    timestamps(type: :utc_datetime)
+  postgres do
+    table "birds"
+    repo Aves.Repo
   end
 
-  @doc false
-  def changeset(bird, attrs) do
-    bird
-    |> cast(attrs, [:nombre_comun, :nombre_cientifico])
-    |> validate_required([:nombre_comun, :nombre_cientifico])
-    |> unique_constraint(:nombre_cientifico)
+  actions do
+    defaults [:read]
+
+    create :create do
+      accept [:name, :category_id]
+    end
+
+    update :update do
+      accept [:name, :category_id]
+    end
+
+    destroy :destroy
+  end
+
+  policies do
+    policy action_type(:read) do
+      authorize_if actor_present()
+    end
+
+    policy action_type([:create, :update, :destroy]) do
+      authorize_if expr(actor.rol in [:moderador, :admin])
+    end
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :name, :string do
+      allow_nil? false
+      public? true
+    end
+
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
+  end
+
+  relationships do
+    belongs_to :category, Aves.Catalog.Category do
+      allow_nil? true
+      public? true
+      attribute_writable? true
+    end
   end
 end

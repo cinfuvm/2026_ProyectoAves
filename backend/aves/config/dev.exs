@@ -1,4 +1,5 @@
 import Config
+config :ash, policies: [show_policy_breakdowns?: true]
 
 # Configure your database
 config :aves, Aves.Repo,
@@ -23,8 +24,11 @@ config :aves, AvesWeb.Endpoint,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "PbvbuNAJUUZ7EZgmO80ij3Zk4SSqihl/P5/9bFCDH+blGP6oAQ8YMaFP7h0KCDyw",
-  watchers: []
+  secret_key_base: "WFSoeyMumGjm44x2yAAsASyO3Q+qHDOWE0mvtYQSHuGqNWzTux1GD9N+JHyepep4",
+  watchers: [
+    esbuild: {Esbuild, :install_and_run, [:aves, ~w(--sourcemap=inline --watch)]},
+    tailwind: {Tailwind, :install_and_run, [:aves, ~w(--watch)]}
+  ]
 
 # ## SSL Support
 #
@@ -50,7 +54,7 @@ config :aves, AvesWeb.Endpoint,
 # different ports.
 
 # Enable dev routes for dashboard and mailbox
-config :aves, dev_routes: true
+config :aves, dev_routes: true, token_signing_secret: "lrqrmpU3ZQdSqgIbDusvcHqCeWapZ1Ir"
 
 # Do not include metadata nor timestamps in development logs
 config :logger, :default_formatter, format: "[$level] $message\n"
@@ -61,6 +65,14 @@ config :phoenix, :stacktrace_depth, 20
 
 # Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
+
+config :phoenix_live_view,
+  # Include debug annotations and locations in rendered markup.
+  # Changing this configuration will require mix clean and a full recompile.
+  debug_heex_annotations: true,
+  debug_attributes: true,
+  # Enable helpful, but potentially expensive runtime checks
+  enable_expensive_runtime_checks: true
 
 # Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false

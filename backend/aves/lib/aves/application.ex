@@ -15,7 +15,8 @@ defmodule Aves.Application do
       # Start a worker by calling: Aves.Worker.start_link(arg)
       # {Aves.Worker, arg},
       # Start to serve requests, typically the last entry
-      AvesWeb.Endpoint
+      AvesWeb.Endpoint,
+      {AshAuthentication.Supervisor, [otp_app: :aves]}
     ]
 
     # See https://elixir.hexdocs.pm/Supervisor.html

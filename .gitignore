@@ -1,2 +1,12 @@
-  node_modules/
-  build/
+# Dependencias
+node_modules/
+
+# Salida de build (Antora, etc.)
+build/
+
+# macOS
+.DS_Store
+
+# Archivos de trabajo locales (no se versionan)
+backend/contexto.md
+backend/Proyecto 2 Bitácora de Aves.md

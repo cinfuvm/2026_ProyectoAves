@@ -1,50 +1,93 @@
 defmodule AvesWeb.Router do
   use AvesWeb, :router
 
+  pipeline :browser do
+    plug :accepts, ["html"]
+    plug :fetch_session
+    plug :fetch_live_flash
+    plug :put_root_layout, html: {AvesWeb.Layouts, :root}
+    plug :protect_from_forgery
+    plug :put_secure_browser_headers
+  end
+
   pipeline :api do
     plug :accepts, ["json"]
   end
 
-  scope "/api", AvesWeb do
-    pipe_through :api
+  pipeline :api_auth do
+    plug :accepts, ["json"]
+    plug AvesWeb.AuthPlug
+  end
 
-    # 1 RUTAS PÚBLICAS
+  scope "/api/json" do
+    pipe_through [:api]
+
+    forward "/swaggerui", OpenApiSpex.Plug.SwaggerUI,
+      path: "/api/json/open_api",
+      default_model_expand_depth: 4
+
+    forward "/", AvesWeb.AshJsonApiRouter
+  end
+
+  scope "/api", AvesWeb.API do
+    pipe_through [:api]
+
+    post "/user/signin", UserController, :register
+    post "/user/login", UserController, :login
+    delete "/user/logout", UserController, :logout
+  end
+
+  scope "/api", AvesWeb.API do
+    pipe_through [:api_auth]
+
+    get "/user/me", UserController, :me
+    patch "/user/me", UserController, :update_me
+
+    # RF-05 and RF-06
+    get "/birds/ranking", BirdController, :ranking # Ranking de aves más vistas
+
     get "/birds", BirdController, :index
     get "/birds/:id", BirdController, :show
-
-    get "/posts", PostController, :index
-    get "/posts/:id", PostController, :show
-
-
-    # 2 RUTAS DE USUARIO REGISTRADO
-    post "/posts", PostController, :create
-    put "/posts/:id", PostController, :update       # (Solo el dueño de la cuenta)
-    delete "/posts/:id", PostController, :delete    # (Solo el Moderador o Admin)
-
-    # Interacciones (Dar/Quitar me gusta)
-    post "/posts/:id_publicacion/likes", LikeController, :create
-    delete "/posts/:id_publicacion/likes", LikeController, :delete
-
-    # Denuncias de Contenido
-    post "/reports", ReportController, :create      # Cualquier usuario puede denunciar
-
-    # 3 RUTAS DE MODERACIÓN
-    get "/reports", ReportController, :index
-    get "/reports/:id", ReportController, :show
-    delete "/reports/:id", ReportController, :delete
-
-    # 4 RUTAS DE ADMINISTRACIÓN EXCLUSIVA
     post "/birds", BirdController, :create
-    put "/birds/:id", BirdController, :update
+    patch "/birds/:id", BirdController, :update
     delete "/birds/:id", BirdController, :delete
-    get "/birds/ranking", BirdController, :rankingS
 
-    get "/users", UserController, :index
-    get "/users/:id", UserController, :show
-    patch "/users/:id/role", UserController, :update_role # Cambiar rol a moderador/admin
-    delete "/users/:id", UserController, :delete
+    get "/categories", CategoryController, :index
+    post "/categories", CategoryController, :create
+    patch "/categories/:id", CategoryController, :update
+    delete "/categories/:id", CategoryController, :delete
 
+    # RF-08 / RF-09 / RF-10 - Personal sightings (bitacora)
+    post "/sightings", SightingController, :create
+    get "/sightings", SightingController, :index
+    patch "/sightings/:id", SightingController, :update
+    delete "/sightings/:id", SightingController, :delete
+
+    # RF-11 - Photos from other users (filterable)
+    get "/photos", PhotoController, :index
+
+    # RF-12 - Personal collection
+    get "/collection", CollectionController, :index
+    post "/collection", CollectionController, :create
+    delete "/collection/:id", CollectionController, :delete
+
+    # RF-13 / RF-14 - Reports and moderator queue
+    post "/reports", ReportController, :create
+    get "/reports", ReportController, :index
+    post "/reports/:id/approve", ReportController, :approve
+    post "/reports/:id/retire", ReportController, :retire
   end
+
+  scope "/", AvesWeb do
+    pipe_through :browser
+
+    get "/", PageController, :home
+  end
+
+  # Other scopes may use custom stacks.
+  # scope "/api", AvesWeb do
+  #   pipe_through :api
+  # end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:aves, :dev_routes) do
@@ -56,7 +99,7 @@ defmodule AvesWeb.Router do
     import Phoenix.LiveDashboard.Router
 
     scope "/dev" do
-      pipe_through [:fetch_session, :protect_from_forgery]
+      pipe_through :browser
 
       live_dashboard "/dashboard", metrics: AvesWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview

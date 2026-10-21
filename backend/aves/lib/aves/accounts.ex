@@ -1,104 +1,72 @@
 defmodule Aves.Accounts do
   @moduledoc """
-  The Accounts context.
+  Dominio de cuentas: usuarios y tokens de autenticación.
   """
+  use Ash.Domain,
+    otp_app: :aves
 
-  import Ecto.Query, warn: false
-  alias Aves.Repo
+  require Ash.Query
 
   alias Aves.Accounts.User
 
-  @doc """
-  Returns the list of usuario.
-
-  ## Examples
-
-      iex> list_usuario()
-      [%User{}, ...]
-
-  """
-  def list_usuario do
-    Repo.all(User)
+  resources do
+    resource Aves.Accounts.Token
+    resource Aves.Accounts.User
   end
 
   @doc """
-  Gets a single user.
+  Crea un usuario administrador, o promueve a `:admin` uno existente.
 
-  Raises `Ecto.NoResultsError` if the User does not exist.
+  Se usa para generar el **primer** administrador (bootstrap), ya que ninguna
+  política permite crear un admin cuando todavía no existe ninguno. La promoción
+  se hace con `authorize?: false`, un bypass controlado que solo se invoca desde
+  el task `mix aves.create_admin`.
 
-  ## Examples
+  Acepta un mapa con `:email`, `:password` y, opcionalmente, `:nickname`.
 
-      iex> get_user!(123)
-      %User{}
+  ## Ejemplo
 
-      iex> get_user!(456)
-      ** (Ecto.NoResultsError)
-
+      iex> Aves.Accounts.create_admin(%{
+      ...>   email: "admin@example.com",
+      ...>   nickname: "admin",
+      ...>   password: "supersecret123"
+      ...> })
+      {:ok, %Aves.Accounts.User{}}
   """
-  def get_user!(id), do: Repo.get!(User, id)
+  @spec create_admin(map()) :: {:ok, User.t()} | {:error, term()}
+  def create_admin(%{email: email, password: password} = attrs) do
+    params = %{
+      "email" => email,
+      "nickname" => Map.get(attrs, :nickname),
+      "password" => password,
+      "password_confirmation" => password
+    }
 
-  @doc """
-  Creates a user.
+    case register(params) do
+      {:ok, user} ->
+        promote(user)
 
-  ## Examples
-
-      iex> create_user(%{field: value})
-      {:ok, %User{}}
-
-      iex> create_user(%{field: bad_value})
-      {:error, %Ecto.Changeset{}}
-
-  """
-  def create_user(attrs) do
-    %User{}
-    |> User.changeset(attrs)
-    |> Repo.insert()
+      {:error, register_error} ->
+        case fetch_by_email(email) do
+          {:ok, nil} -> {:error, register_error}
+          {:ok, user} -> promote(user)
+          {:error, error} -> {:error, error}
+        end
+    end
   end
 
-  @doc """
-  Updates a user.
-
-  ## Examples
-
-      iex> update_user(user, %{field: new_value})
-      {:ok, %User{}}
-
-      iex> update_user(user, %{field: bad_value})
-      {:error, %Ecto.Changeset{}}
-
-  """
-  def update_user(%User{} = user, attrs) do
-    user
-    |> User.changeset(attrs)
-    |> Repo.update()
+  defp register(params) do
+    strategy = AshAuthentication.Info.strategy!(User, :password)
+    AshAuthentication.Strategy.action(strategy, :register, params)
   end
 
-  @doc """
-  Deletes a user.
-
-  ## Examples
-
-      iex> delete_user(user)
-      {:ok, %User{}}
-
-      iex> delete_user(user)
-      {:error, %Ecto.Changeset{}}
-
-  """
-  def delete_user(%User{} = user) do
-    Repo.delete(user)
+  defp promote(user) do
+    Ash.update(user, %{rol: :admin}, action: :assign_role, authorize?: false)
   end
 
-  @doc """
-  Returns an `%Ecto.Changeset{}` for tracking user changes.
-
-  ## Examples
-
-      iex> change_user(user)
-      %Ecto.Changeset{data: %User{}}
-
-  """
-  def change_user(%User{} = user, attrs \\ %{}) do
-    User.changeset(user, attrs)
+  defp fetch_by_email(email) do
+    User
+    |> Ash.Query.filter(email == ^email)
+    |> Ash.read_one(authorize?: false)
   end
 end
