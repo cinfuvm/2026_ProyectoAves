@@ -1,0 +1,28 @@
+= Usuarios y roles
+
+== Roles
+
+[cols="1,2,2"]
+|===
+|Rol |Capacidades |Acceso
+
+|Usuario
+|Consultar aves, gestionar perfil, registrar avistamientos, editar/eliminar los propios avistamientos, crear colecciones y reportar fotografías.
+|App móvil y funcionalidades públicas.
+
+|Moderador
+|Todo lo anterior, más revisión de reportes y moderación de fotografías.
+|App + dashboard.
+
+|Administrador
+|Todo lo anterior, más gestión de usuarios, aves y colecciones/contenido administrativo.
+|App + dashboard.
+|===
+
+== Reglas de autorización
+
+* Un usuario solo puede editar o eliminar sus propios avistamientos.
+* Solo moderadores y administradores pueden acceder al dashboard.
+* Solo administradores pueden ejecutar el CRUD completo de aves.
+* Moderadores pueden aprobar o retirar fotografías reportadas.
+* Las acciones administrativas deben quedar registradas para trazabilidad.

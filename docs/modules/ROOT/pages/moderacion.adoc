@@ -1,0 +1,32 @@
+= Moderación y popularidad
+
+== Reportes de fotografías
+
+Un usuario puede reportar una fotografía cuando considera que el contenido no corresponde a un ave.
+
+=== Estados sugeridos
+
+* `pending`: reporte pendiente.
+* `approved`: el contenido fue considerado válido y permanece publicado.
+* `removed`: la fotografía fue retirada.
+
+=== Flujo
+
+. Usuario envía reporte.
+. El sistema crea un reporte en estado `pending`.
+. Moderador consulta la cola.
+. Moderador revisa fotografía y contexto.
+. Moderador decide mantener o retirar.
+. El sistema registra la decisión y actualiza el estado.
+
+== Aves populares
+
+La sección “Aves populares” debe mostrar las especies con mayor cantidad de visualizaciones.
+
+La métrica base será el número de visualizaciones de la ficha de cada ave durante un período definido por el producto. Para el MVP se recomienda comenzar con un conteo acumulado y dejar preparada la arquitectura para incorporar ventanas temporales posteriormente.
+
+== Reglas
+
+* Una visualización debe contabilizarse de manera controlada para evitar incrementos artificiales.
+* El ranking no debe depender de contenido reportado como retirado.
+* Las fotografías retiradas no deben aparecer en las vistas públicas.

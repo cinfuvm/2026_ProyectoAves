@@ -1,0 +1,48 @@
+= Calidad, pruebas y criterios de aceptación
+
+== Criterios generales
+
+Una funcionalidad se considera terminada cuando:
+
+. Está implementada.
+. Tiene validaciones de entrada.
+. Tiene autorización correspondiente.
+. Está documentada en OpenAPI cuando expone API.
+. Cuenta con pruebas automatizadas o pruebas Bruno según corresponda.
+. Está integrada con el frontend que la consume.
+. No rompe los flujos existentes.
+
+== Criterios de aceptación clave
+
+=== Registro
+
+Dado un usuario no registrado, cuando completa correctamente el formulario, entonces se crea su cuenta y puede iniciar sesión.
+
+=== Avistamiento
+
+Dado un usuario autenticado, cuando informa ave, lugar, fecha, comentario y fotografía válidos, entonces el sistema crea un avistamiento asociado al usuario.
+
+=== Propiedad
+
+Dado un avistamiento perteneciente al usuario A, cuando el usuario B intenta modificarlo o eliminarlo, entonces la API rechaza la operación.
+
+=== Moderación
+
+Dado un reporte pendiente, cuando un moderador lo resuelve como retiro, entonces la fotografía deja de estar disponible públicamente.
+
+=== Popularidad
+
+Dado que una ficha de ave recibe visualizaciones válidas, entonces su contador/ranking refleja dichas visualizaciones.
+
+=== API
+
+Cada endpoint publicado debe especificar request, response, autenticación, errores y ejemplos en OpenAPI.
+
+== Pruebas
+
+* Unitarias: reglas de dominio.
+* Integración: API + persistencia.
+* Autorización: roles y propiedad.
+* Validación: entradas inválidas y archivos.
+* End-to-end: flujos críticos.
+* Bruno: colección ejecutable contra ambientes definidos.

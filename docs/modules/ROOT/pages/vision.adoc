@@ -1,0 +1,37 @@
+= Visión y alcance
+
+== Personas objetivo
+
+=== Usuario observador
+
+Persona que desea identificar aves, consultar información y mantener un registro fotográfico de sus observaciones.
+
+=== Moderador
+
+Usuario con permisos para revisar reportes de fotografías y retirar contenido que incumpla la regla de pertinencia.
+
+=== Administrador
+
+Usuario con acceso completo al dashboard para administrar usuarios, aves y colecciones/contenido.
+
+== Flujos principales
+
+. El usuario se registra o inicia sesión.
+. Busca un ave por nombre o categoría.
+. Consulta la ficha del ave.
+. Registra un avistamiento con lugar, fecha, comentario y fotografía.
+. Consulta su bitácora personal.
+. Explora fotografías de otros usuarios.
+. Guarda fotografías en una colección personal.
+. Puede reportar una fotografía que no corresponda a un ave.
+. Un moderador revisa el reporte.
+. Las aves con mayor cantidad de visualizaciones aparecen en “Aves populares”.
+
+== Principios del producto
+
+* Mobile-first para la experiencia de observación y registro.
+* API-first para compartir lógica entre clientes.
+* Seguridad por roles.
+* Moderación explícita de contenido reportado.
+* Documentación como parte del desarrollo, no como actividad posterior.
+* Separación clara entre catálogo de especies y publicaciones de avistamientos.

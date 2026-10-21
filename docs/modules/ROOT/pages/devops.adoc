@@ -1,0 +1,44 @@
+= Despliegue y DevOps
+
+== Repositorio
+
+El proyecto debe gestionarse mediante Git y GitHub.
+
+== GitHub Actions
+
+El pipeline debe contemplar como mínimo:
+
+. Instalación de dependencias.
+. Lint/format.
+. Pruebas.
+. Validación del contrato OpenAPI.
+. Ejecución de comprobaciones de la aplicación.
+. Construcción de artefactos.
+. Despliegue.
+
+== Fly.io
+
+La aplicación backend debe desplegarse en Fly.io.
+
+El despliegue debe ser reproducible y utilizar secretos/configuración del entorno sin almacenar credenciales en el repositorio.
+
+== Ambientes
+
+Se recomienda separar:
+
+* `development`
+* `staging`
+* `production`
+
+== Documentación
+
+Antora debe generar el sitio de documentación del proyecto. La documentación debe mantenerse versionada junto al código.
+
+== Definition of Done de infraestructura
+
+* Pipeline ejecutado correctamente.
+* Aplicación desplegada en Fly.io.
+* Variables/secretos configurados.
+* Health check disponible.
+* Logs accesibles.
+* Rollback definido.

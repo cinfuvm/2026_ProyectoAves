@@ -1,0 +1,126 @@
+= API REST y documentación
+
+== Objetivo
+
+La API REST será la interfaz común entre backend, dashboard web y aplicación móvil. Debe estar documentada con OpenAPI y probada mediante Bruno.
+
+== Recursos principales
+
+* `users`
+* `sessions`
+* `birds`
+* `categories`
+* `sightings`
+* `photos`
+* `collections`
+* `collection-items`
+* `reports`
+* `popular-birds`
+
+== Ejemplos de endpoints
+
+[cols="1,1,3"]
+|===
+|Método |Ruta |Propósito
+
+|POST
+|`/api/auth/register`
+|Registrar usuario.
+
+|POST
+|`/api/auth/login`
+|Iniciar sesión.
+
+|POST
+|`/api/auth/logout`
+|Cerrar sesión.
+
+|GET
+|`/api/birds`
+|Listar/buscar aves.
+
+|GET
+|`/api/birds/:id`
+|Consultar ficha de ave.
+
+|POST
+|`/api/birds`
+|Crear ave; administrador.
+
+|PATCH
+|`/api/birds/:id`
+|Actualizar ave; administrador.
+
+|DELETE
+|`/api/birds/:id`
+|Eliminar ave; administrador.
+
+|GET
+|`/api/sightings`
+|Consultar avistamientos propios.
+
+|POST
+|`/api/sightings`
+|Crear avistamiento.
+
+|PATCH
+|`/api/sightings/:id`
+|Editar avistamiento propio.
+
+|DELETE
+|`/api/sightings/:id`
+|Eliminar avistamiento propio.
+
+|GET
+|`/api/photos`
+|Explorar fotografías.
+
+|POST
+|`/api/photos/:id/report`
+|Reportar fotografía.
+
+|GET
+|`/api/reports`
+|Consultar cola de reportes; moderador/admin.
+
+|PATCH
+|`/api/reports/:id`
+|Resolver reporte.
+
+|GET
+|`/api/popular-birds`
+|Consultar aves populares.
+|===
+
+== OpenAPI
+
+El contrato OpenAPI debe ser tratado como fuente de verdad de la interfaz HTTP.
+
+Debe incluir:
+
+* rutas;
+* parámetros;
+* esquemas de request y response;
+* autenticación;
+* códigos HTTP;
+* errores;
+* ejemplos;
+* paginación y filtros.
+
+== Bruno
+
+La colección Bruno debe organizarse por dominio:
+
+[source,text]
+----
+bruno/
+  auth/
+  birds/
+  sightings/
+  photos/
+  collections/
+  reports/
+  admin/
+----
+
+Cada carpeta debe contener casos positivos y negativos, incluyendo autenticación, autorización, validaciones y errores de recursos inexistentes.

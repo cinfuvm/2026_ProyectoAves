@@ -1,0 +1,91 @@
+= Arquitectura y tecnología
+
+== Arquitectura lógica
+
+[source,text]
+----
+Aplicación móvil ───────┐
+                        ├──> API REST ──> Phoenix + Ash Framework ──> Base de datos
+Dashboard web ──────────┘                     │
+                                             ├── Autenticación/autorización
+                                             ├── Catálogo de aves
+                                             ├── Avistamientos
+                                             ├── Colecciones
+                                             ├── Reportes
+                                             └── Popularidad
+
+OpenAPI <────────────── API REST ───────────────> Bruno
+----
+
+== Backend
+
+Tecnologías obligatorias:
+
+* Phoenix.
+* Ash Framework.
+* API REST.
+* OpenAPI.
+
+Responsabilidades:
+
+* reglas de negocio;
+* persistencia;
+* autenticación;
+* autorización;
+* gestión de fotografías;
+* moderación;
+* estadísticas;
+* contrato API.
+
+== Frontend web
+
+El dashboard puede utilizar un framework CSS. Debe consumir exclusivamente la API definida por el backend para las operaciones de negocio.
+
+== Frontend mobile
+
+La aplicación debe ser compatible con Android e iOS y utilizar una tecnología permitida por el enunciado.
+
+== Modelo conceptual
+
+Entidades mínimas:
+
+[cols="1,2"]
+|===
+|Entidad |Descripción
+
+|User
+|Cuenta, credenciales, rol y estado.
+
+|Bird
+|Especie del catálogo.
+
+|Category
+|Clasificación utilizada para búsqueda y navegación.
+
+|Sighting
+|Avistamiento realizado por un usuario.
+
+|Photo
+|Fotografía asociada a un avistamiento.
+
+|Collection
+|Colección personal de fotografías/avistamientos guardados.
+
+|CollectionItem
+|Relación entre colección y fotografía.
+
+|Report
+|Denuncia sobre una fotografía.
+
+|BirdView
+|Registro o contador de visualizaciones de aves.
+|===
+
+== Seguridad
+
+* Autenticación obligatoria para operaciones privadas.
+* Autorización basada en roles.
+* Validación de propiedad de recursos.
+* Validación de archivos fotográficos.
+* Protección contra acceso horizontal a recursos de otros usuarios.
+* Registro de acciones administrativas y de moderación.

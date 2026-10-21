@@ -1,0 +1,90 @@
+= PRD — Bitácora de Aves
+:toc:
+:toclevels: 3
+:sectnums:
+:icons: font
+
+== 1. Resumen ejecutivo
+
+Bitácora de Aves es una plataforma web y móvil orientada al registro, consulta y gestión de avistamientos de aves chilenas. El producto combina un catálogo administrable de aves con una bitácora personal de observaciones y una experiencia social acotada: los usuarios pueden publicar fotografías de avistamientos y guardar fotografías de otros usuarios en colecciones personales.
+
+El sistema contará con una API REST documentada mediante OpenAPI, desarrollada con Phoenix y Ash Framework, una colección de pruebas en Bruno, un dashboard web para administración y una aplicación móvil para Android e iOS.
+
+== 2. Problema
+
+Los observadores de aves necesitan una forma simple de consultar información sobre aves chilenas, registrar sus avistamientos y organizar fotografías. La solución debe centralizar el catálogo de especies y permitir construir una bitácora personal sin incorporar funciones sociales ajenas al objetivo principal, como chat o seguimiento de perfiles.
+
+== 3. Visión del producto
+
+Crear una plataforma que funcione como un “Instagram de Aves Chilenas” simplificado: catálogo de aves + publicaciones de avistamientos + colecciones personales + moderación + estadísticas de popularidad.
+
+=== Objetivos
+
+* Permitir consultar rápidamente aves por nombre y categoría.
+* Permitir registrar avistamientos con lugar, fecha, comentario y fotografía.
+* Permitir organizar fotografías de otros usuarios en colecciones personales.
+* Proporcionar herramientas de moderación para contenido reportado.
+* Identificar y mostrar las aves más populares.
+* Entregar una API única para el dashboard y la aplicación móvil.
+* Mantener documentación técnica y de API mediante Antora Docs, OpenAPI y Bruno.
+* Automatizar el despliegue mediante GitHub Actions hacia Fly.io.
+
+=== Fuera de alcance
+
+* Chat entre usuarios.
+* Seguimiento/follow de perfiles.
+* Mensajería privada.
+* PWA como alternativa a la aplicación móvil.
+* React Native para la aplicación móvil.
+
+== 4. Stakeholders
+
+[cols="1,2"]
+|===
+|Stakeholder |Interés
+
+|Usuario
+|Consultar aves, registrar avistamientos y crear colecciones.
+
+|Moderador
+|Revisar reportes y retirar contenido que no corresponda.
+
+|Administrador
+|Gestionar usuarios, aves y contenido del sistema.
+
+|Equipo Frontend Web
+|Construir landing y dashboard administrativo.
+
+|Equipo Frontend Mobile
+|Construir aplicaciones nativas/multiplataforma permitida para Android e iOS.
+
+|Equipo Backend
+|Construir dominio, API REST, autenticación, persistencia y reglas de negocio.
+
+|Equipo DevOps/Gestión/Documentación
+|CI/CD, despliegue, documentación, calidad y coordinación.
+|===
+
+== 5. Métricas de éxito
+
+* 100% de las funcionalidades críticas RF-01 a RF-20 implementadas o justificadamente descartadas.
+* Todos los endpoints públicos documentados en OpenAPI.
+* Todos los endpoints principales cubiertos por colecciones y pruebas Bruno.
+* Dashboard accesible exclusivamente por moderadores y administradores.
+* Despliegue reproducible mediante GitHub Actions.
+* Aplicación móvil funcional en Android e iOS.
+* Capacidad de registrar, editar y eliminar avistamientos propios.
+* Moderación de fotografías reportadas mediante una cola de revisión.
+
+== 6. Dependencias
+
+* Datos del proyecto base “Aves de Chile”.
+* Phoenix.
+* Ash Framework.
+* API REST.
+* OpenAPI.
+* Bruno.
+* GitHub Actions.
+* Fly.io.
+* Tecnología móvil permitida: nativo, Flutter, Mob o Flet.
+* Framework CSS permitido para frontend web.

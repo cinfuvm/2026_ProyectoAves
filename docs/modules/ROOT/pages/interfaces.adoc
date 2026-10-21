@@ -1,0 +1,45 @@
+= Experiencia de usuario e interfaces
+
+== Aplicación móvil
+
+La aplicación móvil será el cliente principal para registrar avistamientos.
+
+Pantallas mínimas:
+
+* Inicio / exploración.
+* Registro e inicio de sesión.
+* Buscador de aves.
+* Ficha de ave.
+* Crear avistamiento.
+* Bitácora personal.
+* Exploración de fotografías.
+* Colecciones personales.
+* Perfil.
+* Reportar fotografía.
+
+La aplicación debe utilizar únicamente tecnologías permitidas: nativo, Flutter, Mob o Flet. No se permite PWA ni React Native.
+
+== Dashboard web
+
+El dashboard estará orientado a moderadores y administradores.
+
+Pantallas mínimas:
+
+* Inicio del dashboard.
+* Usuarios.
+* Aves.
+* Avistamientos/colecciones.
+* Reportes.
+* Estadísticas de popularidad.
+
+== Landing page
+
+La landing debe:
+
+* explicar el propósito de Bitácora de Aves;
+* mostrar el valor de la aplicación;
+* destacar el registro de avistamientos;
+* presentar ejemplos visuales inspirados en interfaces tipo Instagram;
+* incluir llamados a instalar la aplicación móvil.
+
+El uso de frameworks CSS como Tailwind, Bootstrap, UIKit u otro equivalente está permitido.

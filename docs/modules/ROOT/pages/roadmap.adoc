@@ -1,0 +1,64 @@
+= Roadmap y entregables
+
+== Fase 1 — Base técnica
+
+* Configuración del repositorio.
+* Phoenix + Ash.
+* Modelo inicial de datos.
+* Autenticación.
+* Estructura Antora.
+* Configuración Bruno.
+* Pipeline inicial.
+
+== Fase 2 — Catálogo
+
+* CRUD de aves.
+* Categorías.
+* Buscador.
+* Ficha de ave.
+* Endpoint REST documentado.
+
+== Fase 3 — Bitácora
+
+* Crear avistamientos.
+* Subir fotografías.
+* Editar/eliminar propios avistamientos.
+* Bitácora personal.
+* Galería pública.
+
+== Fase 4 — Colecciones y moderación
+
+* Colecciones personales.
+* Reportes.
+* Cola de moderación.
+* Acciones de aprobar/retirar.
+
+== Fase 5 — Dashboard y popularidad
+
+* Gestión de usuarios.
+* Gestión de aves.
+* Gestión de contenido.
+* Aves populares.
+* Estadísticas básicas.
+
+== Fase 6 — Integración y despliegue
+
+* Integración completa móvil/API/dashboard.
+* Pruebas de aceptación.
+* Bruno completo.
+* OpenAPI final.
+* GitHub Actions.
+* Despliegue en Fly.io.
+* Revisión final de documentación.
+
+== Entregables
+
+* Código fuente.
+* API REST.
+* Especificación OpenAPI.
+* Colección Bruno.
+* Dashboard web.
+* Aplicación móvil Android/iOS.
+* Sitio Antora.
+* Pipeline GitHub Actions.
+* Aplicación desplegada en Fly.io.

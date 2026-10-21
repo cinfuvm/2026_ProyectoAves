@@ -1,0 +1,28 @@
+= Equipos y responsabilidades
+
+[cols="1,1,3"]
+|===
+|Equipo |Personas |Responsabilidades
+
+|Frontend Dashboard Web
+|3
+|Landing, dashboard, gestión administrativa, integración con API y UX web.
+
+|Frontend Mobile
+|3
+|Aplicación Android/iOS, autenticación, catálogo, bitácora, fotografías y colecciones.
+
+|Backend
+|3
+|Phoenix, Ash, modelo de dominio, API REST, autenticación, autorización, OpenAPI y persistencia.
+
+|DevOps, Gestión y Documentación
+|2
+|GitHub Actions, Fly.io, calidad, coordinación, Antora, Bruno y documentación.
+|===
+
+== Organización sugerida
+
+Cada equipo debe trabajar mediante tareas pequeñas y revisables. Las interfaces entre equipos deben definirse mediante el contrato OpenAPI para reducir dependencias directas.
+
+El equipo Backend debe publicar temprano una primera versión del contrato API para permitir que los equipos frontend avancen en paralelo.
