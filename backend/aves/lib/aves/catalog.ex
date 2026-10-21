@@ -16,5 +16,4 @@ defmodule Aves.Catalog do
     resource Aves.Catalog.BirdView
   end
 
->>>>>>> feat/backend/marcelo
 end
