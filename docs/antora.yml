@@ -1,5 +1,8 @@
 name: bitacora-aves
 title: Bitácora de Aves
 version: ~
+
+start_page: ROOT:index.adoc
+
 nav:
   - modules/ROOT/nav.adoc
