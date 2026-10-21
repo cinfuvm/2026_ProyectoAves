@@ -131,7 +131,3 @@ defmodule AvesWeb.API.ReportController do
     }
   end
 end
-<<<<<<< HEAD
-
-=======
->>>>>>> feat/backend/marcelo
