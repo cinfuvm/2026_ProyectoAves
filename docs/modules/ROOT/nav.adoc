@@ -1,6 +1,6 @@
 * xref:index.adoc[Inicio]
-* xref:requisitos.adoc[Requisitos Funcionales]
 * xref:prd.adoc[PRD — Bitácora de Aves]
+** xref:requisitos.adoc[Requisitos Funcionales]
 ** xref:vision.adoc[Visión y alcance]
 ** xref:usuarios.adoc[Usuarios y roles]
 ** xref:api.adoc[API REST y documentación]
