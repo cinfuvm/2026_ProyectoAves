@@ -63,7 +63,4 @@ defmodule Aves.Catalog.Category do
     end
   end
 end
-<<<<<<< HEAD
-=======
 
->>>>>>> feat/backend/marcelo
