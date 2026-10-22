@@ -16,3 +16,4 @@ Sistema de administración de datos de aves y bitácora de avistamientos por usu
 ** xref:devops.adoc[Despliegue y DevOps]
 ** xref:equipo.adoc[Equipos y responsabilidades]
 ** xref:roadmap.adoc[Roadmap y entregables]
+* xref:uat.adoc[UAT — User Acceptance Testing]
