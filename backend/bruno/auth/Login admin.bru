@@ -1,0 +1,26 @@
+meta {
+  name: Login admin
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/user/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "{{adminEmail}}",
+    "password": "{{password}}"
+  }
+}
+
+script:post-response {
+  bru.setVar("adminToken", res.body.token);
+}
+
+assert {
+  res.status: eq 200
+}

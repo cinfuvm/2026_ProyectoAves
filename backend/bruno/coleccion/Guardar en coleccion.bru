@@ -1,0 +1,35 @@
+meta {
+  name: Guardar en coleccion
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/collection
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "sighting_id": "{{photoId}}"
+  }
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setVar("collectionItemId", res.body.item.id);
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+docs {
+  Requiere photoId de "Fotos de otros usuarios". Guardar la propia foto no está permitido.
+}

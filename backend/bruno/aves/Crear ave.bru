@@ -1,0 +1,42 @@
+meta {
+  name: Crear ave
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/birds
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{moderadorToken}}
+}
+
+body:json {
+  {
+    "name": "Flamenco chileno",
+    "scientific_name": "Ave de prueba {{sufijo}}",
+    "description": "Ave creada desde Bruno para probar el borrado.",
+    "category_id": "{{categoryId}}"
+  }
+}
+
+script:pre-request {
+  bru.setVar("sufijo", Date.now());
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setVar("nuevaAveId", res.body.bird.id);
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+docs {
+  Requiere token de moderador o admin. Un usuario común recibe 403.
+}

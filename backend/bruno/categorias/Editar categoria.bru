@@ -1,0 +1,29 @@
+meta {
+  name: Editar categoria
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{baseUrl}}/api/categories/{{nuevaCategoriaId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{moderadorToken}}
+}
+
+body:json {
+  {
+    "name": "Categoria editada {{sufijo}}"
+  }
+}
+
+script:pre-request {
+  bru.setVar("sufijo", Date.now());
+}
+
+assert {
+  res.status: eq 200
+}

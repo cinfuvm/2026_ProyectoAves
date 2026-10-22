@@ -656,7 +656,7 @@ components:
                 type: string
               photo_url:
                 type: string
-                description: URL de una foto ya existente. Se ignora si se envía `photo`. Las fotos subidas quedan como ruta relativa (`/uploads/<archivo>`); el cliente debe anteponer la URL base del servidor.
+                description: URL de una foto ya existente. Se ignora si se envía `photo`.
         multipart/form-data:
           schema:
             type: object
@@ -674,7 +674,7 @@ components:
               photo:
                 type: string
                 format: binary
-                description: Foto JPEG o PNG de hasta 5 MB. Se guarda con un nombre único y su URL pública queda en `photo_url`.
+                description: Foto JPEG o PNG de hasta 5 MB. Se guarda sin metadatos (EXIF, GPS, comentarios) con un nombre único, y su URL pública queda en `photo_url`.
   schemas:
     Error:
       type: object
@@ -767,6 +767,8 @@ components:
         photo_url:
           type: string
           nullable: true
+          description: URL completa de la foto. Las fotos subidas tienen la forma `<base>/uploads/<archivo>`, con la base del servidor en que corre el backend.
+          example: http://127.0.0.1:4000/uploads/aafe295e-0c10-439b-a0ba-29b9a552735b.jpg
         bird_id:
           type: string
           format: uuid

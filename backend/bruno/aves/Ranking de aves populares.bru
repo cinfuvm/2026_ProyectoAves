@@ -1,0 +1,24 @@
+meta {
+  name: Ranking de aves populares
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/birds/ranking
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+docs {
+  Ordena por views_count: las vistas de la ficha de cada ave (RF-15).
+  Abrir "Ficha de ave" varias veces para ver el conteo cambiar.
+}

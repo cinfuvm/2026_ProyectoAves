@@ -89,6 +89,27 @@ defmodule Aves.Factory do
     |> Ash.Seed.seed!(Map.merge(base, attrs))
   end
 
+  @doc """
+  Bytes of a minimal, structurally valid JPEG: SOI, a JFIF segment, any extra
+  segments given, a scan header and EOI. `Aves.Storage` parses this structure,
+  so test photos must have it.
+  """
+  def jpeg_bytes(extra_segments \\ <<>>) do
+    jfif =
+      <<0xFF, 0xE0, 0x00, 0x10, "JFIF", 0x00, 0x01, 0x01, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00,
+        0x00>>
+
+    <<0xFF, 0xD8>> <> jfif <> extra_segments <> <<0xFF, 0xDA, 0x00, 0x02, "x", 0xFF, 0xD9>>
+  end
+
+  @doc "Wraps `payload` in an APP1 (EXIF) segment, as a camera would."
+  def exif_segment(payload), do: segment(0xE1, payload)
+
+  @doc "Wraps `payload` in a COM (comment) segment."
+  def comment_segment(payload), do: segment(0xFE, payload)
+
+  defp segment(marker, payload), do: <<0xFF, marker, 2 + byte_size(payload)::16>> <> payload
+
   @doc "Adds a bearer authorization header for the given token to the conn."
   def sign_in_conn(conn, token) do
     Plug.Conn.put_req_header(conn, "authorization", "Bearer #{token}")

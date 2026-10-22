@@ -1,0 +1,39 @@
+meta {
+  name: Registrar avistamiento con foto
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/sightings
+  body: multipartForm
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:multipart-form {
+  bird_id: {{birdId}}
+  place: Laguna Verde
+  spotted_on: 2026-10-20
+  comment: Foto subida desde Bruno
+  photo: @file(fixtures/ave.png)
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setVar("sightingId", res.body.sighting.id);
+    bru.setVar("uploadedPhotoUrl", res.body.sighting.photo_url);
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+docs {
+  Sube fixtures/ave.png (PNG de 1x1 píxel). Para probar con otra foto, cambiar
+  la ruta por un JPEG o PNG de hasta 5 MB. La respuesta trae la URL completa en photo_url.
+}

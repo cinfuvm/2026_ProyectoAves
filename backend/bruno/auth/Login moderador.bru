@@ -1,0 +1,26 @@
+meta {
+  name: Login moderador
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/user/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "{{moderadorEmail}}",
+    "password": "{{password}}"
+  }
+}
+
+script:post-response {
+  bru.setVar("moderadorToken", res.body.token);
+}
+
+assert {
+  res.status: eq 200
+}

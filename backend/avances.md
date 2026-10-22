@@ -37,7 +37,7 @@
 | RF-17 | Dashboard de aves y colecciones | ⚠️ parcial | Solo API; falta la capa LiveView |
 | RF-18 | Landing | 🔵 | Fuera del backend (`landing/`) |
 | RF-19 | OpenAPI completo | ⚠️ | Usuarios en `birs_user_apis.yaml`; resto del backend en `birs_apis.yaml` (`docs/modules/ROOT/attachments/openapi/`). Falta el contrato de `/images` (decisión 6) |
-| RF-20 | Colección Bruno | ❌ | No existen archivos `.bru` |
+| RF-20 | Colección Bruno | ✅ | `backend/bruno/`: 33 requests que cubren todos los endpoints. Pasan 33/33 en dos corridas seguidas contra el servidor de desarrollo (ver `backend/bruno/README.md`) |
 
 ### Endpoints REST (`/api`)
 
@@ -63,13 +63,14 @@
   - **URL guardada:** ruta relativa, por ejemplo `/uploads/aafe295e-0c10-439b-a0ba-29b9a552735b.jpg`.
   - **Formatos:** JPEG y PNG, según el tipo real del archivo (sus primeros bytes), no según el nombre ni el `Content-Type` del cliente. Coincide con la validación de `photo_url`.
   - **Tamaño:** máximo 5 MB.
+  - **Metadatos:** antes de guardar se quitan los datos EXIF (incluido el GPS de la cámara), XMP, comentarios y chunks de texto de PNG. En JPEG se conservan APP0 (JFIF) y APP2 (perfil de color). Un JPEG con la estructura rota se rechaza con 422. Verificado con un JPEG real de `sips`: se quitaron APP1 (EXIF) y APP13 (IPTC) y el resto quedó igual.
 - Los tests escriben en una carpeta temporal. `.gitignore` excluye `priv/static/uploads/`.
-- **Verificación:** `mix precommit` con 82 tests (4 nuevos). Prueba manual con `curl` contra el servidor de desarrollo: la foto se guardó, la URL devuelta respondió `200 image/jpeg` y el nombre quedó en `photo_url`.
+- **Verificación:** `mix precommit` con 93 tests (los de subida, limpieza, borrado y metadatos). Prueba manual con `curl` contra el servidor de desarrollo: la foto se guardó, la URL devuelta respondió `200 image/jpeg` y el nombre quedó en `photo_url`.
 - **Limitaciones:**
   - **Resuelto:** si la base de datos rechaza el alta o el `PATCH`, la foto recién subida se borra. Si un `PATCH` con foto nueva tiene éxito, se borra la anterior.
   - **Resuelto:** al eliminar un avistamiento (`soft_delete`) se borra su archivo, después de confirmar la transacción (`Aves.Bitacora.Changes.RemovePhotoFile`). La fila sigue en la base con su `photo_url`, oculta por `deleted_at` y sin archivo.
   - **Moderación:** retirar una foto (`hide`) no borra el archivo, para poder restaurarla.
-  - La URL es relativa. La app móvil debe anteponer la URL base del servidor.
+  - **Resuelto:** la base de datos guarda la ruta relativa, pero las respuestas de la API devuelven la URL completa. `Helpers.public_photo_url/1` antepone `config :aves, :public_base_url` (por defecto `http://127.0.0.1:4000` en desarrollo y `https://<PHX_HOST>` en producción). La variable `PUBLIC_BASE_URL` la sobrescribe, por ejemplo con `http://10.0.2.2:4000` para el emulador de Android.
   - En un despliegue con contenedores, los archivos se pierden al redesplegar si no hay volumen persistente.
 
 ### Migraciones
@@ -110,7 +111,6 @@
 - **RF-16, gestión de usuarios desde admin:** endpoints para listar, editar, suspender y asignar roles por REST. Las acciones `assign_role` y `destroy` ya existen con sus policies.
 - **RF-17, dashboard LiveView:** capa web para admins y moderadores, con login por sesión.
 - **RF-19, OpenAPI completo:** falta documentar `/images` (los stubs de `birs_user_apis.yaml`), que depende de la decisión 6. Los endpoints del backend ya están en `birs_apis.yaml`.
-- **RF-20, colección Bruno:** no existen archivos `.bru`.
 - **Almacenamiento en producción:** la subida de fotos ya funciona en disco local (ver sección 0, "Subida de fotos"). Falta resolver dónde guardarlas en Fly.io, porque su disco es efímero (decisión 8).
 - **Métricas para admin:** pendiente desde #10. El enunciado también pide un dashboard de Grafana con golden metrics.
 - **Despliegue:** GitHub Actions y Fly.io, según el enunciado. Todavía no hay configuración en el repo.

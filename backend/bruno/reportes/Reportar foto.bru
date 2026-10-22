@@ -1,0 +1,32 @@
+meta {
+  name: Reportar foto
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/reports
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "sighting_id": "{{photoId}}",
+    "reason": "La foto no corresponde a un ave"
+  }
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setVar("reportId", res.body.report.id);
+  }
+}
+
+assert {
+  res.status: eq 201
+}

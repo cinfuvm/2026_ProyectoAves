@@ -1,0 +1,23 @@
+meta {
+  name: Eliminar categoria
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/api/categories/{{nuevaCategoriaId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{moderadorToken}}
+}
+
+assert {
+  res.status: eq 204
+}
+
+docs {
+  Borra la categoría creada por "Crear categoria" (nuevaCategoriaId). Una categoría con aves no se puede borrar.
+}

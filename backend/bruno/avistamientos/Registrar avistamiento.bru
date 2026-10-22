@@ -1,0 +1,39 @@
+meta {
+  name: Registrar avistamiento
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/sightings
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "bird_id": "{{birdId}}",
+    "place": "Laguna Verde",
+    "spotted_on": "2026-10-20",
+    "comment": "Un flamenco en la orilla",
+    "photo_url": "https://example.com/flamenco.jpg"
+  }
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setVar("sightingId", res.body.sighting.id);
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+docs {
+  Solo con photo_url externa. Para subir un archivo usar "Registrar avistamiento con foto".
+}

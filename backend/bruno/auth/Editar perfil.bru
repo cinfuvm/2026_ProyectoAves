@@ -1,0 +1,25 @@
+meta {
+  name: Editar perfil
+  type: http
+  seq: 6
+}
+
+patch {
+  url: {{baseUrl}}/api/user/me
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "nickname": "usuario_editado"
+  }
+}
+
+assert {
+  res.status: eq 200
+}

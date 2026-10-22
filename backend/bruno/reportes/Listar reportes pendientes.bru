@@ -1,0 +1,23 @@
+meta {
+  name: Listar reportes pendientes
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/reports?status=pendiente&page=1&per_page=10
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{moderadorToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+docs {
+  Solo moderadores y administradores. Un usuario común recibe 403.
+}

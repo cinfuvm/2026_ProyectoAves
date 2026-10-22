@@ -64,12 +64,22 @@ defmodule AvesWeb.API.Helpers do
       place: sighting.place,
       spotted_on: to_string(sighting.spotted_on),
       comment: sighting.comment,
-      photo_url: sighting.photo_url,
+      photo_url: public_photo_url(sighting.photo_url),
       bird_id: sighting.bird_id,
       owner_id: sighting.owner_id,
       inserted_at: sighting.inserted_at
     }
   end
+
+  @doc """
+  Full URL of a photo for API responses. Uploaded photos are stored as a path
+  (`/uploads/<file>`) and get the server's public base URL; external URLs are
+  returned unchanged. The database keeps the path only.
+  """
+  def public_photo_url("/uploads/" <> _ = path),
+    do: Application.fetch_env!(:aves, :public_base_url) <> path
+
+  def public_photo_url(url), do: url
 
   @doc "Parses a positive integer from params, falling back to `default`."
   def parse_int(nil, default), do: default

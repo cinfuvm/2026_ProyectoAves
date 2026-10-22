@@ -81,10 +81,15 @@ defmodule AvesWeb.API.SightingControllerTest do
         |> post(~p"/api/sightings", Map.put(@valid_attrs, "photo", upload))
 
       assert %{"sighting" => sighting} = json_response(conn, 201)
-      assert sighting["photo_url"] =~ ~r|^/uploads/[0-9a-f-]{36}\.jpg$|
+      base = Application.fetch_env!(:aves, :public_base_url)
+      assert sighting["photo_url"] =~ ~r|^#{Regex.escape(base)}/uploads/[0-9a-f-]{36}\.jpg$|
 
       stored = Path.join(Storage.uploads_dir(), Path.basename(sighting["photo_url"]))
       assert File.read!(stored) == File.read!(upload.path)
+
+      # The database keeps the path only; the URL is completed in the response.
+      saved = Ash.get!(Aves.Bitacora.Sighting, sighting["id"], authorize?: false)
+      assert saved.photo_url =~ ~r|^/uploads/|
     end
 
     @tag :tmp_dir
@@ -129,7 +134,7 @@ defmodule AvesWeb.API.SightingControllerTest do
         |> patch(~p"/api/sightings/#{sighting.id}", %{"photo" => jpeg_upload(tmp_dir)})
 
       assert %{"sighting" => updated} = json_response(conn, 200)
-      assert updated["photo_url"] =~ ~r|^/uploads/.+\.jpg$|
+      assert updated["photo_url"] =~ ~r|/uploads/.+\.jpg$|
     end
 
     @tag :tmp_dir
@@ -202,7 +207,7 @@ defmodule AvesWeb.API.SightingControllerTest do
 
   defp jpeg_upload(dir) do
     path = Path.join(dir, "ave.jpg")
-    File.write!(path, <<0xFF, 0xD8, 0xFF, 0xE0>> <> "contenido de prueba")
+    File.write!(path, jpeg_bytes())
     %Plug.Upload{path: path, filename: "ave.jpg", content_type: "image/jpeg"}
   end
 

@@ -7,15 +7,20 @@ defmodule Aves.Storage do
   `Aves.Bitacora.Sighting`. The format is detected from the first bytes of the
   file, not from the name or the content type sent by the client.
 
+  Metadata is removed before the file is written. Phone photos often carry
+  EXIF data with GPS coordinates, camera serial numbers and dates, so the
+  stored copy keeps only what is needed to show the image.
+
   The folder defaults to `priv/static/uploads` and is served at `/uploads`.
   It can be changed with `config :aves, :uploads_dir`.
   """
 
   @max_bytes 5 * 1024 * 1024
   @public_prefix "/uploads"
+  @png_text_chunks ~w(eXIf tEXt zTXt iTXt tIME)
 
   @doc """
-  Copies the upload into the public folder.
+  Copies the upload into the public folder, without metadata.
 
   Returns `{:ok, public_url}` or `{:error, message}`, where `message` is in
   Spanish because it is shown to the user.
@@ -23,10 +28,11 @@ defmodule Aves.Storage do
   def store(%Plug.Upload{path: path}) do
     with :ok <- check_size(path),
          {:ok, bytes} <- File.read(path),
-         {:ok, extension} <- detect_extension(bytes) do
+         {:ok, extension} <- detect_extension(bytes),
+         {:ok, clean} <- strip_metadata(bytes, extension) do
       name = Ecto.UUID.generate() <> extension
       File.mkdir_p!(uploads_dir())
-      File.cp!(path, Path.join(uploads_dir(), name))
+      File.write!(Path.join(uploads_dir(), name), clean)
 
       {:ok, @public_prefix <> "/" <> name}
     end
@@ -70,4 +76,74 @@ defmodule Aves.Storage do
     do: {:ok, ".png"}
 
   defp detect_extension(_bytes), do: {:error, "La foto debe ser JPEG o PNG"}
+
+  # JPEG: walks the segments after SOI. Application segments APP1 to APP15
+  # (EXIF, XMP, ...) and comments (COM) are dropped. APP0 (JFIF) and APP2 (ICC
+  # color profile) are kept. From the start of the scan (SOS) on, the image
+  # data is copied as is.
+  defp strip_metadata(<<0xFF, 0xD8, segments::binary>>, ".jpg") do
+    case jpeg_segments(segments, [<<0xFF, 0xD8>>]) do
+      {:ok, parts} -> {:ok, IO.iodata_to_binary(parts)}
+      :error -> {:error, "La foto no es un JPEG válido"}
+    end
+  end
+
+  # PNG: walks the chunks after the signature. Text chunks and EXIF chunks are
+  # dropped; the rest is kept, up to and including IEND.
+  defp strip_metadata(<<0x89, "PNG", 0x0D, 0x0A, 0x1A, 0x0A, chunks::binary>>, ".png") do
+    case png_chunks(chunks, []) do
+      {:ok, parts} ->
+        {:ok, IO.iodata_to_binary([<<0x89, "PNG", 0x0D, 0x0A, 0x1A, 0x0A>> | parts])}
+
+      :error ->
+        {:error, "La foto no es un PNG válido"}
+    end
+  end
+
+  defp strip_metadata(_bytes, _extension), do: {:error, "La foto no es válida"}
+
+  defp jpeg_segments(<<0xFF, 0xDA, _::binary>> = scan, acc),
+    do: {:ok, Enum.reverse([scan | acc])}
+
+  defp jpeg_segments(<<0xFF, 0xD9, _::binary>> = eoi, acc),
+    do: {:ok, Enum.reverse([eoi | acc])}
+
+  # Markers without a length: restart markers and fill bytes.
+  defp jpeg_segments(<<0xFF, marker, rest::binary>>, acc)
+       when marker in 0xD0..0xD7 or marker == 0x01,
+       do: jpeg_segments(rest, [<<0xFF, marker>> | acc])
+
+  defp jpeg_segments(<<0xFF, marker, length::16, _::binary>> = bin, acc) when length >= 2 do
+    size = 2 + length
+
+    case bin do
+      <<segment::binary-size(^size), rest::binary>> ->
+        if metadata_marker?(marker),
+          do: jpeg_segments(rest, acc),
+          else: jpeg_segments(rest, [segment | acc])
+
+      _ ->
+        :error
+    end
+  end
+
+  defp jpeg_segments(_bytes, _acc), do: :error
+
+  defp metadata_marker?(marker), do: marker in 0xE1..0xEF or marker == 0xFE
+
+  defp png_chunks(
+         <<length::32, type::binary-size(4), _::binary-size(length), _crc::binary-size(4),
+           rest::binary>> = bin,
+         acc
+       ) do
+    chunk = binary_part(bin, 0, 12 + length)
+
+    cond do
+      type == "IEND" -> {:ok, Enum.reverse([chunk | acc])}
+      type in @png_text_chunks -> png_chunks(rest, acc)
+      true -> png_chunks(rest, [chunk | acc])
+    end
+  end
+
+  defp png_chunks(_bytes, _acc), do: :error
 end

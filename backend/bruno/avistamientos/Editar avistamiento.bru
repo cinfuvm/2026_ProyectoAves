@@ -1,0 +1,29 @@
+meta {
+  name: Editar avistamiento
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/api/sightings/{{sightingId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "comment": "Comentario editado desde Bruno"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+docs {
+  Solo el dueño puede editar su avistamiento. Otro usuario recibe 404.
+}
