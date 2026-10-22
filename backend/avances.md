@@ -66,7 +66,9 @@
 - Los tests escriben en una carpeta temporal. `.gitignore` excluye `priv/static/uploads/`.
 - **Verificación:** `mix precommit` con 82 tests (4 nuevos). Prueba manual con `curl` contra el servidor de desarrollo: la foto se guardó, la URL devuelta respondió `200 image/jpeg` y el nombre quedó en `photo_url`.
 - **Limitaciones:**
-  - Si la base de datos rechaza el avistamiento después de guardar la foto, el archivo queda huérfano.
+  - **Resuelto:** si la base de datos rechaza el alta o el `PATCH`, la foto recién subida se borra. Si un `PATCH` con foto nueva tiene éxito, se borra la anterior.
+  - **Resuelto:** al eliminar un avistamiento (`soft_delete`) se borra su archivo, después de confirmar la transacción (`Aves.Bitacora.Changes.RemovePhotoFile`). La fila sigue en la base con su `photo_url`, oculta por `deleted_at` y sin archivo.
+  - **Moderación:** retirar una foto (`hide`) no borra el archivo, para poder restaurarla.
   - La URL es relativa. La app móvil debe anteponer la URL base del servidor.
   - En un despliegue con contenedores, los archivos se pierden al redesplegar si no hay volumen persistente.
 

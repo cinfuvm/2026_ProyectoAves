@@ -32,6 +32,25 @@ defmodule Aves.Storage do
     end
   end
 
+  @doc """
+  Deletes the file behind a URL returned by `store/1`.
+
+  Only URLs with the exact shape this module generates are touched. Anything
+  else (an external link, a malformed path) is ignored, so a stored value can
+  never make the delete reach outside the photos folder. A missing file is not
+  an error.
+  """
+  def delete(url) when is_binary(url) do
+    case Regex.run(~r"\A/uploads/([0-9a-f-]{36}\.(?:jpg|png))\z", url) do
+      [_, name] -> _ = File.rm(Path.join(uploads_dir(), name))
+      nil -> :ok
+    end
+
+    :ok
+  end
+
+  def delete(_url), do: :ok
+
   @doc "Absolute path of the folder where photos are written."
   def uploads_dir do
     Application.get_env(:aves, :uploads_dir) || Application.app_dir(:aves, "priv/static/uploads")

@@ -131,6 +131,73 @@ defmodule AvesWeb.API.SightingControllerTest do
       assert %{"sighting" => updated} = json_response(conn, 200)
       assert updated["photo_url"] =~ ~r|^/uploads/.+\.jpg$|
     end
+
+    @tag :tmp_dir
+    test "si la base rechaza el avistamiento, la foto subida no queda en disco", %{
+      conn: conn,
+      tmp_dir: tmp_dir
+    } do
+      {_user, token} = user_with_token()
+      attrs = @valid_attrs |> Map.delete("place") |> Map.put("photo", jpeg_upload(tmp_dir))
+
+      conn = conn |> sign_in_conn(token) |> post(~p"/api/sightings", attrs)
+
+      assert json_response(conn, 422)
+      assert File.ls!(Storage.uploads_dir()) == []
+    end
+
+    @tag :tmp_dir
+    test "eliminar el avistamiento borra su foto del disco", %{conn: conn} do
+      {owner, token} = user_with_token()
+      path = stored_photo!()
+      sighting = sighting(owner, %{photo_url: "/uploads/" <> Path.basename(path)})
+
+      conn = conn |> sign_in_conn(token) |> delete(~p"/api/sightings/#{sighting.id}")
+
+      assert response(conn, 204)
+      refute File.exists?(path)
+    end
+
+    @tag :tmp_dir
+    test "PATCH con foto nueva borra la foto anterior", %{conn: conn, tmp_dir: tmp_dir} do
+      {owner, token} = user_with_token()
+      old = stored_photo!()
+      sighting = sighting(owner, %{photo_url: "/uploads/" <> Path.basename(old)})
+
+      conn =
+        conn
+        |> sign_in_conn(token)
+        |> patch(~p"/api/sightings/#{sighting.id}", %{"photo" => jpeg_upload(tmp_dir)})
+
+      assert json_response(conn, 200)
+      refute File.exists?(old)
+    end
+
+    @tag :tmp_dir
+    test "un PATCH rechazado conserva la foto anterior", %{conn: conn, tmp_dir: tmp_dir} do
+      {owner, token} = user_with_token()
+      old = stored_photo!()
+      sighting = sighting(owner, %{photo_url: "/uploads/" <> Path.basename(old)})
+
+      conn =
+        conn
+        |> sign_in_conn(token)
+        |> patch(~p"/api/sightings/#{sighting.id}", %{
+          "photo" => jpeg_upload(tmp_dir),
+          "place" => nil
+        })
+
+      assert json_response(conn, 422)
+      assert File.exists?(old)
+      assert Storage.uploads_dir() |> File.ls!() |> length() == 1
+    end
+  end
+
+  defp stored_photo! do
+    File.mkdir_p!(Storage.uploads_dir())
+    path = Path.join(Storage.uploads_dir(), "#{Ecto.UUID.generate()}.jpg")
+    File.write!(path, "foto de prueba")
+    path
   end
 
   defp jpeg_upload(dir) do

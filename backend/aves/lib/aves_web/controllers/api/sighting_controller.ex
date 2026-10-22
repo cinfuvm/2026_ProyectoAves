@@ -29,6 +29,7 @@ defmodule AvesWeb.API.SightingController do
           |> json(%{sighting: sighting_json(sighting)})
 
         {:error, error} ->
+          discard_upload(params, attrs["photo_url"])
           error_response(conn, :unprocessable_entity, error)
       end
     else
@@ -39,9 +40,16 @@ defmodule AvesWeb.API.SightingController do
   @doc "PATCH /api/sightings/:id - Edit an own sighting (RF-09)."
   def update(conn, %{"id" => id} = params) do
     with {:ok, sighting} <- fetch_sighting(conn, id),
-         {:ok, attrs} <- put_photo(sighting_params(params), params),
-         {:ok, updated} <- Ash.update(sighting, attrs, actor: actor(conn), action: :update) do
-      json(conn, %{sighting: sighting_json(updated)})
+         {:ok, attrs} <- put_photo(sighting_params(params), params) do
+      case Ash.update(sighting, attrs, actor: actor(conn), action: :update) do
+        {:ok, updated} ->
+          replace_photo(params, sighting.photo_url)
+          json(conn, %{sighting: sighting_json(updated)})
+
+        {:error, error} ->
+          discard_upload(params, attrs["photo_url"])
+          error_response(conn, :unprocessable_entity, error)
+      end
     else
       {:error, :not_found} ->
         error_response(conn, :not_found, "Avistamiento no encontrado")
@@ -103,6 +111,14 @@ defmodule AvesWeb.API.SightingController do
   end
 
   defp put_photo(attrs, _params), do: {:ok, attrs}
+
+  # A rejected upload must not leave its file behind.
+  defp discard_upload(%{"photo" => %Plug.Upload{}}, url), do: Storage.delete(url)
+  defp discard_upload(_params, _url), do: :ok
+
+  # Once a PATCH with a new upload succeeds, the previous file is no longer used.
+  defp replace_photo(%{"photo" => %Plug.Upload{}}, old_url), do: Storage.delete(old_url)
+  defp replace_photo(_params, _old_url), do: :ok
 
   defp sighting_params(params) do
     %{}

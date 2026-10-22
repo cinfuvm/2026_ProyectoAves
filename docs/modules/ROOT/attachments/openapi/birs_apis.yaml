@@ -656,7 +656,7 @@ components:
                 type: string
               photo_url:
                 type: string
-                description: URL de una foto ya existente. Se ignora si se envía `photo`.
+                description: URL de una foto ya existente. Se ignora si se envía `photo`. Las fotos subidas quedan como ruta relativa (`/uploads/<archivo>`); el cliente debe anteponer la URL base del servidor.
         multipart/form-data:
           schema:
             type: object
