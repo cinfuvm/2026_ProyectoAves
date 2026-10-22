@@ -18,11 +18,11 @@ defmodule Aves.Catalog.Bird do
     defaults [:read]
 
     create :create do
-      accept [:name, :category_id]
+      accept [:name, :category_id, :scientific_name, :description]
     end
 
     update :update do
-      accept [:name, :category_id]
+      accept [:name, :category_id, :scientific_name, :description]
     end
 
     destroy :destroy
@@ -35,7 +35,7 @@ defmodule Aves.Catalog.Bird do
 
     # Only moderators and admins can manage the catalog.
     policy action_type([:create, :update, :destroy]) do
-      authorize_if expr(actor.rol in [:moderador, :admin])
+      authorize_if expr(^actor(:rol) in [:moderador, :admin])
     end
   end
 
@@ -44,6 +44,16 @@ defmodule Aves.Catalog.Bird do
 
     attribute :name, :string do
       allow_nil? false
+      public? true
+    end
+
+    attribute :scientific_name, :string do
+      description "Scientific name from the \"Aves de Chile\" base data (RF-07)."
+      public? true
+    end
+
+    attribute :description, :string do
+      description "Species description shown on the bird detail page (RF-07)."
       public? true
     end
 
@@ -57,5 +67,15 @@ defmodule Aves.Catalog.Bird do
       public? true
       attribute_writable? true
     end
+
+    has_many :photos, Aves.Bitacora.Sighting do
+      description "Visible sightings of this bird, shown on the detail page (RF-07)."
+      public? true
+      filter expr(is_nil(hidden_at) and is_nil(deleted_at))
+    end
+  end
+
+  identities do
+    identity :unique_scientific_name, [:scientific_name]
   end
 end

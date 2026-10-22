@@ -38,6 +38,13 @@ defmodule AvesWeb.API.Helpers do
   end
 
   def error_response(conn, status, error) do
+    # Forbidden policies always surface as 403, regardless of the caller's guess.
+    status =
+      case error do
+        %Ash.Error.Forbidden{} -> :forbidden
+        _ -> status
+      end
+
     conn |> put_status(status) |> json(%{errors: error_messages(error)})
   end
 

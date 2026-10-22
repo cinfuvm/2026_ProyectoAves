@@ -1,7 +1,8 @@
 # Avances Backend — Bitácora de Aves
 
 > Resumen de la implementación realizada hasta ahora.
-> **Última actualización:** 2026-10-14
+> **Última actualización:** 2026-10-22
+> **Alcance:** backend completo (autenticación, catálogo, bitácora, colección, moderación). La sección 0 resume el estado general; las secciones 1 a 11 detallan la autenticación, roles y perfil.
 > **Issues trabajados:** #9 — Registro e inicio de sesión (RF-01, RF-02) · #10 — Roles de usuario (RF-03) · #11 — Perfil de usuario (RF-04).
 > La base de autenticación (bearer) de #9 la reutilizan #10 y #11.
 
@@ -11,6 +12,76 @@
 - **App:** `aves/` (dentro de `backend/`).
 - **Contrato móvil (OpenAPI):** `../docs/modules/ROOT/attachments/openapi/birs_user_apis.yaml`.
 - **Base de datos local:** `docker-compose.yaml` (raíz del repo) → servicio `db` = `postgres:16` en `localhost:5432` (usuario/clave `postgres`).
+
+---
+
+## 0. Estado general del backend (2026-10-22)
+
+**Rama:** `fix/backend/correccion_detalles`. Incluye el trabajo de jose, mauricio y marcelo, y las correcciones de la sesión del 22-oct (detalle en `sesion_20261022.md`).
+
+### Cobertura de requisitos
+
+| RF | Requisito | Estado | Dónde |
+|---|---|---|---|
+| RF-01..04 | Registro, sesión, roles, perfil | ✅ | §1–§6 |
+| RF-05 | CRUD de aves | ✅ | `Aves.Catalog.Bird`, `BirdController` |
+| RF-06 | Buscador por nombre y categoría | ✅ | `GET /api/birds?name=&category_id=` |
+| RF-07 | Ficha de ave | ✅ | `GET /api/birds/:id` (categoría, nombre científico, descripción, galería de hasta 50 avistamientos) |
+| RF-08..10 | Avistamientos: registrar, editar, eliminar, bitácora | ✅ | `SightingController` |
+| RF-11 | Fotos de otros usuarios con filtros | ✅ | `PhotoController` |
+| RF-12 | Colección personal | ✅ | `CollectionController` |
+| RF-13 | Reportar foto | ✅ | `POST /api/reports` |
+| RF-14 | Cola de moderadores (aprobar / retirar) | ✅ | `POST /api/reports/:id/approve` y `/retire` |
+| RF-15 | Aves populares | ⚠️ parcial | `GET /api/birds/ranking` cuenta avistamientos; `bird_views` existe pero nada la escribe |
+| RF-16 | Gestión de usuarios desde admin (ver, editar, suspender) | ❌ | Sin endpoints |
+| RF-17 | Dashboard de aves y colecciones | ⚠️ parcial | Solo API; falta la capa LiveView |
+| RF-18 | Landing | 🔵 | Fuera del backend (`landing/`) |
+| RF-19 | OpenAPI completo | ⚠️ | Solo endpoints de usuario (`birs_user_apis.yaml`) |
+| RF-20 | Colección Bruno | ❌ | No existen archivos `.bru` |
+
+### Endpoints REST (`/api`)
+
+- **Públicos:** `POST /user/signin`, `POST /user/login`, `DELETE /user/logout`.
+- **Autenticados (bearer):**
+  - Usuario: `GET|PATCH /user/me`.
+  - Aves: `GET /birds`, `GET /birds/ranking`, `GET /birds/:id`, y `POST|PATCH|DELETE` (moderador o admin para escribir).
+  - Categorías: `GET|POST|PATCH|DELETE /categories`.
+  - Avistamientos: `GET|POST /sightings`, `PATCH|DELETE /sightings/:id`.
+  - Fotos: `GET /photos`.
+  - Colección: `GET|POST /collection`, `DELETE /collection/:id`.
+  - Reportes: `GET|POST /reports`, `POST /reports/:id/approve`, `POST /reports/:id/retire`.
+- **Otros:** `/api/json/*` (AshJsonApi) y Swagger UI en `/api/json/swaggerui`.
+
+### Migraciones
+
+| Versión | Nombre | Contenido |
+|---|---|---|
+| 20261007194006 | `initialize_and_add_authentication_resources_extensions_1` | Extensiones (citext) |
+| 20261007194007 | `initialize_and_add_authentication_resources` | Usuarios y tokens |
+| 20261009122556 | `add_user_auth_fields` | Campos de autenticación de usuario |
+| 20261015223749 | `initial_catalog_bitacora_moderation` | Categorías, aves, avistamientos, colección, reportes |
+| 20261022015932 | `add_bird_views_and_details` | `bird_views`; `scientific_name` y `description` en `birds` (RF-07) |
+
+- La migración `20261021230001_add_bird_views` fue **reemplazada** por `20261022015932`. El commit que la contiene (`480049e`) existe solo en local y no está en el remoto. En la base local `aves_dev` solo está aplicada la nueva. Si algún integrante ya aplicó la vieja, su `bird_views` tendrá índice y la migración nueva fallará con `duplicate_table`; hay que coordinarlo antes de subir.
+- Toda migración de recursos se genera con `mix ash.codegen <nombre>`. `mix ash.codegen --check` pasa sin cambios pendientes.
+
+### Verificación (2026-10-22)
+
+- `mix precommit` → compilación sin warnings, formato y **71 tests pasan**.
+- Pruebas manuales de la sesión (curl): `PATCH` de admin con `scientific_name` y `description` → OK; `PATCH` de usuario normal → 403; `GET /api/birds/:id` devuelve la ficha con galería.
+
+### Problemas conocidos (análisis del 22-oct, pendientes de corregir)
+
+1. **`bird_views` sin índice sobre `bird_id`.** La migración descartada sí lo tenía. Conviene agregarlo antes de implementar RF-15, porque el ranking agrupa por ave.
+2. **Borrar un ave con vistas registradas falla con 422 y mensaje crudo.** La FK `bird_views_bird_id_fkey` no tiene `on_delete`, y `Bird` no conoce `bird_views`. El error muestra el texto de `Ecto.ConstraintError`. Cuando RF-15 empiece a registrar vistas, un admin no podrá borrar aves ya visitadas. Solución: `has_many :views` con `on_delete` o limpieza explícita antes de destruir.
+3. **Errores de validación responden 403.** En `GET /api/birds?category_id=no-es-uuid`, `index` pasa `:forbidden` como estado por defecto para cualquier error y el helper solo cambia el estado para `Ash.Error.Forbidden`. El resultado es 403 cuando debería ser 422. `ranking` tiene el mismo patrón.
+4. **`show` no maneja todos los errores.** El `with` solo tiene la cláusula `{:error, :not_found}`. Si `Ash.load` falla, Elixir lanza `WithClauseError` (500). Esto se detectó leyendo el código; no se probó.
+5. **Documentación desactualizada en el código.** Los `@moduledoc` de `Aves.Catalog` y `Aves.Catalog.Bird` dicen que el CRUD de aves está en otro issue, y ya no es así.
+6. **Ranking por avistamientos, no por vistas.** El enunciado y `contexto.md` piden "más vistas" (`views_count`). Hay que decidir si RF-15 usa `bird_views` o los avistamientos.
+
+### Divergencias con el modelo original (`contexto.md`)
+
+- `contexto.md` define PUBLICACION, LIKE y `views_count`, y prohíbe una tabla extra para populares. La implementación usa **`Sighting`** como publicación y creó **`bird_views`**. El `requisitos.adoc` no menciona likes. Hay que validarlo con el equipo.
 
 ---
 

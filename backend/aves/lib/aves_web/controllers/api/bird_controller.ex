@@ -6,6 +6,7 @@ defmodule AvesWeb.API.BirdController do
   require Ash.Query
 
   alias Aves.Catalog.Bird
+  alias Aves.Bitacora.Sighting
 
   def index(conn, params) do
     query = Ash.Query.for_read(Bird, :read)
@@ -42,8 +43,14 @@ defmodule AvesWeb.API.BirdController do
   end
 
   def show(conn, %{"id" => id}) do
+    photos_query =
+      Ash.Query.for_read(Sighting, :read)
+      |> Ash.Query.sort(spotted_on: :desc, inserted_at: :desc)
+      |> Ash.Query.limit(50)
+
     with {:ok, bird} <- fetch_bird(conn, id),
-         {:ok, bird} <- Ash.load(bird, :category, actor: actor(conn)) do
+         {:ok, bird} <-
+           Ash.load(bird, [:category, photos: photos_query], actor: actor(conn)) do
       json(conn, %{bird: bird_json(bird)})
     else
       {:error, :not_found} ->
@@ -56,6 +63,8 @@ defmodule AvesWeb.API.BirdController do
       %{}
       |> put_if(params, "name", :string)
       |> put_if(params, "category_id", :string)
+      |> put_if(params, "scientific_name", :string)
+      |> put_if(params, "description", :string)
 
     case Ash.create(Bird, attrs, actor: actor(conn), action: :create) do
       {:ok, bird} ->
@@ -74,6 +83,8 @@ defmodule AvesWeb.API.BirdController do
         %{}
         |> put_if(params, "name", :string)
         |> put_if(params, "category_id", :string)
+        |> put_if(params, "scientific_name", :string)
+        |> put_if(params, "description", :string)
 
       case Ash.update(bird, attrs, actor: actor(conn), action: :update) do
         {:ok, updated_bird} ->
@@ -112,10 +123,17 @@ defmodule AvesWeb.API.BirdController do
     %{
       id: bird.id,
       name: bird.name,
+      scientific_name: bird.scientific_name,
+      description: bird.description,
       category_id: bird.category_id,
       category:
         if(Ash.Resource.loaded?(bird, :category) and not is_nil(bird.category),
           do: %{id: bird.category.id, name: bird.category.name},
+          else: nil
+        ),
+      photos:
+        if(Ash.Resource.loaded?(bird, :photos),
+          do: Enum.map(bird.photos, &sighting_json/1),
           else: nil
         ),
       inserted_at: bird.inserted_at,
