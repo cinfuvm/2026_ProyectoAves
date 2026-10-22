@@ -52,6 +52,24 @@
   - Reportes: `GET|POST /reports`, `POST /reports/:id/approve`, `POST /reports/:id/retire`.
 - **Otros:** `/api/json/*` (AshJsonApi) y Swagger UI en `/api/json/swaggerui`.
 
+### Subida de fotos (2026-10-22)
+
+**Archivos:** `lib/aves/storage.ex` (nuevo), `lib/aves_web/controllers/api/sighting_controller.ex`, `lib/aves_web.ex`, `config/test.exs`.
+
+- `POST /api/sightings` y `PATCH /api/sightings/:id` aceptan el campo multipart `photo`. Si se envía, la foto reemplaza a `photo_url`.
+- `Aves.Storage.store/1` valida la foto, la copia a una carpeta pública y devuelve la URL que se guarda en la base de datos:
+  - **Carpeta:** `priv/static/uploads`, servida en `/uploads`. Configurable con `config :aves, :uploads_dir`.
+  - **Nombre:** UUID aleatorio más la extensión detectada. Dos fotos nunca comparten nombre.
+  - **URL guardada:** ruta relativa, por ejemplo `/uploads/aafe295e-0c10-439b-a0ba-29b9a552735b.jpg`.
+  - **Formatos:** JPEG y PNG, según el tipo real del archivo (sus primeros bytes), no según el nombre ni el `Content-Type` del cliente. Coincide con la validación de `photo_url`.
+  - **Tamaño:** máximo 5 MB.
+- Los tests escriben en una carpeta temporal. `.gitignore` excluye `priv/static/uploads/`.
+- **Verificación:** `mix precommit` con 82 tests (4 nuevos). Prueba manual con `curl` contra el servidor de desarrollo: la foto se guardó, la URL devuelta respondió `200 image/jpeg` y el nombre quedó en `photo_url`.
+- **Limitaciones:**
+  - Si la base de datos rechaza el avistamiento después de guardar la foto, el archivo queda huérfano.
+  - La URL es relativa. La app móvil debe anteponer la URL base del servidor.
+  - En un despliegue con contenedores, los archivos se pierden al redesplegar si no hay volumen persistente.
+
 ### Migraciones
 
 | Versión | Nombre | Contenido |
@@ -91,7 +109,7 @@
 - **RF-17, dashboard LiveView:** capa web para admins y moderadores, con login por sesión.
 - **RF-19, OpenAPI completo:** falta documentar `/images` (los stubs de `birs_user_apis.yaml`), que depende de la decisión 6. Los endpoints del backend ya están en `birs_apis.yaml`.
 - **RF-20, colección Bruno:** no existen archivos `.bru`.
-- **Subida de fotos:** `photo_url` es solo un string. Falta la carga de archivos y el almacenamiento.
+- **Almacenamiento en producción:** la subida de fotos ya funciona en disco local (ver sección 0, "Subida de fotos"). Falta resolver dónde guardarlas en Fly.io, porque su disco es efímero (decisión 8).
 - **Métricas para admin:** pendiente desde #10. El enunciado también pide un dashboard de Grafana con golden metrics.
 - **Despliegue:** GitHub Actions y Fly.io, según el enunciado. Todavía no hay configuración en el repo.
 - **Limpieza:**
@@ -109,7 +127,7 @@
 5. **Login:** hoy solo entra con email. El nickname queda como mejora posible.
 6. **Contrato móvil:** el OpenAPI de móvil usa `/images` y `PUT /images` para reportar. El backend expone `/api/photos` y `/api/reports`. Hay que decidir cuál se mantiene y avisar al equipo.
 7. **Likes:** `contexto.md` los incluye y el enunciado no. Hay que decidir si se implementan.
-8. **Almacenamiento de fotos:** disco local, S3 u otro proveedor, y cuándo se implementa.
+8. **Almacenamiento de fotos:** en desarrollo ya se guarda en disco local (`priv/static/uploads`). Falta decidir el destino en producción: volumen de Fly.io, S3 u otro proveedor.
 9. **Dashboard:** si admin y moderador comparten la misma vista o tienen permisos distintos.
 
 ---

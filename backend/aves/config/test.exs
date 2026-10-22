@@ -23,6 +23,9 @@ config :aves, AvesWeb.Endpoint,
   secret_key_base: "r3IWMdu8xKAr9TOVyb4EsVsxIHyanwu5G8YfjKXcOx/02x8yeWOEr5HeBMlJyM++",
   server: false
 
+# Uploaded photos go to a temporary folder, never to the project's priv/
+config :aves, :uploads_dir, Path.join(System.tmp_dir!(), "aves_test_uploads")
+
 # In test we don't send emails
 config :aves, Aves.Mailer, adapter: Swoosh.Adapters.Test
 

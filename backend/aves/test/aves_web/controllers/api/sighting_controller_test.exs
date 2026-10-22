@@ -6,6 +6,8 @@ defmodule AvesWeb.API.SightingControllerTest do
 
   import Aves.Factory
 
+  alias Aves.Storage
+
   @valid_attrs %{
     "place" => "Reserva Costanera",
     "spotted_on" => "2026-01-15",
@@ -57,6 +59,84 @@ defmodule AvesWeb.API.SightingControllerTest do
       conn = post(conn, ~p"/api/sightings", @valid_attrs)
       assert %{"error" => _} = json_response(conn, 401)
     end
+  end
+
+  describe "fotos subidas (RF-08)" do
+    setup context do
+      previous = Application.get_env(:aves, :uploads_dir)
+      Application.put_env(:aves, :uploads_dir, Path.join(context.tmp_dir, "uploads"))
+
+      on_exit(fn -> Application.put_env(:aves, :uploads_dir, previous) end)
+      :ok
+    end
+
+    @tag :tmp_dir
+    test "guarda la foto en la carpeta pública y devuelve su URL", %{conn: conn, tmp_dir: tmp_dir} do
+      {_user, token} = user_with_token()
+      upload = jpeg_upload(tmp_dir)
+
+      conn =
+        conn
+        |> sign_in_conn(token)
+        |> post(~p"/api/sightings", Map.put(@valid_attrs, "photo", upload))
+
+      assert %{"sighting" => sighting} = json_response(conn, 201)
+      assert sighting["photo_url"] =~ ~r|^/uploads/[0-9a-f-]{36}\.jpg$|
+
+      stored = Path.join(Storage.uploads_dir(), Path.basename(sighting["photo_url"]))
+      assert File.read!(stored) == File.read!(upload.path)
+    end
+
+    @tag :tmp_dir
+    test "cada foto recibe un nombre distinto", %{conn: conn, tmp_dir: tmp_dir} do
+      {_user, token} = user_with_token()
+      params = Map.put(@valid_attrs, "photo", jpeg_upload(tmp_dir))
+
+      first = conn |> sign_in_conn(token) |> post(~p"/api/sightings", params)
+      second = conn |> sign_in_conn(token) |> post(~p"/api/sightings", params)
+
+      assert json_response(first, 201)["sighting"]["photo_url"] !=
+               json_response(second, 201)["sighting"]["photo_url"]
+    end
+
+    @tag :tmp_dir
+    test "rechaza un archivo que no es JPEG ni PNG aunque tenga extensión .jpg", %{
+      conn: conn,
+      tmp_dir: tmp_dir
+    } do
+      {_user, token} = user_with_token()
+      path = Path.join(tmp_dir, "nota.jpg")
+      File.write!(path, "esto es texto, no una imagen")
+      upload = %Plug.Upload{path: path, filename: "nota.jpg", content_type: "image/jpeg"}
+
+      conn =
+        conn
+        |> sign_in_conn(token)
+        |> post(~p"/api/sightings", Map.put(@valid_attrs, "photo", upload))
+
+      assert %{"error" => message} = json_response(conn, 422)
+      assert message =~ "JPEG o PNG"
+    end
+
+    @tag :tmp_dir
+    test "PATCH reemplaza la foto por una subida", %{conn: conn, tmp_dir: tmp_dir} do
+      {owner, token} = user_with_token()
+      sighting = sighting(owner, %{photo_url: "https://example.com/vieja.jpg"})
+
+      conn =
+        conn
+        |> sign_in_conn(token)
+        |> patch(~p"/api/sightings/#{sighting.id}", %{"photo" => jpeg_upload(tmp_dir)})
+
+      assert %{"sighting" => updated} = json_response(conn, 200)
+      assert updated["photo_url"] =~ ~r|^/uploads/.+\.jpg$|
+    end
+  end
+
+  defp jpeg_upload(dir) do
+    path = Path.join(dir, "ave.jpg")
+    File.write!(path, <<0xFF, 0xD8, 0xFF, 0xE0>> <> "contenido de prueba")
+    %Plug.Upload{path: path, filename: "ave.jpg", content_type: "image/jpeg"}
   end
 
   describe "GET /api/sightings (RF-10)" do

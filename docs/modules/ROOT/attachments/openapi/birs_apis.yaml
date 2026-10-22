@@ -656,7 +656,25 @@ components:
                 type: string
               photo_url:
                 type: string
-                description: URL de la foto. Todavía no hay subida de archivos.
+                description: URL de una foto ya existente. Se ignora si se envía `photo`.
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              bird_id:
+                type: string
+                format: uuid
+              place:
+                type: string
+              spotted_on:
+                type: string
+                format: date
+              comment:
+                type: string
+              photo:
+                type: string
+                format: binary
+                description: Foto JPEG o PNG de hasta 5 MB. Se guarda con un nombre único y su URL pública queda en `photo_url`.
   schemas:
     Error:
       type: object
