@@ -8,6 +8,14 @@ defmodule Aves.Catalog.BirdView do
   postgres do
     table "bird_views"
     repo Aves.Repo
+
+    references do
+      reference :bird, on_delete: :delete
+    end
+
+    custom_indexes do
+      index [:bird_id]
+    end
   end
 
   actions do

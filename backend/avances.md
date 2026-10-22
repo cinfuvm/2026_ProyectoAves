@@ -32,7 +32,7 @@
 | RF-12 | Colección personal | ✅ | `CollectionController` |
 | RF-13 | Reportar foto | ✅ | `POST /api/reports` |
 | RF-14 | Cola de moderadores (aprobar / retirar) | ✅ | `POST /api/reports/:id/approve` y `/retire` |
-| RF-15 | Aves populares | ⚠️ parcial | `GET /api/birds/ranking` cuenta avistamientos; `bird_views` existe pero nada la escribe |
+| RF-15 | Aves populares | ✅ | `GET /api/birds/ranking` ordena por `views_count`, contado desde `bird_views` (una fila por cada `GET /api/birds/:id`) |
 | RF-16 | Gestión de usuarios desde admin (ver, editar, suspender) | ❌ | Sin endpoints |
 | RF-17 | Dashboard de aves y colecciones | ⚠️ parcial | Solo API; falta la capa LiveView |
 | RF-18 | Landing | 🔵 | Fuera del backend (`landing/`) |
@@ -61,23 +61,25 @@
 | 20261009122556 | `add_user_auth_fields` | Campos de autenticación de usuario |
 | 20261015223749 | `initial_catalog_bitacora_moderation` | Categorías, aves, avistamientos, colección, reportes |
 | 20261022015932 | `add_bird_views_and_details` | `bird_views`; `scientific_name` y `description` en `birds` (RF-07) |
+| 20261022035822 | `add_bird_views_cascade_and_index` | Índice sobre `bird_views.bird_id`; FK con `ON DELETE CASCADE` |
 
 - La migración `20261021230001_add_bird_views` fue **reemplazada** por `20261022015932`. El commit que la contiene (`480049e`) existe solo en local y no está en el remoto. En la base local `aves_dev` solo está aplicada la nueva. Si algún integrante ya aplicó la vieja, su `bird_views` tendrá índice y la migración nueva fallará con `duplicate_table`; hay que coordinarlo antes de subir.
 - Toda migración de recursos se genera con `mix ash.codegen <nombre>`. `mix ash.codegen --check` pasa sin cambios pendientes.
 
 ### Verificación (2026-10-22)
 
-- `mix precommit` → compilación sin warnings, formato y **71 tests pasan**.
+- `mix precommit` → compilación sin warnings, formato y **78 tests pasan** (71 previos + 7 de `bird_controller_test.exs`: filtro, UUID inválido, ficha con galería, registro de vista, 404, ranking por vistas, borrado en cascada).
+- `mix ash.codegen --check` sin cambios pendientes.
 - Pruebas manuales de la sesión (curl): `PATCH` de admin con `scientific_name` y `description` → OK; `PATCH` de usuario normal → 403; `GET /api/birds/:id` devuelve la ficha con galería.
 
-### Problemas conocidos (análisis del 22-oct, pendientes de corregir)
+### Correcciones del 22-oct y pendientes
 
-1. **`bird_views` sin índice sobre `bird_id`.** La migración descartada sí lo tenía. Conviene agregarlo antes de implementar RF-15, porque el ranking agrupa por ave.
-2. **Borrar un ave con vistas registradas falla con 422 y mensaje crudo.** La FK `bird_views_bird_id_fkey` no tiene `on_delete`, y `Bird` no conoce `bird_views`. El error muestra el texto de `Ecto.ConstraintError`. Cuando RF-15 empiece a registrar vistas, un admin no podrá borrar aves ya visitadas. Solución: `has_many :views` con `on_delete` o limpieza explícita antes de destruir.
-3. **Errores de validación responden 403.** En `GET /api/birds?category_id=no-es-uuid`, `index` pasa `:forbidden` como estado por defecto para cualquier error y el helper solo cambia el estado para `Ash.Error.Forbidden`. El resultado es 403 cuando debería ser 422. `ranking` tiene el mismo patrón.
-4. **`show` no maneja todos los errores.** El `with` solo tiene la cláusula `{:error, :not_found}`. Si `Ash.load` falla, Elixir lanza `WithClauseError` (500). Esto se detectó leyendo el código; no se probó.
+1. **Resuelto:** `bird_views` tiene índice sobre `bird_id` (migración `20261022035822`).
+2. **Resuelto:** la FK tiene `ON DELETE CASCADE`. Borrar un ave elimina sus vistas. Los avistamientos siguen bloqueando el borrado con 422 (regla de negocio, con mensaje de Ash).
+3. **Resuelto:** `category_id` inválido responde 422 con mensaje claro. Los errores de lectura y del ranking ya no salen como 403 por defecto.
+4. **Resuelto:** `show` responde 500 controlado si `Ash.load` falla, en vez de lanzar `WithClauseError`.
 5. **Documentación desactualizada en el código.** Los `@moduledoc` de `Aves.Catalog` y `Aves.Catalog.Bird` dicen que el CRUD de aves está en otro issue, y ya no es así.
-6. **Ranking por avistamientos, no por vistas.** El enunciado y `contexto.md` piden "más vistas" (`views_count`). Hay que decidir si RF-15 usa `bird_views` o los avistamientos.
+6. **Resuelto (decisión del equipo):** RF-15 cuenta `bird_views`. El ranking anterior nunca sumaba bien porque el SQL devolvía el UUID como binario y no coincidía con el `id` del ave; ahora se castea a texto. El campo de respuesta pasó de `sightings_count` a `views_count`. No había consumidores de ese campo.
 
 ### Divergencias con el modelo original (`contexto.md`)
 

@@ -6,39 +6,41 @@ defmodule AvesWeb.API.BirdController do
   require Ash.Query
 
   alias Aves.Catalog.Bird
+  alias Aves.Catalog.BirdView
   alias Aves.Bitacora.Sighting
 
   def index(conn, params) do
-    query = Ash.Query.for_read(Bird, :read)
+    with {:ok, category_id} <- optional_uuid(params, "category_id") do
+      query = Ash.Query.for_read(Bird, :read)
 
-    query =
-      case Map.get(params, "name") do
-        name when is_binary(name) and name != "" ->
-          pattern = "%#{name}%"
-          Ash.Query.filter(query, ilike(name, ^pattern))
+      query =
+        case Map.get(params, "name") do
+          name when is_binary(name) and name != "" ->
+            pattern = "%#{name}%"
+            Ash.Query.filter(query, ilike(name, ^pattern))
 
-        _ ->
-          query
+          _ ->
+            query
+        end
+
+      query =
+        if category_id,
+          do: Ash.Query.filter(query, category_id == ^category_id),
+          else: query
+
+      query
+      |> Ash.Query.load(:category)
+      |> Ash.read(actor: actor(conn))
+      |> case do
+        {:ok, birds} ->
+          json(conn, %{birds: Enum.map(birds, &bird_json/1)})
+
+        {:error, error} ->
+          error_response(conn, :unprocessable_entity, error)
       end
-
-    query =
-      case Map.get(params, "category_id") do
-        category_id when is_binary(category_id) and category_id != "" ->
-          Ash.Query.filter(query, category_id == ^category_id)
-
-        _ ->
-          query
-      end
-
-    query
-    |> Ash.Query.load(:category)
-    |> Ash.read(actor: actor(conn))
-    |> case do
-      {:ok, birds} ->
-        json(conn, %{birds: Enum.map(birds, &bird_json/1)})
-
-      {:error, error} ->
-        error_response(conn, :forbidden, error)
+    else
+      :error ->
+        error_response(conn, :unprocessable_entity, "category_id debe ser un UUID válido")
     end
   end
 
@@ -51,10 +53,14 @@ defmodule AvesWeb.API.BirdController do
     with {:ok, bird} <- fetch_bird(conn, id),
          {:ok, bird} <-
            Ash.load(bird, [:category, photos: photos_query], actor: actor(conn)) do
+      record_view(bird, conn)
       json(conn, %{bird: bird_json(bird)})
     else
       {:error, :not_found} ->
         error_response(conn, :not_found, "Ave no encontrada")
+
+      {:error, error} ->
+        error_response(conn, :internal_server_error, error)
     end
   end
 
@@ -119,6 +125,20 @@ defmodule AvesWeb.API.BirdController do
     end
   end
 
+  # Missing or empty params are optional; any other value must be a UUID.
+  defp optional_uuid(params, key) do
+    case Map.get(params, key) do
+      value when is_binary(value) and value != "" -> Ecto.UUID.cast(value)
+      _ -> {:ok, nil}
+    end
+  end
+
+  # Each detail view is one row in bird_views (RF-15). A failure to record it
+  # must not break the response, so the result is ignored.
+  defp record_view(bird, conn) do
+    Ash.create(BirdView, %{bird_id: bird.id}, action: :record, actor: actor(conn))
+  end
+
   defp bird_json(bird) do
     %{
       id: bird.id,
@@ -143,11 +163,8 @@ defmodule AvesWeb.API.BirdController do
 
   def ranking(conn, _params) do
     sql = """
-    SELECT bird_id, COUNT(*) AS sightings_count
-    FROM sightings
-    WHERE bird_id IS NOT NULL
-      AND deleted_at IS NULL
-      AND hidden_at IS NULL
+    SELECT bird_id::text, COUNT(*) AS views_count
+    FROM bird_views
     GROUP BY bird_id
     ORDER BY COUNT(*) DESC, bird_id ASC
     """
@@ -182,7 +199,7 @@ defmodule AvesWeb.API.BirdController do
               |> Enum.map(fn bird ->
                 Map.put(
                   bird_json(bird),
-                  :sightings_count,
+                  :views_count,
                   Map.get(counts, bird.id, 0)
                 )
               end)
@@ -190,7 +207,7 @@ defmodule AvesWeb.API.BirdController do
             json(conn, %{birds: ranked_birds})
 
           {:error, error} ->
-            error_response(conn, :forbidden, error)
+            error_response(conn, :internal_server_error, error)
         end
 
       {:error, error} ->
