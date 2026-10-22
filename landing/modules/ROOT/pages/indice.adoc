@@ -1,0 +1,10 @@
+= 2026_ProyectoAves Documentacion
+:navtitle: Welcome
+
+== Overview
+
+Equipo de desarrollo para la Landing Page y Dashboard administrativa del proyecto en cargo de; Cuentas y Acceso, CRUD Administrativo, Moderación, popularidad, Dashboard web y landing.
+Referencias cross-references:
+
+* xref:indice.adoc[Indice]
+* xref:intro.adoc[Introduccion]
