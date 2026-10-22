@@ -36,7 +36,7 @@
 | RF-16 | Gestión de usuarios desde admin (ver, editar, suspender) | ❌ | Sin endpoints |
 | RF-17 | Dashboard de aves y colecciones | ⚠️ parcial | Solo API; falta la capa LiveView |
 | RF-18 | Landing | 🔵 | Fuera del backend (`landing/`) |
-| RF-19 | OpenAPI completo | ⚠️ | Solo endpoints de usuario (`birs_user_apis.yaml`) |
+| RF-19 | OpenAPI completo | ⚠️ | Usuarios en `birs_user_apis.yaml`; resto del backend en `birs_apis.yaml` (`docs/modules/ROOT/attachments/openapi/`). Falta el contrato de `/images` (decisión 6) |
 | RF-20 | Colección Bruno | ❌ | No existen archivos `.bru` |
 
 ### Endpoints REST (`/api`)
@@ -84,6 +84,33 @@
 ### Divergencias con el modelo original (`contexto.md`)
 
 - `contexto.md` define PUBLICACION, LIKE y `views_count`, y prohíbe una tabla extra para populares. La implementación usa **`Sighting`** como publicación y creó **`bird_views`**. El `requisitos.adoc` no menciona likes. Hay que validarlo con el equipo.
+
+### Pendientes por realizar (2026-10-22)
+
+- **RF-16, gestión de usuarios desde admin:** endpoints para listar, editar, suspender y asignar roles por REST. Las acciones `assign_role` y `destroy` ya existen con sus policies.
+- **RF-17, dashboard LiveView:** capa web para admins y moderadores, con login por sesión.
+- **RF-19, OpenAPI completo:** falta documentar `/images` (los stubs de `birs_user_apis.yaml`), que depende de la decisión 6. Los endpoints del backend ya están en `birs_apis.yaml`.
+- **RF-20, colección Bruno:** no existen archivos `.bru`.
+- **Subida de fotos:** `photo_url` es solo un string. Falta la carga de archivos y el almacenamiento.
+- **Métricas para admin:** pendiente desde #10. El enunciado también pide un dashboard de Grafana con golden metrics.
+- **Despliegue:** GitHub Actions y Fly.io, según el enunciado. Todavía no hay configuración en el repo.
+- **Limpieza:**
+  - Quitar o usar el router de AshJsonApi, que está vacío.
+  - Mover `secret_key_base` y `token_signing_secret` de `config/dev.exs` a variables de entorno.
+  - Actualizar `sesion_20261022.md`, que ya no describe el estado final de `bird_views`.
+- **Commit:** el trabajo del 22-oct está sin commitear. El commit `480049e` existe solo en local.
+
+### Pendientes por decidir (2026-10-22)
+
+1. **Vistas del ranking (RF-15):** ¿cada visita cuenta o solo una por usuario? Hoy cuenta cada visita. ¿Las búsquedas y listados también suman o solo la ficha?
+2. **Borrado de aves con avistamientos:** hoy responde 422. ¿Se bloquea siempre, se oculta con soft delete o se borra en cascada?
+3. **Borrado de categorías con aves:** la FK no tiene `on_delete`. No está probado qué responde hoy.
+4. **Estados del reporte:** el código usa `pendiente`, `aprobado` y `retirado`. El modelo original decía `pendiente`, `aceptado` y `rechazado`. Hay que elegir uno y alinear el contrato móvil.
+5. **Login:** hoy solo entra con email. El nickname queda como mejora posible.
+6. **Contrato móvil:** el OpenAPI de móvil usa `/images` y `PUT /images` para reportar. El backend expone `/api/photos` y `/api/reports`. Hay que decidir cuál se mantiene y avisar al equipo.
+7. **Likes:** `contexto.md` los incluye y el enunciado no. Hay que decidir si se implementan.
+8. **Almacenamiento de fotos:** disco local, S3 u otro proveedor, y cuándo se implementa.
+9. **Dashboard:** si admin y moderador comparten la misma vista o tienen permisos distintos.
 
 ---
 

@@ -1,0 +1,841 @@
+openapi: 3.0.0
+info:
+  title: birs_apis
+  version: 1.0.0
+  description: >
+    Endpoints de catálogo, bitácora, fotos, colección y moderación del backend de
+    Aves. El contrato de autenticación y perfil está en `birs_user_apis.yaml`.
+    Todos los endpoints requieren bearer token salvo que se indique lo contrario.
+servers:
+  - url: http://127.0.0.1:4000
+security:
+  - bearerAuth: []
+tags:
+  - name: API aves
+  - name: API categorías
+  - name: API avistamientos
+  - name: API fotos
+  - name: API colección
+  - name: API reportes
+paths:
+  /api/birds:
+    get:
+      summary: Buscar aves
+      description: Lista las aves, filtradas opcionalmente por nombre (parcial, sin distinguir mayúsculas) y categoría (RF-06).
+      tags:
+        - API aves
+      parameters:
+        - $ref: '#/components/parameters/nameQuery'
+        - $ref: '#/components/parameters/categoryIdQuery'
+      responses:
+        '200':
+          description: Aves encontradas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  birds:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Bird'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ErrorMessage'
+    post:
+      summary: Crear ave
+      description: Solo moderadores y administradores (RF-05).
+      tags:
+        - API aves
+      requestBody:
+        $ref: '#/components/requestBodies/BirdInput'
+      responses:
+        '201':
+          description: Ave creada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bird:
+                    $ref: '#/components/schemas/Bird'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Errors'
+  /api/birds/ranking:
+    get:
+      summary: Aves populares
+      description: Aves ordenadas por número de vistas de su ficha, de mayor a menor. Solo incluye aves con al menos una vista (RF-15).
+      tags:
+        - API aves
+      responses:
+        '200':
+          description: Ranking de aves
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  birds:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: '#/components/schemas/Bird'
+                        - type: object
+                          properties:
+                            views_count:
+                              type: integer
+                              example: 12
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/birds/{id}:
+    parameters:
+      - $ref: '#/components/parameters/id'
+    get:
+      summary: Ficha de ave
+      description: Devuelve el ave con su categoría y hasta 50 avistamientos visibles, más recientes primero (RF-07). Cada consulta registra una vista para el ranking (RF-15).
+      tags:
+        - API aves
+      responses:
+        '200':
+          description: Ficha del ave
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bird:
+                    allOf:
+                      - $ref: '#/components/schemas/Bird'
+                      - type: object
+                        properties:
+                          photos:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Sighting'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      summary: Editar ave
+      description: Solo moderadores y administradores.
+      tags:
+        - API aves
+      requestBody:
+        $ref: '#/components/requestBodies/BirdInput'
+      responses:
+        '200':
+          description: Ave actualizada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bird:
+                    $ref: '#/components/schemas/Bird'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/Errors'
+    delete:
+      summary: Eliminar ave
+      description: Solo moderadores y administradores. Elimina también sus vistas. Responde 422 si el ave tiene avistamientos.
+      tags:
+        - API aves
+      responses:
+        '204':
+          description: Ave eliminada
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/Errors'
+  /api/categories:
+    get:
+      summary: Listar categorías
+      tags:
+        - API categorías
+      responses:
+        '200':
+          description: Categorías
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  categories:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Category'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      summary: Crear categoría
+      description: Solo moderadores y administradores.
+      tags:
+        - API categorías
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  example: Rapaces
+      responses:
+        '201':
+          description: Categoría creada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  category:
+                    $ref: '#/components/schemas/Category'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/Errors'
+  /api/categories/{id}:
+    parameters:
+      - $ref: '#/components/parameters/id'
+    patch:
+      summary: Editar categoría
+      description: Solo moderadores y administradores.
+      tags:
+        - API categorías
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: Categoría actualizada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  category:
+                    $ref: '#/components/schemas/Category'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/Errors'
+    delete:
+      summary: Eliminar categoría
+      description: Solo moderadores y administradores.
+      tags:
+        - API categorías
+      responses:
+        '204':
+          description: Categoría eliminada
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/Errors'
+  /api/sightings:
+    get:
+      summary: Bitácora personal
+      description: Avistamientos del usuario autenticado, más recientes primero, paginados (RF-10).
+      tags:
+        - API avistamientos
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/perPage'
+      responses:
+        '200':
+          description: Página de avistamientos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sightings:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Sighting'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      summary: Registrar avistamiento
+      description: Registra un avistamiento propio con lugar, fecha, comentario y foto (RF-08).
+      tags:
+        - API avistamientos
+      requestBody:
+        $ref: '#/components/requestBodies/SightingInput'
+      responses:
+        '201':
+          description: Avistamiento registrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sighting:
+                    $ref: '#/components/schemas/Sighting'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/Errors'
+  /api/sightings/{id}:
+    parameters:
+      - $ref: '#/components/parameters/id'
+    patch:
+      summary: Editar avistamiento propio
+      description: Solo el dueño puede editarlo (RF-09).
+      tags:
+        - API avistamientos
+      requestBody:
+        $ref: '#/components/requestBodies/SightingInput'
+      responses:
+        '200':
+          description: Avistamiento actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sighting:
+                    $ref: '#/components/schemas/Sighting'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/Errors'
+    delete:
+      summary: Eliminar avistamiento propio
+      description: Borrado lógico. Solo el dueño puede eliminarlo (RF-09).
+      tags:
+        - API avistamientos
+      responses:
+        '204':
+          description: Avistamiento eliminado
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/Errors'
+  /api/photos:
+    get:
+      summary: Fotos de otros usuarios
+      description: Avistamientos visibles de otros usuarios, filtrables por ave o categoría, paginados (RF-11).
+      tags:
+        - API fotos
+      parameters:
+        - $ref: '#/components/parameters/birdIdQuery'
+        - $ref: '#/components/parameters/categoryIdQuery'
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/perPage'
+      responses:
+        '200':
+          description: Página de fotos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  photos:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Sighting'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /api/collection:
+    get:
+      summary: Colección personal
+      description: Fotos de otros usuarios guardadas por el usuario autenticado (RF-12).
+      tags:
+        - API colección
+      responses:
+        '200':
+          description: Elementos de la colección
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CollectionItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      summary: Guardar foto en la colección
+      tags:
+        - API colección
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - sighting_id
+              properties:
+                sighting_id:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Foto guardada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  item:
+                    $ref: '#/components/schemas/CollectionItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/Errors'
+  /api/collection/{id}:
+    parameters:
+      - $ref: '#/components/parameters/id'
+    delete:
+      summary: Quitar foto de la colección
+      tags:
+        - API colección
+      responses:
+        '204':
+          description: Elemento eliminado
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/Errors'
+  /api/reports:
+    get:
+      summary: Cola de reportes
+      description: Solo moderadores y administradores (RF-14).
+      tags:
+        - API reportes
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Filtra por estado.
+          schema:
+            $ref: '#/components/schemas/ReportStatus'
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/perPage'
+      responses:
+        '200':
+          description: Página de reportes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reports:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Report'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      summary: Reportar foto
+      description: Reporta un avistamiento que no corresponde a un ave (RF-13). El reporte queda en estado `pendiente`.
+      tags:
+        - API reportes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - sighting_id
+              properties:
+                sighting_id:
+                  type: string
+                  format: uuid
+                reason:
+                  type: string
+                  example: No es un ave
+      responses:
+        '201':
+          description: Reporte creado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  report:
+                    $ref: '#/components/schemas/Report'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/Errors'
+  /api/reports/{id}/approve:
+    parameters:
+      - $ref: '#/components/parameters/id'
+    post:
+      summary: Aprobar reporte
+      description: La foto se mantiene visible (RF-14). Solo moderadores y administradores.
+      tags:
+        - API reportes
+      responses:
+        '200':
+          description: Reporte aprobado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  report:
+                    $ref: '#/components/schemas/Report'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/reports/{id}/retire:
+    parameters:
+      - $ref: '#/components/parameters/id'
+    post:
+      summary: Retirar reporte
+      description: Marca el reporte como `retirado` y oculta el avistamiento reportado (RF-14). Solo moderadores y administradores.
+      tags:
+        - API reportes
+      responses:
+        '200':
+          description: Reporte retirado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  report:
+                    $ref: '#/components/schemas/Report'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    id:
+      name: id
+      in: path
+      required: true
+      description: UUID del recurso.
+      schema:
+        type: string
+        format: uuid
+    nameQuery:
+      name: name
+      in: query
+      required: false
+      description: Texto a buscar dentro del nombre del ave.
+      schema:
+        type: string
+    categoryIdQuery:
+      name: category_id
+      in: query
+      required: false
+      description: UUID de la categoría. Un valor que no sea UUID responde 422.
+      schema:
+        type: string
+        format: uuid
+    birdIdQuery:
+      name: bird_id
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uuid
+    page:
+      name: page
+      in: query
+      required: false
+      description: Número de página, empezando en 1.
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    perPage:
+      name: per_page
+      in: query
+      required: false
+      description: Elementos por página.
+      schema:
+        type: integer
+        minimum: 1
+        default: 20
+  requestBodies:
+    BirdInput:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+                example: Flamenco chileno
+              scientific_name:
+                type: string
+                example: Phoenicopterus chilensis
+              description:
+                type: string
+              category_id:
+                type: string
+                format: uuid
+    SightingInput:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              bird_id:
+                type: string
+                format: uuid
+              place:
+                type: string
+                example: Laguna Verde
+              spotted_on:
+                type: string
+                format: date
+                example: '2026-10-20'
+              comment:
+                type: string
+              photo_url:
+                type: string
+                description: URL de la foto. Todavía no hay subida de archivos.
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Mensaje único (401, 404 y algunos 422).
+        errors:
+          type: array
+          items:
+            type: string
+          description: Lista de mensajes (403 y 422 de validación).
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        per_page:
+          type: integer
+        count:
+          type: integer
+          nullable: true
+        more?:
+          type: boolean
+          description: Indica si hay una página siguiente.
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        inserted_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Bird:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        scientific_name:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        category_id:
+          type: string
+          format: uuid
+          nullable: true
+        category:
+          type: object
+          nullable: true
+          description: Solo se incluye en listados y en la ficha.
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+        inserted_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Sighting:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        place:
+          type: string
+          nullable: true
+        spotted_on:
+          type: string
+          format: date
+          nullable: true
+        comment:
+          type: string
+          nullable: true
+        photo_url:
+          type: string
+          nullable: true
+        bird_id:
+          type: string
+          format: uuid
+          nullable: true
+        owner_id:
+          type: string
+          format: uuid
+        inserted_at:
+          type: string
+          format: date-time
+    CollectionItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        sighting_id:
+          type: string
+          format: uuid
+        owner_id:
+          type: string
+          format: uuid
+        inserted_at:
+          type: string
+          format: date-time
+        sighting:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Sighting'
+    ReportStatus:
+      type: string
+      enum:
+        - pendiente
+        - aprobado
+        - retirado
+    Report:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        sighting_id:
+          type: string
+          format: uuid
+        reporter_id:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/ReportStatus'
+        inserted_at:
+          type: string
+          format: date-time
+        sighting:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Sighting'
+  responses:
+    Unauthorized:
+      description: Falta el token o no es válido
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: El rol del usuario no permite la acción
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Recurso no encontrado o no visible para el usuario
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ErrorMessage:
+      description: Parámetro inválido
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Errors:
+      description: Datos inválidos
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
