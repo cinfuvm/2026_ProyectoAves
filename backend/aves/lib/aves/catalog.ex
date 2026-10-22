@@ -1,10 +1,7 @@
 defmodule Aves.Catalog do
   @moduledoc """
-  Domain for the bird catalog: categories and birds.
-
-  Only the minimal resources required by the sightings/collection/moderation
-  requirements (RF-08..RF-14) live here. The full bird CRUD (RF-05) and search
-  (RF-06) are handled in their own issues.
+  Domain for the bird catalog: categories, birds and the view counter used for
+  popular birds (RF-15).
   """
   use Ash.Domain,
     otp_app: :aves

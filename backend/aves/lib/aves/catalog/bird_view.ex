@@ -1,4 +1,9 @@
 defmodule Aves.Catalog.BirdView do
+  @moduledoc """
+  One row per detail-page view of a bird. The popular ranking (RF-15) counts
+  these rows per bird.
+  """
+
   use Ash.Resource,
     otp_app: :aves,
     domain: Aves.Catalog,

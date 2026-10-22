@@ -1,7 +1,8 @@
 defmodule Aves.Catalog.Bird do
   @moduledoc """
-  A bird species. Minimal resource for the sightings/moderation requirements;
-  the full catalog CRUD (RF-05) and search (RF-06) live in their own issues.
+  A bird species of the Chilean catalog. Supports CRUD (moderators and admins),
+  search by name and category, the detail page with its photo gallery, and
+  view tracking for the popular ranking.
   """
   use Ash.Resource,
     otp_app: :aves,
