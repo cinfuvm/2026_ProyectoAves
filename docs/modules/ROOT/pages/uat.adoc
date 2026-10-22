@@ -1,0 +1,1017 @@
+= UAT — User Acceptance Testing
+:toc:
+:toclevels: 3
+:sectnums:
+
+== 1. Objetivo
+
+El presente documento define las pruebas de aceptación de usuario (User Acceptance Testing, UAT) para el sistema *Bitácora de Aves*.
+
+El objetivo es verificar que las funcionalidades implementadas cumplen con los requisitos funcionales RF-01 a RF-20 definidos para el proyecto.
+
+Las pruebas se realizan desde la perspectiva de los usuarios finales y de los responsables de administración y moderación del sistema.
+
+== 2. Alcance
+
+El UAT contempla las siguientes áreas:
+
+* Cuentas y acceso.
+* Catálogo de aves.
+* Bitácora de avistamientos.
+* Moderación y popularidad.
+* Dashboard web y landing page.
+* API REST y documentación.
+
+Cada requisito funcional posee al menos un caso de prueba asociado.
+
+== 3. Roles utilizados en las pruebas
+
+[cols="1,3"]
+|===
+|Rol |Descripción
+
+|Usuario
+|Usuario común que puede registrarse, iniciar sesión, consultar aves, registrar avistamientos y administrar su colección personal.
+
+|Moderador
+|Usuario encargado de revisar los reportes de fotografías.
+
+|Administrador
+|Usuario encargado de administrar usuarios, aves y colecciones mediante el dashboard.
+|===
+
+== 4. Resultado de las pruebas
+
+Cada prueba debe registrarse utilizando uno de los siguientes estados:
+
+[cols="1,3"]
+|===
+|Estado |Descripción
+
+|PASS
+|La funcionalidad cumple completamente con el resultado esperado.
+
+|FAIL
+|La funcionalidad no cumple con el resultado esperado.
+
+|BLOCKED
+|La prueba no puede ejecutarse debido a una dependencia o problema externo.
+
+|N/A
+|La prueba no aplica al ambiente evaluado.
+|===
+
+== 5. Casos de aceptación
+
+=== 5.1 Cuentas y acceso
+
+==== UAT-01 — Registro de usuarios
+
+*Requisito:* RF-01
+
+[cols="1,3"]
+|===
+|Elemento |Descripción
+
+|Precondición
+|El usuario no posee una cuenta registrada.
+
+|Acción
+|Ingresar a la opción de registro, completar los datos requeridos y enviar el formulario.
+
+|Resultado esperado
+|El sistema crea correctamente la cuenta del usuario y permite utilizar las funciones correspondientes a un usuario registrado.
+
+|Criterio de aceptación
+|La cuenta queda registrada y puede utilizarse para iniciar sesión.
+
+|Estado
+|Pendiente
+|===
+
+==== UAT-02 — Inicio de sesión
+
+*Requisito:* RF-02
+
+[cols="1,3"]
+|===
+|Elemento |Descripción
+
+|Precondición
+|Existe una cuenta registrada.
+
+|Acción
+|Ingresar credenciales válidas desde la aplicación móvil y desde el dashboard.
+
+|Resultado esperado
+|El usuario inicia sesión correctamente y obtiene acceso a las funcionalidades correspondientes a su rol.
+
+|Criterio de aceptación
+|El inicio de sesión funciona correctamente en los clientes correspondientes.
+
+|Estado
+|Pendiente
+|===
+
+==== UAT-03 — Cierre de sesión
+
+*Requisito:* RF-02
+
+[cols="1,3"]
+|===
+|Elemento |Descripción
+
+|Precondición
+|Existe una sesión iniciada.
+
+|Acción
+|Seleccionar la opción de cerrar sesión.
+
+|Resultado esperado
+|La sesión se termina correctamente y las funcionalidades que requieren autenticación dejan de estar disponibles.
+
+|Criterio de aceptación
+|El usuario debe volver a autenticarse para acceder nuevamente a las funciones privadas.
+
+|Estado
+|Pendiente
+|===
+
+==== UAT-04 — Roles y acceso al dashboard
+
+*Requisito:* RF-03
+
+[cols="1,3"]
+|===
+|Elemento |Descripción
+
+|Precondición
+|Existen cuentas con los roles usuario, moderador y administrador.
+
+|Acción
+|Intentar acceder al dashboard utilizando cada uno de los tres roles.
+
+|Resultado esperado
+|El usuario común no puede acceder al dashboard. El moderador y el administrador pueden acceder.
+
+|Criterio de aceptación
+|El acceso al dashboard está restringido exclusivamente a moderadores y administradores.
+
+|Estado
+|Pendiente
+|===
+
+==== UAT-05 — Edición de perfil
+
+*Requisito:* RF-04
+
+[cols="1,3"]
+|===
+|Elemento |Descripción
+
+|Precondición
+|El usuario ha iniciado sesión.
+
+|Acción
+|Modificar los datos básicos permitidos de su perfil y guardar los cambios.
+
+|Resultado esperado
+|Los cambios son almacenados correctamente y se muestran al volver a consultar el perfil.
+
+|Criterio de aceptación
+|El usuario puede modificar correctamente su información básica.
+
+|Estado
+|Pendiente
+|===
+
+=== 5.2 Catálogo de aves
+
+==== UAT-06 — CRUD de aves
+
+*Requisito:* RF-05
+
+[cols="1,3"]
+|===
+|Elemento |Descripción
+
+|Precondición
+|El usuario posee rol de administrador.
+
+|Acción
+|Crear una nueva ave, consultar sus datos, modificarla y posteriormente eliminarla.
+
+|Resultado esperado
+|Las cuatro operaciones CRUD se ejecutan correctamente.
+
+|Criterio de aceptación
+|El administrador puede crear, consultar, modificar y eliminar aves.
+
+|Estado
+|Pendiente
+|===
+
+==== UAT-07 — Búsqueda de aves por nombre
+
+*Requisito:* RF-06
+
+[cols="1,3"]
+|===
+|Elemento |Descripción
+
+|Precondición
+|Existen aves registradas en el sistema.
+
+|Acción
+|Ingresar el nombre o parte del nombre de un ave en el buscador.
+
+|Resultado esperado
+|La API devuelve las aves que coinciden con el criterio de búsqueda y el frontend muestra los resultados.
+
+|Criterio de aceptación
+|El usuario puede encontrar aves mediante su nombre.
+
+|Estado
+|Pendiente
+|===
+
+==== UAT-08 — Búsqueda de aves por categoría
+
+*Requisito:* RF-06
+
+[cols="1,3"]
+|===
+|Elemento |Descripción
+
+|Precondición
+|Existen aves asociadas a diferentes categorías.
+
+|Acción
+|Seleccionar o consultar una categoría mediante el buscador.
+
+|Resultado esperado
+|La API devuelve las aves pertenecientes a la categoría seleccionada.
+
+|Criterio de aceptación
+|El usuario puede filtrar aves utilizando una categoría.
+
+|Estado
+|Pendiente
+|===
+
+==== UAT-09 — Ficha de ave
+
+*Requisito:* RF-07
+
+[cols="1,3"]
+|===
+|Elemento |Descripción
+
+|Precondición
+|Existe un ave registrada con información proveniente del proyecto base “Aves de Chile” y existen avistamientos asociados.
+
+|Acción
+|Seleccionar el ave desde el catálogo.
+
+|Resultado esperado
+|El sistema muestra la información del ave y las fotografías correspondientes a sus avistamientos.
+
+|Criterio de aceptación
+|La ficha presenta correctamente los datos del ave y las fotografías disponibles.
+
+|Estado
+|Pendiente
+|===
+
+=== 5.3 Bitácora de avistamientos
+
+==== UAT-10 — Registrar avistamiento
+
+*Requisito:* RF-08
+
+[cols="1,3"]
+|===
+|Elemento |Descripción
+
+|Precondición
+|El usuario ha iniciado sesión y existe un ave registrada.
+
+|Acción
+|Registrar un avistamiento indicando lugar, fecha, comentario y fotografía.
+
+|Resultado esperado
+|El sistema guarda el avistamiento asociado al usuario y al ave seleccionada.
+
+|Criterio de aceptación
+|El avistamiento aparece correctamente registrado con los cuatro datos requeridos.
+
+|Estado
+|Pendiente
+|===
+
+==== UAT-11 — Editar avistamiento propio
+
+*Requisito:* RF-09
+
+[cols="1,3"]
+|===
+|Elemento |Descripción
+
+|Precondición
+|El usuario posee un avistamiento registrado.
+
+|Acción
+|Modificar los datos del avistamiento y guardar los cambios.
+
+|Resultado esperado
+|El sistema actualiza correctamente el avistamiento.
+
+|Criterio de aceptación
+|El usuario puede modificar sus propios avistamientos.
+
+|Estado
+|Pendiente
+|===
+
+==== UAT-12 — Eliminar avistamiento propio
+
+*Requisito:* RF-09
+
+[cols="1,3"]
+|===
+|Elemento |Descripción
+
+|Precondición
+|El usuario posee un avistamiento registrado.
+
+|Acción
+|Seleccionar la opción de eliminar el avistamiento y confirmar.
+
+|Resultado esperado
+|El avistamiento es eliminado y deja de aparecer en la bitácora del usuario.
+
+|Criterio de aceptación
+|El usuario puede eliminar sus propios avistamientos.
+
+|Estado
+|Pendiente
+|===
+
+==== UAT-13 — Visualizar bitácora personal
+
+*Requisito:* RF-10
+
+[cols="1,3"]
+|===
+|Elemento |Descripción
+
+|Precondición
+|El usuario ha registrado uno o más avistamientos.
+
+|Acción
+|Ingresar a la sección de bitácora personal.
+
+|Resultado esperado
+|El sistema muestra los avistamientos pertenecientes al usuario.
+
+|Criterio de aceptación
+|La bitácora muestra correctamente las observaciones personales.
+
+|Estado
+|Pendiente
+|===
+
+==== UAT-14 — Visualizar fotografías de otros usuarios
+
+*Requisito:* RF-11
+
+[cols="1,3"]
+|===
+|Elemento |Descripción
+
+|Precondición
+|Existen fotografías de avistamientos realizadas por otros usuarios.
+
+|Acción
+|Acceder a la sección de fotografías y aplicar un filtro por ave o categoría.
+
+|Resultado esperado
+|El sistema muestra fotografías de otros usuarios que coinciden con el filtro seleccionado.
+
+|Criterio de aceptación
+|Las fotografías pueden visualizarse y filtrarse por ave o categoría.
+
+|Estado
+|Pendiente
+|===
+
+==== UAT-15 — Agregar fotografía a colección personal
+
+*Requisito:* RF-12
+
+[cols="1,3"]
+|===
+|Elemento |Descripción
+
+|Precondición
+|El usuario ha iniciado sesión y existe una fotografía publicada por otro usuario.
+
+|Acción
+|Seleccionar la opción para agregar la fotografía a una colección personal.
+
+|Resultado esperado
+|La fotografía queda asociada a la colección personal del usuario.
+
+|Criterio de aceptación
+|El usuario puede guardar fotografías de otros usuarios en su colección.
+
+|Estado
+|Pendiente
+|===
+
+=== 5.4 Moderación y popularidad
+
+==== UAT-16 — Reportar fotografía
+
+*Requisito:* RF-13
+
+[cols="1,3"]
+|===
+|Elemento |Descripción
+
+|Precondición
+|Existe una fotografía publicada que no corresponde a un ave.
+
+|Acción
+|Seleccionar la opción para reportar la fotografía.
+
+|Resultado esperado
+|El sistema registra el reporte y lo deja disponible para revisión de un moderador.
+
+|Criterio de aceptación
+|El reporte queda correctamente registrado.
+
+|Estado
+|Pendiente
+|===
+
+==== UAT-17 — Revisar cola de reportes
+
+*Requisito:* RF-14
+
+[cols="1,3"]
+|===
+|Elemento |Descripción
+
+|Precondición
+|Existe al menos un reporte pendiente y el usuario posee rol de moderador.
+
+|Acción
+|Ingresar al dashboard y acceder a la cola de reportes.
+
+|Resultado esperado
+|El moderador puede visualizar los reportes pendientes y la fotografía asociada.
+
+|Criterio de aceptación
+|Los reportes pendientes aparecen correctamente en la cola de moderación.
+
+|Estado
+|Pendiente
+|===
+
+==== UAT-18 — Aprobar fotografía reportada
+
+*Requisito:* RF-14
+
+[cols="1,3"]
+|===
+|Elemento |Descripción
+
+|Precondición
+|Existe una fotografía reportada y un moderador se encuentra revisándola.
+
+|Acción
+|Seleccionar la acción de aprobar o mantener la fotografía.
+
+|Resultado esperado
+|El reporte queda resuelto y la fotografía continúa disponible para los usuarios.
+
+|Criterio de aceptación
+|El moderador puede aprobar una fotografía reportada.
+
+|Estado
+|Pendiente
+|===
+
+==== UAT-19 — Retirar fotografía reportada
+
+*Requisito:* RF-14
+
+[cols="1,3"]
+|===
+|Elemento |Descripción
+
+|Precondición
+|Existe una fotografía reportada y un moderador se encuentra revisándola.
+
+|Acción
+|Seleccionar la acción de retirar la fotografía.
+
+|Resultado esperado
+|La fotografía deja de estar disponible públicamente y el reporte queda resuelto.
+
+|Criterio de aceptación
+|El moderador puede retirar una fotografía reportada.
+
+|Estado
+|Pendiente
+|===
+
+==== UAT-20 — Aves populares
+
+*Requisito:* RF-15
+
+[cols="1,3"]
+|===
+|Elemento |Descripción
+
+|Precondición
+|Existen aves con diferentes cantidades de visualizaciones por parte de los usuarios.
+
+|Acción
+|Ingresar a la sección “Aves populares”.
+
+|Resultado esperado
+|El sistema muestra las aves ordenadas según su popularidad o cantidad de visualizaciones.
+
+|Criterio de aceptación
+|Las aves con mayor cantidad de visualizaciones aparecen como las más populares.
+
+|Estado
+|Pendiente
+|===
+
+=== 5.5 Dashboard web y landing
+
+==== UAT-21 — Gestión de usuarios
+
+*Requisito:* RF-16
+
+[cols="1,3"]
+|===
+|Elemento |Descripción
+
+|Precondición
+|El administrador ha iniciado sesión en el dashboard.
+
+|Acción
+|Consultar un usuario, modificar sus datos permitidos y suspenderlo.
+
+|Resultado esperado
+|El administrador puede visualizar, editar y suspender usuarios.
+
+|Criterio de aceptación
+|Las tres acciones de gestión de usuarios funcionan correctamente.
+
+|Estado
+|Pendiente
+|===
+
+==== UAT-22 — Gestión de aves y colecciones
+
+*Requisito:* RF-17
+
+[cols="1,3"]
+|===
+|Elemento |Descripción
+
+|Precondición
+|El administrador ha iniciado sesión en el dashboard.
+
+|Acción
+|Acceder a la gestión de aves y a la gestión de colecciones personales de avistamientos.
+
+|Resultado esperado
+|El administrador puede consultar y gestionar la información correspondiente.
+
+|Criterio de aceptación
+|El dashboard proporciona las herramientas necesarias para administrar aves y colecciones.
+
+|Estado
+|Pendiente
+|===
+
+==== UAT-23 — Landing page
+
+*Requisito:* RF-18
+
+[cols="1,3"]
+|===
+|Elemento |Descripción
+
+|Precondición
+|Ninguna.
+
+|Acción
+|Ingresar a la landing page desde un navegador.
+
+|Resultado esperado
+|La página presenta el proyecto Bitácora de Aves y contiene una invitación clara para instalar la aplicación móvil.
+
+|Criterio de aceptación
+|La landing comunica el propósito del proyecto y dirige al usuario hacia la instalación de la aplicación móvil.
+
+|Estado
+|Pendiente
+|===
+
+=== 5.6 API y documentación
+
+==== UAT-24 — API REST
+
+*Requisito:* RF-19
+
+[cols="1,3"]
+|===
+|Elemento |Descripción
+
+|Precondición
+|La API REST se encuentra disponible.
+
+|Acción
+|Realizar solicitudes a los endpoints necesarios para el funcionamiento del dashboard y de la aplicación móvil.
+
+|Resultado esperado
+|La API procesa correctamente las solicitudes y entrega las respuestas esperadas.
+
+|Criterio de aceptación
+|El dashboard y la aplicación móvil pueden utilizar la API REST para realizar las operaciones requeridas.
+
+|Estado
+|Pendiente
+|===
+
+==== UAT-25 — Documentación OpenAPI
+
+*Requisito:* RF-19
+
+[cols="1,3"]
+|===
+|Elemento |Descripción
+
+|Precondición
+|Existe una especificación OpenAPI de la API.
+
+|Acción
+|Consultar la documentación y revisar los endpoints utilizados por el sistema.
+
+|Resultado esperado
+|Los endpoints utilizados están documentados con sus parámetros, solicitudes, respuestas y códigos de estado correspondientes.
+
+|Criterio de aceptación
+|La documentación permite comprender y utilizar correctamente la API REST.
+
+|Estado
+|Pendiente
+|===
+
+==== UAT-26 — Colección Bruno
+
+*Requisito:* RF-20
+
+[cols="1,3"]
+|===
+|Elemento |Descripción
+
+|Precondición
+|La colección Bruno se encuentra disponible y configurada para el ambiente de pruebas.
+
+|Acción
+|Ejecutar las pruebas correspondientes a los principales endpoints de la API.
+
+|Resultado esperado
+|Las solicitudes se ejecutan correctamente y permiten comprobar el comportamiento de los endpoints.
+
+|Criterio de aceptación
+|La colección Bruno contiene pruebas funcionales para los endpoints definidos por el proyecto.
+
+|Estado
+|Pendiente
+|===
+
+== 6. Matriz de trazabilidad
+
+La siguiente matriz relaciona cada requisito funcional con su correspondiente prueba UAT.
+
+[cols="1,2,4"]
+|===
+|Requisito |Caso UAT |Funcionalidad evaluada
+
+|RF-01
+|UAT-01
+|Registro de usuarios.
+
+|RF-02
+|UAT-02, UAT-03
+|Inicio y cierre de sesión.
+
+|RF-03
+|UAT-04
+|Roles y acceso al dashboard.
+
+|RF-04
+|UAT-05
+|Edición de perfil.
+
+|RF-05
+|UAT-06
+|CRUD de aves.
+
+|RF-06
+|UAT-07, UAT-08
+|Búsqueda por nombre y categoría.
+
+|RF-07
+|UAT-09
+|Ficha de ave.
+
+|RF-08
+|UAT-10
+|Registro de avistamientos.
+
+|RF-09
+|UAT-11, UAT-12
+|Edición y eliminación de avistamientos propios.
+
+|RF-10
+|UAT-13
+|Bitácora personal.
+
+|RF-11
+|UAT-14
+|Fotografías de otros usuarios y filtros.
+
+|RF-12
+|UAT-15
+|Colecciones personales.
+
+|RF-13
+|UAT-16
+|Reporte de fotografías.
+
+|RF-14
+|UAT-17, UAT-18, UAT-19
+|Cola y acciones de moderación.
+
+|RF-15
+|UAT-20
+|Aves populares.
+
+|RF-16
+|UAT-21
+|Gestión de usuarios.
+
+|RF-17
+|UAT-22
+|Gestión de aves y colecciones.
+
+|RF-18
+|UAT-23
+|Landing page.
+
+|RF-19
+|UAT-24, UAT-25
+|API REST y OpenAPI.
+
+|RF-20
+|UAT-26
+|Pruebas mediante Bruno.
+|===
+
+== 7. Registro de resultados
+
+Una vez ejecutadas las pruebas, se deberá completar la siguiente tabla.
+
+[cols="1,1,1,1,4"]
+|===
+|ID UAT |Resultado |Fecha |Responsable |Observaciones
+
+|UAT-01
+|Pendiente
+|
+|
+|
+
+|UAT-02
+|Pendiente
+|
+|
+|
+
+|UAT-03
+|Pendiente
+|
+|
+|
+
+|UAT-04
+|Pendiente
+|
+|
+|
+
+|UAT-05
+|Pendiente
+|
+|
+|
+
+|UAT-06
+|Pendiente
+|
+|
+|
+
+|UAT-07
+|Pendiente
+|
+|
+|
+
+|UAT-08
+|Pendiente
+|
+|
+|
+
+|UAT-09
+|Pendiente
+|
+|
+|
+
+|UAT-10
+|Pendiente
+|
+|
+|
+
+|UAT-11
+|Pendiente
+|
+|
+|
+
+|UAT-12
+|Pendiente
+|
+|
+|
+
+|UAT-13
+|Pendiente
+|
+|
+|
+
+|UAT-14
+|Pendiente
+|
+|
+|
+
+|UAT-15
+|Pendiente
+|
+|
+|
+
+|UAT-16
+|Pendiente
+|
+|
+|
+
+|UAT-17
+|Pendiente
+|
+|
+|
+
+|UAT-18
+|Pendiente
+|
+|
+|
+
+|UAT-19
+|Pendiente
+|
+|
+|
+
+|UAT-20
+|Pendiente
+|
+|
+|
+
+|UAT-21
+|Pendiente
+|
+|
+|
+
+|UAT-22
+|Pendiente
+|
+|
+|
+
+|UAT-23
+|Pendiente
+|
+|
+|
+
+|UAT-24
+|Pendiente
+|
+|
+|
+
+|UAT-25
+|Pendiente
+|
+|
+|
+
+|UAT-26
+|Pendiente
+|
+|
+|
+|===
+
+== 8. Criterios de aceptación final
+
+El sistema será considerado aceptado cuando:
+
+* Los 20 requisitos funcionales hayan sido evaluados mediante los casos UAT correspondientes.
+* Los casos críticos no presenten resultados `FAIL`.
+* No existan errores críticos que impidan utilizar las funcionalidades principales.
+* Los usuarios puedan completar los flujos principales del sistema.
+* Los permisos asociados a usuario, moderador y administrador funcionen correctamente.
+* La API REST pueda ser utilizada por el dashboard y la aplicación móvil.
+* La documentación OpenAPI se encuentre disponible y actualizada.
+* La colección Bruno permita ejecutar las pruebas definidas para los endpoints.
+* Los resultados hayan sido registrados y revisados por el equipo responsable.
+
+== 9. Aprobación
+
+Una vez finalizadas las pruebas, los responsables del proyecto deberán registrar la aceptación formal del sistema.
+
+[cols="2,3,2"]
+|===
+|Responsable |Nombre |Firma
+
+|Representante del proyecto
+|
+|
+
+|Responsable Backend
+|
+|
+
+|Responsable Frontend Web
+|
+|
+
+|Responsable Frontend Mobile
+|
+|
+
+|Responsable DevOps / Documentación
+|
+|
+
+|Fecha de aprobación
+|
+|
+|===
+
+=== Resultado final
+
+[cols="1,3"]
+|===
+|Estado |Selección
+
+|Aceptado
+|[ ]
+
+|Aceptado con observaciones
+|[ ]
+
+|Rechazado
+|[ ]
+|===
