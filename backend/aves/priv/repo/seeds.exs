@@ -51,6 +51,7 @@ defmodule Seed do
     case Ash.read(Category, authorize?: false) do
       {:ok, cats} ->
         Enum.find(cats, &(to_string(&1.name) == name)) || Ash.Seed.seed!(Category, %{name: name})
+
       _ ->
         Ash.Seed.seed!(Category, %{name: name})
     end
@@ -61,6 +62,7 @@ defmodule Seed do
       {:ok, birds} ->
         Enum.find(birds, &(to_string(&1.name) == name)) ||
           Ash.Seed.seed!(Bird, %{name: name, category_id: category_id})
+
       _ ->
         Ash.Seed.seed!(Bird, %{name: name, category_id: category_id})
     end
@@ -103,6 +105,6 @@ case Ash.read(Sighting, authorize?: false) do
   _ ->
     IO.puts("  = sightings already present, skipping")
 end
+
 IO.puts("\nDone. All demo users share the password: #{Seed.password()}")
 IO.puts("Sign in via POST /api/user/login with {email, password}.\n")
-

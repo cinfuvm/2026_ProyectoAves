@@ -40,7 +40,10 @@ defmodule AvesWeb.API.ReportControllerTest do
       sighting = sighting(owner)
 
       {:ok, _} =
-        Ash.create(Report, %{sighting_id: sighting.id, reason: "x"}, actor: reporter, action: :report)
+        Ash.create(Report, %{sighting_id: sighting.id, reason: "x"},
+          actor: reporter,
+          action: :report
+        )
 
       conn =
         conn

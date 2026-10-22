@@ -115,4 +115,3 @@ defmodule Aves.Factory do
 
   defp strategy, do: AshAuthentication.Info.strategy!(User, :password)
 end
-

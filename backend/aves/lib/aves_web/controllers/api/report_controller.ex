@@ -20,9 +20,10 @@ defmodule AvesWeb.API.ReportController do
 
   @doc "POST /api/reports - Report a photo (RF-13)."
   def create(conn, params) do
-    attrs = %{}
-    |> put_if(params, "sighting_id", :string)
-    |> put_if(params, "reason", :string)
+    attrs =
+      %{}
+      |> put_if(params, "sighting_id", :string)
+      |> put_if(params, "reason", :string)
 
     case Ash.create(Report, attrs, actor: actor(conn), action: :report) do
       {:ok, report} ->

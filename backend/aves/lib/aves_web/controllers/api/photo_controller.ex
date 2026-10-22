@@ -43,4 +43,3 @@ defmodule AvesWeb.API.PhotoController do
     Ash.Query.filter(query, bird.category_id == ^category_id)
   end
 end
-

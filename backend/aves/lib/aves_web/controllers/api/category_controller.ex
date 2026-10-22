@@ -19,8 +19,9 @@ defmodule AvesWeb.API.CategoryController do
   end
 
   def create(conn, params) do
-    attrs = %{}
-    |> put_if(params, "name", :string)
+    attrs =
+      %{}
+      |> put_if(params, "name", :string)
 
     case Ash.create(Category, attrs, actor: actor(conn), action: :create) do
       {:ok, category} ->
@@ -35,8 +36,9 @@ defmodule AvesWeb.API.CategoryController do
 
   def update(conn, %{"id" => id} = params) do
     with {:ok, category} <- fetch_category(conn, id) do
-      attrs = %{}
-      |> put_if(params, "name", :string)
+      attrs =
+        %{}
+        |> put_if(params, "name", :string)
 
       case Ash.update(category, attrs, actor: actor(conn), action: :update) do
         {:ok, updated_category} ->
@@ -48,9 +50,6 @@ defmodule AvesWeb.API.CategoryController do
     else
       {:error, :not_found} ->
         error_response(conn, :not_found, "Categoría no encontrada")
-
-      {:error, error} ->
-        error_response(conn, :unprocessable_entity, error)
     end
   end
 

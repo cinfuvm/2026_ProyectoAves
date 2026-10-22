@@ -3,8 +3,9 @@ defmodule AvesWeb.API.BirdController do
 
   import AvesWeb.API.Helpers
 
+  require Ash.Query
+
   alias Aves.Catalog.Bird
-  alias Aves.Catalog.BirdView
 
   def index(conn, params) do
     query = Ash.Query.for_read(Bird, :read)
@@ -42,21 +43,19 @@ defmodule AvesWeb.API.BirdController do
 
   def show(conn, %{"id" => id}) do
     with {:ok, bird} <- fetch_bird(conn, id),
-        {:ok, bird} <- Ash.load(bird, :category, actor: actor(conn)) do
+         {:ok, bird} <- Ash.load(bird, :category, actor: actor(conn)) do
       json(conn, %{bird: bird_json(bird)})
     else
       {:error, :not_found} ->
         error_response(conn, :not_found, "Ave no encontrada")
-
-      {:error, error} ->
-        error_response(conn, :unprocessable_entity, error)
     end
   end
 
   def create(conn, params) do
-    attrs = %{}
-    |> put_if(params, "name", :string)
-    |> put_if(params, "category_id", :string)
+    attrs =
+      %{}
+      |> put_if(params, "name", :string)
+      |> put_if(params, "category_id", :string)
 
     case Ash.create(Bird, attrs, actor: actor(conn), action: :create) do
       {:ok, bird} ->
@@ -71,9 +70,10 @@ defmodule AvesWeb.API.BirdController do
 
   def update(conn, %{"id" => id} = params) do
     with {:ok, bird} <- fetch_bird(conn, id) do
-      attrs = %{}
-      |> put_if(params, "name", :string)
-      |> put_if(params, "category_id", :string)
+      attrs =
+        %{}
+        |> put_if(params, "name", :string)
+        |> put_if(params, "category_id", :string)
 
       case Ash.update(bird, attrs, actor: actor(conn), action: :update) do
         {:ok, updated_bird} ->
@@ -85,9 +85,6 @@ defmodule AvesWeb.API.BirdController do
     else
       {:error, :not_found} ->
         error_response(conn, :not_found, "Ave no encontrada")
-
-      {:error, error} ->
-        error_response(conn, :unprocessable_entity, error)
     end
   end
 
@@ -182,5 +179,4 @@ defmodule AvesWeb.API.BirdController do
         error_response(conn, :internal_server_error, error)
     end
   end
-
 end

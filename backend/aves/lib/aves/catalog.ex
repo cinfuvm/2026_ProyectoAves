@@ -9,11 +9,9 @@ defmodule Aves.Catalog do
   use Ash.Domain,
     otp_app: :aves
 
-
   resources do
     resource Aves.Catalog.Category
     resource Aves.Catalog.Bird
     resource Aves.Catalog.BirdView
   end
-
 end

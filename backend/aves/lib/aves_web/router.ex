@@ -44,7 +44,8 @@ defmodule AvesWeb.Router do
     patch "/user/me", UserController, :update_me
 
     # RF-05 and RF-06
-    get "/birds/ranking", BirdController, :ranking # Ranking de aves más vistas
+    # Ranking de aves más vistas
+    get "/birds/ranking", BirdController, :ranking
 
     get "/birds", BirdController, :index
     get "/birds/:id", BirdController, :show

@@ -104,4 +104,3 @@ defmodule AvesWeb.API.SightingController do
     |> put_if(params, "bird_id", :string)
   end
 end
-

@@ -1,4 +1,3 @@
-
 defmodule Aves.Catalog.BirdView do
   use Ash.Resource,
     otp_app: :aves,

@@ -97,6 +97,12 @@ defmodule Aves.Bitacora.Sighting do
     end
   end
 
+  validations do
+    validate match(:photo_url, ~r/\.(jpe?g|png)(\?.*)?$/i),
+      message: "must be a .jpg, .jpeg or .png image URL",
+      where: [changing(:photo_url)]
+  end
+
   attributes do
     uuid_primary_key :id
 
@@ -154,11 +160,5 @@ defmodule Aves.Bitacora.Sighting do
     has_many :collection_items, Aves.Bitacora.CollectionItem do
       public? true
     end
-  end
-
-  validations do
-    validate match(:photo_url, ~r/\.(jpe?g|png)(\?.*)?$/i),
-      message: "must be a .jpg, .jpeg or .png image URL",
-      where: [changing(:photo_url)]
   end
 end

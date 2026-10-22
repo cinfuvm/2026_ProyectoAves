@@ -68,7 +68,8 @@ defmodule Aves.Repo.Migrations.InitialCatalogBitacoraModeration do
             name: "collection_items_owner_id_fkey",
             type: :uuid,
             prefix: "public"
-          ), null: false
+          ),
+          null: false
 
       add :sighting_id, :uuid, null: false
     end
@@ -96,7 +97,8 @@ defmodule Aves.Repo.Migrations.InitialCatalogBitacoraModeration do
             name: "reports_reporter_id_fkey",
             type: :uuid,
             prefix: "public"
-          ), null: false
+          ),
+          null: false
 
       add :sighting_id, :uuid, null: false
     end
@@ -147,7 +149,8 @@ defmodule Aves.Repo.Migrations.InitialCatalogBitacoraModeration do
             name: "sightings_owner_id_fkey",
             type: :uuid,
             prefix: "public"
-          ), null: false
+          ),
+          null: false
 
       add :bird_id,
           references(:birds,

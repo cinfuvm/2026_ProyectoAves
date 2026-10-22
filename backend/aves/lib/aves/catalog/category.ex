@@ -19,10 +19,7 @@ defmodule Aves.Catalog.Category do
     create :create do
       accept [:name]
     end
-  end
 
-  policies do
-    # Categories are public catalog data: any authenticated actor can read them.
     update :update do
       accept [:name]
     end
@@ -31,6 +28,7 @@ defmodule Aves.Catalog.Category do
   end
 
   policies do
+    # Categories are public catalog data: any authenticated actor can read them.
     policy action_type(:read) do
       authorize_if actor_present()
     end
@@ -53,14 +51,13 @@ defmodule Aves.Catalog.Category do
     update_timestamp :updated_at
   end
 
-  identities do
-    identity :unique_name, [:name]
-  end
-
   relationships do
     has_many :birds, Aves.Catalog.Bird do
       public? true
     end
   end
-end
 
+  identities do
+    identity :unique_name, [:name]
+  end
+end

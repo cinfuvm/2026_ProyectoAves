@@ -27,8 +27,9 @@ defmodule AvesWeb.API.CollectionController do
 
   @doc "POST /api/collection - Add a sighting to the collection (RF-12)."
   def create(conn, params) do
-    attrs = %{}
-    |> put_if(params, "sighting_id", :string)
+    attrs =
+      %{}
+      |> put_if(params, "sighting_id", :string)
 
     case Ash.create(CollectionItem, attrs, actor: actor(conn), action: :add) do
       {:ok, item} ->
