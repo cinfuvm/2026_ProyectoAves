@@ -13,10 +13,13 @@
 * ✅ Requisitos Completados
 
     RF-02: Inicio y cierre de sesión (móvil y dashboard).
+        > hrefs desde "/propaganda" hacia "/login" (iniciar sesion) y "/signup" (crear usuario)
     RF-03: Roles: usuario, moderador, administrador, con acceso al dashboard solo para los dos últimos.
     RF-05: CRUD completo de aves (administrador).
     RF-16: Gestión de usuarios (ver, editar, suspender).
+        > Solamente visible por administradores "/admin"
     RF-18: Landing page que invite a instalar la app móvil.
+        > Encontrado en pagina "/propaganda"
 
 * ❌ Requisitos por Completar
 
