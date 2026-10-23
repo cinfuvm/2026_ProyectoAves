@@ -1,0 +1,24 @@
+meta {
+  name: Eliminar ave
+  type: http
+  seq: 7
+}
+
+delete {
+  url: {{baseUrl}}/api/birds/{{nuevaAveId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+assert {
+  res.status: eq 204
+}
+
+docs {
+  Borra el ave creada por "Crear ave" (nuevaAveId) junto con sus vistas.
+  Responde 422 si el ave tiene avistamientos.
+}

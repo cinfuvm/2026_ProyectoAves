@@ -71,6 +71,8 @@ if config_env() == :prod do
 
   host = System.get_env("PHX_HOST") || "example.com"
 
+  config :aves, :public_base_url, System.get_env("PUBLIC_BASE_URL") || "https://#{host}"
+
   config :aves, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
   config :aves, AvesWeb.Endpoint,

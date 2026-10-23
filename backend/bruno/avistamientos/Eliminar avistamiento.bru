@@ -1,0 +1,23 @@
+meta {
+  name: Eliminar avistamiento
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/api/sightings/{{sightingId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{userToken}}
+}
+
+assert {
+  res.status: eq 204
+}
+
+docs {
+  Borrado lógico y borra el archivo de la foto del disco.
+}

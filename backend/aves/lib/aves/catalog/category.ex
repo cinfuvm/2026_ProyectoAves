@@ -35,7 +35,7 @@ defmodule Aves.Catalog.Category do
 
     # Only moderators and admins can manage the catalog.
     policy action_type([:create, :update, :destroy]) do
-      authorize_if expr(actor.rol in [:moderador, :admin])
+      authorize_if expr(^actor(:rol) in [:moderador, :admin])
     end
   end
 

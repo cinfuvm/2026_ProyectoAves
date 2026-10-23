@@ -1,0 +1,25 @@
+meta {
+  name: Buscar aves por nombre
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/birds?name=flamenco
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+script:post-response {
+  if (res.body.birds && res.body.birds.length > 0) {
+    bru.setVar("birdId", res.body.birds[0].id);
+  }
+}
+
+assert {
+  res.status: eq 200
+}

@@ -1,7 +1,8 @@
 # Avances Backend — Bitácora de Aves
 
 > Resumen de la implementación realizada hasta ahora.
-> **Última actualización:** 2026-10-14
+> **Última actualización:** 2026-10-22
+> **Alcance:** backend completo (autenticación, catálogo, bitácora, colección, moderación). La sección 0 resume el estado general; las secciones 1 a 11 detallan la autenticación, roles y perfil.
 > **Issues trabajados:** #9 — Registro e inicio de sesión (RF-01, RF-02) · #10 — Roles de usuario (RF-03) · #11 — Perfil de usuario (RF-04).
 > La base de autenticación (bearer) de #9 la reutilizan #10 y #11.
 
@@ -11,6 +12,241 @@
 - **App:** `aves/` (dentro de `backend/`).
 - **Contrato móvil (OpenAPI):** `../docs/modules/ROOT/attachments/openapi/birs_user_apis.yaml`.
 - **Base de datos local:** `docker-compose.yaml` (raíz del repo) → servicio `db` = `postgres:16` en `localhost:5432` (usuario/clave `postgres`).
+
+---
+
+## Arquitectura del backend
+
+**Idea central:** los recursos de Ash definen datos, acciones y reglas de acceso (policies) en un solo lugar. Los controllers son delgados: reciben la petición, llaman a una acción de Ash y devuelven JSON. La misma regla de permisos aplica a la API REST y al dashboard LiveView previsto.
+
+### Arranque y configuración
+
+- **`lib/aves/application.ex`** levanta, en orden: telemetría, `Aves.Repo`, DNSCluster, `Phoenix.PubSub`, el `Endpoint` y `AshAuthentication.Supervisor`.
+- **`lib/aves/secrets.ex`** entrega `token_signing_secret` a AshAuthentication.
+- **`config/config.exs`** es la base. **`dev.exs`**, **`prod.exs`** y **`test.exs`** ajustan cada entorno.
+- **`config/runtime.exs`** lee variables de entorno en producción: `DATABASE_URL`, `SECRET_KEY_BASE`, `PHX_HOST`, `PORT` (4000 por defecto), `DNS_CLUSTER_QUERY` y `PUBLIC_BASE_URL`.
+- Variables propias: `PUBLIC_BASE_URL` (base de las URLs de fotos) y `config :aves, :uploads_dir` (carpeta de fotos, en test apunta a una carpeta temporal).
+
+### Router y pipelines
+
+| Scope | Pipeline | Contenido |
+|---|---|---|
+| `/api/json` | `:api` | Swagger UI y AshJsonApi. Sin dominios: no expone nada. |
+| `/api` (públicas) | `:api` | `POST /user/signin`, `POST /user/login`, `DELETE /user/logout`. |
+| `/api` (autenticadas) | `:api_auth` | Usuario, aves, categorías, avistamientos, fotos, colección y reportes. |
+| `/` | `:browser` | Página Phoenix por defecto. |
+
+El pipeline `:api_auth` incluye `AvesWeb.AuthPlug`, que lee `Authorization: Bearer <token>`, carga al usuario y lo registra como **actor** de Ash. Sin token válido responde 401.
+
+### Autenticación
+
+- AshAuthentication con estrategia de contraseña. Login por **email**. La contraseña se guarda como `hashed_password` (bcrypt).
+- Tokens JWT **con estado**, guardados en la tabla de tokens: se pueden revocar, por eso el logout es real.
+- `rol` es un átomo: `usuario` (por defecto), `moderador` o `admin`.
+- `UserController` delega en las acciones de AshAuthentication. Acepta `user` como alias de `email` y `confirm_password` como alias de `password_confirmation`, por compatibilidad con el contrato inicial.
+
+### Dominios y recursos
+
+| Dominio | Recurso | Qué guarda | Acciones y policies clave |
+|---|---|---|---|
+| `Aves.Accounts` | `User` | email, nickname, `hashed_password`, rol | `assign_role` (solo admin), `update_profile` (solo el propio). Moderador lee a cualquiera y borra solo usuarios comunes. |
+| `Aves.Accounts` | `Token` | Tokens emitidos y su expiración | Revocación. |
+| `Aves.Catalog` | `Category` | name (único) | Lectura para cualquier autenticado; escritura para moderador y admin. |
+| `Aves.Catalog` | `Bird` | name, scientific_name (único), description, category | Lectura para cualquier autenticado; escritura para moderador y admin. `has_many :photos` con avistamientos visibles. |
+| `Aves.Catalog` | `BirdView` | Una fila por visita a la ficha de un ave | Base del ranking (RF-15). Se borra en cascada con el ave. |
+| `Aves.Bitacora` | `Sighting` | place, spotted_on, comment, photo_url, hidden_at, deleted_at, owner, bird | `register`, `update` y `soft_delete` (dueño); `hide` (moderador); `personal_log` (RF-10); `public` (RF-11). `soft_delete` además borra el archivo de la foto. |
+| `Aves.Bitacora` | `CollectionItem` | Avistamiento ajeno guardado por el usuario | Restricción única dueño + avistamiento (RF-12). |
+| `Aves.Moderation` | `Report` | reason, status (`pendiente`, `aprobado`, `retirado`), reporter, sighting | Cualquiera reporta; moderador aprueba o retira. Retirar oculta el avistamiento. |
+
+`Aves.Storage` no es un recurso: guarda y borra los archivos de las fotos (ver "Subida de fotos" en la sección 0).
+
+### Controllers y helpers
+
+Viven en `lib/aves_web/controllers/api/`: `UserController`, `BirdController`, `CategoryController`, `SightingController`, `PhotoController`, `CollectionController` y `ReportController`.
+
+`helpers.ex` concentra lo común: `actor/1`, `page_opts/1` (paginación de Ash), `error_response/3` (convierte `Ash.Error.Forbidden` en 403), `sighting_json/1` (serialización con la URL completa de la foto) y `put_if/4`.
+
+### Base de datos y migraciones
+
+- Migraciones en `priv/repo/migrations/` (cinco en total). Snapshots de recursos en `priv/resource_snapshots/`.
+- **Regla:** todo cambio de recursos se genera con `mix ash.codegen <nombre>`, nunca a mano. Si el código cambia sin codegen, el servidor de desarrollo falla al arrancar (`CheckCodegenStatus`, error 500). Las migraciones manuales dejan a Ash sin saber del esquema y provocan choques (`duplicate_table`, FKs).
+- `mix ash.codegen --check` verifica que no haya cambios pendientes.
+
+### Pruebas
+
+- `test/support/factory.ex`: `user_with_token/1`, `category/1`, `bird/1`, `sighting/2`, `sign_in_conn/2` y `jpeg_bytes/1`.
+- `mix precommit` compila con warnings como error, formatea y corre todos los tests.
+
+### Flujo de ejemplo: `GET /api/birds/:id`
+
+1. El endpoint y el router envían la petición a `:api_auth`.
+2. `AuthPlug` valida el token y pone al usuario como actor.
+3. `BirdController.show` hace `Ash.get` con el actor. La policy de lectura de `Bird` decide si puede verla.
+4. Carga la categoría y hasta 50 avistamientos visibles, cada uno filtrado por las policies de `Sighting`.
+5. Registra una fila en `bird_views`. Si falla, la respuesta sigue igual.
+6. Responde el JSON de la ficha.
+
+## Modelo de datos original y su estado
+
+El enunciado pedía las entidades USUARIO, AVE, PUBLICACION, LIKE y REPORTE, con los siguientes ajustes:
+
+| # | Ajuste pedido | Estado |
+|---|---|---|
+| 1 | PUBLICACION con lugar y fecha de avistamiento; `pie_de_foto` como comentario | ✅ `Sighting`: `place`, `spotted_on`, `comment`. |
+| 2 | COLECCION_ITEM distinta de LIKE, con gestión desde el panel | ✅ `CollectionItem`. Falta la gestión desde el panel (RF-17). |
+| 3 | AVE con descripción | ✅ `Bird.description` (y `scientific_name`). |
+| 4 | REPORTE con `id_moderador`, `fecha_resolucion` y estado enum (pendiente, aceptado, rechazado) | ⚠️ Estado enum ✅, pero con valores `aprobado` y `retirado`. **No tiene** `id_moderador` ni `fecha_resolucion`. |
+| 5 | USUARIO con `password_hash` y rol enum (usuario, moderador, admin) | ✅ |
+| 6 | Aves populares como suma de `views_count` por ave, sin tabla extra | ⚠️ Se implementó con `bird_views` (una fila por visita) y no con un campo `views_count`. Es la decisión 1 pendiente. |
+
+**Likes:** el modelo original los incluye (LIKE con PK compuesta). El enunciado no los menciona, y no están implementados (decisión 7).
+
+**Contrato móvil (observaciones originales):**
+
+| Observación | Estado |
+|---|---|
+| Login y registro usaban `user` | ✅ Login por email; `user` es alias. Nickname pendiente (decisión 5). |
+| Typo `confirm_pasword` | ✅ `password_confirmation`, con alias `confirm_password`. |
+| Reportar como `PUT /images` | ✅ `POST /api/reports`. El OpenAPI móvil todavía usa `/images` (decisión 6). |
+| `POST /images` sin body | ✅ `POST /api/sightings` multipart con `photo`, `place`, `spotted_on`, `comment` y `bird_id`. |
+| `GET /images` solo con URLs | ✅ `GET /api/photos`, paginado y con datos del avistamiento. |
+| Login debe devolver el token | ✅ |
+| Faltaban buscador, populares, likes y colección | ✅ Excepto likes (decisión 7). |
+
+**Comunicación:** la app móvil usa REST con bearer token. El dashboard LiveView se conectará al mismo backend, reutilizando las acciones de Ash (login por sesión, pendiente).
+
+## Historial de la sesión del 22-oct
+
+Este bloque reemplaza a `sesion_20261022.md`, que se eliminó porque su contenido ya está en las secciones de arriba. Lo que se conserva aquí es lo que no está en otro lugar.
+
+- **Merges de la rama:** `jose` (PR #28, accounts), `mauricio` (RF-08 a RF-14, sightings y moderación) y `marcelo` (catálogo). El merge de `marcelo` se publicó con marcadores de conflicto (`<<<<<<< HEAD`) dentro del código. Los commits siguientes solo borraron las líneas de marcador y dejaron `category.ex` roto. Se corrigió en esa sesión.
+- **Correcciones de compilación:** `require Ash.Query` en `bird_controller.ex`, cláusulas `{:error, ...}` redundantes y un alias sin uso (todo con `warnings-as-errors`).
+- **Bug de updates atómicos:** la policy con `expr(actor.rol in [...])` falla en updates atómicos con `Invalid reference actor.rol`. La forma correcta es `expr(^actor(:rol) in [...])`.
+- **Errores de permiso:** `error_response/3` devuelve 403 para `Ash.Error.Forbidden`, sin importar el estado que pida el controller.
+- **Comandos útiles:** están en `backend/readme.md`.
+
+---
+
+## 0. Estado general del backend (2026-10-22)
+
+**Rama:** `fix/backend/correccion_detalles`. Incluye el trabajo de jose, mauricio y marcelo, y las correcciones de la sesión del 22-oct (ver "Historial de la sesión del 22-oct").
+
+### Cobertura de requisitos
+
+| RF | Requisito | Estado | Dónde |
+|---|---|---|---|
+| RF-01..04 | Registro, sesión, roles, perfil | ✅ | §1–§6 |
+| RF-05 | CRUD de aves | ✅ | `Aves.Catalog.Bird`, `BirdController` |
+| RF-06 | Buscador por nombre y categoría | ✅ | `GET /api/birds?name=&category_id=` |
+| RF-07 | Ficha de ave | ✅ | `GET /api/birds/:id` (categoría, nombre científico, descripción, galería de hasta 50 avistamientos) |
+| RF-08..10 | Avistamientos: registrar, editar, eliminar, bitácora | ✅ | `SightingController` |
+| RF-11 | Fotos de otros usuarios con filtros | ✅ | `PhotoController` |
+| RF-12 | Colección personal | ✅ | `CollectionController` |
+| RF-13 | Reportar foto | ✅ | `POST /api/reports` |
+| RF-14 | Cola de moderadores (aprobar / retirar) | ✅ | `POST /api/reports/:id/approve` y `/retire` |
+| RF-15 | Aves populares | ✅ | `GET /api/birds/ranking` ordena por `views_count`, contado desde `bird_views` (una fila por cada `GET /api/birds/:id`) |
+| RF-16 | Gestión de usuarios desde admin (ver, editar, suspender) | ❌ | Sin endpoints |
+| RF-17 | Dashboard de aves y colecciones | ⚠️ parcial | Solo API; falta la capa LiveView |
+| RF-18 | Landing | 🔵 | Fuera del backend (`landing/`) |
+| RF-19 | OpenAPI completo | ⚠️ | Usuarios en `birs_user_apis.yaml`; resto del backend en `birs_apis.yaml` (`docs/modules/ROOT/attachments/openapi/`). Falta el contrato de `/images` (decisión 6) |
+| RF-20 | Colección Bruno | ✅ | `backend/bruno/`: 33 requests que cubren todos los endpoints. Pasan 33/33 en dos corridas seguidas contra el servidor de desarrollo (ver `backend/bruno/README.md`) |
+
+### Endpoints REST (`/api`)
+
+- **Públicos:** `POST /user/signin`, `POST /user/login`, `DELETE /user/logout`.
+- **Autenticados (bearer):**
+  - Usuario: `GET|PATCH /user/me`.
+  - Aves: `GET /birds`, `GET /birds/ranking`, `GET /birds/:id`, y `POST|PATCH|DELETE` (moderador o admin para escribir).
+  - Categorías: `GET|POST|PATCH|DELETE /categories`.
+  - Avistamientos: `GET|POST /sightings`, `PATCH|DELETE /sightings/:id`.
+  - Fotos: `GET /photos`.
+  - Colección: `GET|POST /collection`, `DELETE /collection/:id`.
+  - Reportes: `GET|POST /reports`, `POST /reports/:id/approve`, `POST /reports/:id/retire`.
+- **Otros:** `/api/json/*` (AshJsonApi) y Swagger UI en `/api/json/swaggerui`.
+
+### Subida de fotos (2026-10-22)
+
+**Archivos:** `lib/aves/storage.ex` (nuevo), `lib/aves_web/controllers/api/sighting_controller.ex`, `lib/aves_web.ex`, `config/test.exs`.
+
+- `POST /api/sightings` y `PATCH /api/sightings/:id` aceptan el campo multipart `photo`. Si se envía, la foto reemplaza a `photo_url`.
+- `Aves.Storage.store/1` valida la foto, la copia a una carpeta pública y devuelve la URL que se guarda en la base de datos:
+  - **Carpeta:** `priv/static/uploads`, servida en `/uploads`. Configurable con `config :aves, :uploads_dir`.
+  - **Nombre:** UUID aleatorio más la extensión detectada. Dos fotos nunca comparten nombre.
+  - **URL guardada:** ruta relativa, por ejemplo `/uploads/aafe295e-0c10-439b-a0ba-29b9a552735b.jpg`.
+  - **Formatos:** JPEG y PNG, según el tipo real del archivo (sus primeros bytes), no según el nombre ni el `Content-Type` del cliente. Coincide con la validación de `photo_url`.
+  - **Tamaño:** máximo 5 MB.
+  - **Metadatos:** antes de guardar se quitan los datos EXIF (incluido el GPS de la cámara), XMP, comentarios y chunks de texto de PNG. En JPEG se conservan APP0 (JFIF) y APP2 (perfil de color). Un JPEG con la estructura rota se rechaza con 422. Verificado con un JPEG real de `sips`: se quitaron APP1 (EXIF) y APP13 (IPTC) y el resto quedó igual.
+- Los tests escriben en una carpeta temporal. `.gitignore` excluye `priv/static/uploads/`.
+- **Verificación:** `mix precommit` con 93 tests (los de subida, limpieza, borrado y metadatos). Prueba manual con `curl` contra el servidor de desarrollo: la foto se guardó, la URL devuelta respondió `200 image/jpeg` y el nombre quedó en `photo_url`.
+- **Limitaciones:**
+  - **Resuelto:** si la base de datos rechaza el alta o el `PATCH`, la foto recién subida se borra. Si un `PATCH` con foto nueva tiene éxito, se borra la anterior.
+  - **Resuelto:** al eliminar un avistamiento (`soft_delete`) se borra su archivo, después de confirmar la transacción (`Aves.Bitacora.Changes.RemovePhotoFile`). La fila sigue en la base con su `photo_url`, oculta por `deleted_at` y sin archivo.
+  - **Moderación:** retirar una foto (`hide`) no borra el archivo, para poder restaurarla.
+  - **Resuelto:** la base de datos guarda la ruta relativa, pero las respuestas de la API devuelven la URL completa. `Helpers.public_photo_url/1` antepone `config :aves, :public_base_url` (por defecto `http://127.0.0.1:4000` en desarrollo y `https://<PHX_HOST>` en producción). La variable `PUBLIC_BASE_URL` la sobrescribe, por ejemplo con `http://10.0.2.2:4000` para el emulador de Android.
+  - En un despliegue con contenedores, los archivos se pierden al redesplegar si no hay volumen persistente.
+
+### Migraciones
+
+| Versión | Nombre | Contenido |
+|---|---|---|
+| 20261007194006 | `initialize_and_add_authentication_resources_extensions_1` | Extensiones (citext) |
+| 20261007194007 | `initialize_and_add_authentication_resources` | Usuarios y tokens |
+| 20261009122556 | `add_user_auth_fields` | Campos de autenticación de usuario |
+| 20261015223749 | `initial_catalog_bitacora_moderation` | Categorías, aves, avistamientos, colección, reportes |
+| 20261022015932 | `add_bird_views_and_details` | `bird_views`; `scientific_name` y `description` en `birds` (RF-07) |
+| 20261022035822 | `add_bird_views_cascade_and_index` | Índice sobre `bird_views.bird_id`; FK con `ON DELETE CASCADE` |
+
+- La migración `20261021230001_add_bird_views` fue **reemplazada** por `20261022015932`. El commit que la contiene (`480049e`) existe solo en local y no está en el remoto. En la base local `aves_dev` solo está aplicada la nueva. Si algún integrante ya aplicó la vieja, su `bird_views` tendrá índice y la migración nueva fallará con `duplicate_table`; hay que coordinarlo antes de subir.
+- Toda migración de recursos se genera con `mix ash.codegen <nombre>`. `mix ash.codegen --check` pasa sin cambios pendientes.
+
+### Verificación (2026-10-22)
+
+- `mix precommit` → compilación sin warnings, formato y **78 tests pasan** (71 previos + 7 de `bird_controller_test.exs`: filtro, UUID inválido, ficha con galería, registro de vista, 404, ranking por vistas, borrado en cascada).
+- `mix ash.codegen --check` sin cambios pendientes.
+- Pruebas manuales de la sesión (curl): `PATCH` de admin con `scientific_name` y `description` → OK; `PATCH` de usuario normal → 403; `GET /api/birds/:id` devuelve la ficha con galería.
+
+### Correcciones del 22-oct y pendientes
+
+1. **Resuelto:** `bird_views` tiene índice sobre `bird_id` (migración `20261022035822`).
+2. **Resuelto:** la FK tiene `ON DELETE CASCADE`. Borrar un ave elimina sus vistas. Los avistamientos siguen bloqueando el borrado con 422 (regla de negocio, con mensaje de Ash).
+3. **Resuelto:** `category_id` inválido responde 422 con mensaje claro. Los errores de lectura y del ranking ya no salen como 403 por defecto.
+4. **Resuelto:** `show` responde 500 controlado si `Ash.load` falla, en vez de lanzar `WithClauseError`.
+5. **Documentación desactualizada en el código.** Los `@moduledoc` de `Aves.Catalog` y `Aves.Catalog.Bird` dicen que el CRUD de aves está en otro issue, y ya no es así.
+6. **Resuelto (decisión del equipo):** RF-15 cuenta `bird_views`. El ranking anterior nunca sumaba bien porque el SQL devolvía el UUID como binario y no coincidía con el `id` del ave; ahora se castea a texto. El campo de respuesta pasó de `sightings_count` a `views_count`. No había consumidores de ese campo.
+
+### Divergencias con el modelo original
+
+- El modelo original define PUBLICACION, LIKE y `views_count`, y prohíbe una tabla extra para populares. La implementación usa **`Sighting`** como publicación y creó **`bird_views`**. El `requisitos.adoc` no menciona likes. Hay que validarlo con el equipo (ver "Modelo de datos original y su estado").
+
+### Pendientes por realizar (2026-10-22)
+
+- **RF-16, gestión de usuarios desde admin:** endpoints para listar, editar, suspender y asignar roles por REST. Las acciones `assign_role` y `destroy` ya existen con sus policies.
+- **RF-17, dashboard LiveView:** capa web para admins y moderadores, con login por sesión.
+- **RF-19, OpenAPI completo:** falta documentar `/images` (los stubs de `birs_user_apis.yaml`), que depende de la decisión 6. Los endpoints del backend ya están en `birs_apis.yaml`.
+- **Almacenamiento en producción:** la subida de fotos ya funciona en disco local (ver sección 0, "Subida de fotos"). Falta resolver dónde guardarlas en Fly.io, porque su disco es efímero (decisión 8).
+- **Métricas para admin:** pendiente desde #10.
+- **Grafana con golden signals (latencia, tráfico, errores y saturación):** requiere un exportador de métricas en Phoenix (PromEx o `telemetry_metrics_prometheus`), un endpoint `/metrics` protegido, Prometheus y Grafana, con los dashboards versionados en el repo. Hoy `AvesWeb.Telemetry` define métricas pero nada las expone. No está implementado.
+- **Despliegue:** GitHub Actions y Fly.io, según el enunciado. Todavía no hay configuración en el repo.
+- **Limpieza:**
+  - Quitar o usar el router de AshJsonApi, que está vacío.
+  - Mover `secret_key_base` y `token_signing_secret` de `config/dev.exs` a variables de entorno.
+  - Corregir `db/seeds.exs`: no es idempotente, aunque su encabezado dice que sí. Al volver a correrlo falla con `usuario@aves.test` ya existente.
+- **Prueba con foto real de teléfono:** la limpieza de EXIF solo está probada con JPEG sintéticos y uno de `sips`.
+- **Commit:** el trabajo del 22-oct y de los días siguientes está sin commitear. Incluye `backend/bruno/`, `birs_apis.yaml`, `storage.ex` y los cambios de config. El commit `480049e` existe solo en local.
+- **Documentación de Antora:** el enunciado la pide; no se ha revisado en este documento.
+
+### Pendientes por decidir (2026-10-22)
+
+1. **Vistas del ranking (RF-15):** ¿cada visita cuenta o solo una por usuario? Hoy cuenta cada visita. ¿Las búsquedas y listados también suman o solo la ficha?
+2. **Borrado de aves con avistamientos:** hoy responde 422. ¿Se bloquea siempre, se oculta con soft delete o se borra en cascada?
+3. **Borrado de categorías con aves:** la FK no tiene `on_delete`. No está probado qué responde hoy.
+4. **Estados del reporte:** el código usa `pendiente`, `aprobado` y `retirado`. El modelo original decía `pendiente`, `aceptado` y `rechazado`. Hay que elegir uno y alinear el contrato móvil.
+5. **Login:** hoy solo entra con email. El nickname queda como mejora posible.
+6. **Contrato móvil:** el OpenAPI de móvil usa `/images` y `PUT /images` para reportar. El backend expone `/api/photos` y `/api/reports`. Hay que decidir cuál se mantiene y avisar al equipo.
+7. **Likes:** el modelo original los incluye y el enunciado no. Hay que decidir si se implementan.
+8. **Almacenamiento de fotos:** en desarrollo ya se guarda en disco local (`priv/static/uploads`). Falta decidir el destino en producción: volumen de Fly.io, S3 u otro proveedor.
+9. **Dashboard:** si admin y moderador comparten la misma vista o tienen permisos distintos.
+10. **URL base para el móvil:** ¿se mantiene `PUBLIC_BASE_URL` con la configuración del servidor? Para un teléfono físico hay que decidir si el servidor de desarrollo escucha en `0.0.0.0`.
 
 ---
 

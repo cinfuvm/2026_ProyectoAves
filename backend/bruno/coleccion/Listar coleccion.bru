@@ -1,0 +1,19 @@
+meta {
+  name: Listar coleccion
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/collection
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{userToken}}
+}
+
+assert {
+  res.status: eq 200
+}

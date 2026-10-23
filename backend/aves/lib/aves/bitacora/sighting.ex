@@ -37,6 +37,7 @@ defmodule Aves.Bitacora.Sighting do
       require_atomic? false
       accept []
       change set_attribute(:deleted_at, &DateTime.utc_now/0)
+      change Aves.Bitacora.Changes.RemovePhotoFile
     end
 
     update :hide do

@@ -17,29 +17,39 @@ defmodule AvesWeb.API.SightingController do
   require Ash.Query
 
   alias Aves.Bitacora.Sighting
+  alias Aves.Storage
 
   @doc "POST /api/sightings - Register a sighting (RF-08)."
   def create(conn, params) do
-    case Ash.create(Sighting, sighting_params(params),
-           actor: actor(conn),
-           action: :register
-         ) do
-      {:ok, sighting} ->
-        conn
-        |> put_status(:created)
-        |> json(%{sighting: sighting_json(sighting)})
+    with {:ok, attrs} <- put_photo(sighting_params(params), params) do
+      case Ash.create(Sighting, attrs, actor: actor(conn), action: :register) do
+        {:ok, sighting} ->
+          conn
+          |> put_status(:created)
+          |> json(%{sighting: sighting_json(sighting)})
 
-      {:error, error} ->
-        error_response(conn, :unprocessable_entity, error)
+        {:error, error} ->
+          discard_upload(params, attrs["photo_url"])
+          error_response(conn, :unprocessable_entity, error)
+      end
+    else
+      {:error, message} -> error_response(conn, :unprocessable_entity, message)
     end
   end
 
   @doc "PATCH /api/sightings/:id - Edit an own sighting (RF-09)."
   def update(conn, %{"id" => id} = params) do
     with {:ok, sighting} <- fetch_sighting(conn, id),
-         {:ok, updated} <-
-           Ash.update(sighting, sighting_params(params), actor: actor(conn), action: :update) do
-      json(conn, %{sighting: sighting_json(updated)})
+         {:ok, attrs} <- put_photo(sighting_params(params), params) do
+      case Ash.update(sighting, attrs, actor: actor(conn), action: :update) do
+        {:ok, updated} ->
+          replace_photo(params, sighting.photo_url)
+          json(conn, %{sighting: sighting_json(updated)})
+
+        {:error, error} ->
+          discard_upload(params, attrs["photo_url"])
+          error_response(conn, :unprocessable_entity, error)
+      end
     else
       {:error, :not_found} ->
         error_response(conn, :not_found, "Avistamiento no encontrado")
@@ -94,6 +104,21 @@ defmodule AvesWeb.API.SightingController do
       {:error, _} -> {:error, :not_found}
     end
   end
+
+  # An uploaded file (multipart field `photo`) takes precedence over `photo_url`.
+  defp put_photo(attrs, %{"photo" => %Plug.Upload{} = upload}) do
+    with {:ok, url} <- Storage.store(upload), do: {:ok, Map.put(attrs, "photo_url", url)}
+  end
+
+  defp put_photo(attrs, _params), do: {:ok, attrs}
+
+  # A rejected upload must not leave its file behind.
+  defp discard_upload(%{"photo" => %Plug.Upload{}}, url), do: Storage.delete(url)
+  defp discard_upload(_params, _url), do: :ok
+
+  # Once a PATCH with a new upload succeeds, the previous file is no longer used.
+  defp replace_photo(%{"photo" => %Plug.Upload{}}, old_url), do: Storage.delete(old_url)
+  defp replace_photo(_params, _old_url), do: :ok
 
   defp sighting_params(params) do
     %{}

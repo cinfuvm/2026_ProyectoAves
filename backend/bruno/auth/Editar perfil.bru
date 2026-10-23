@@ -1,0 +1,34 @@
+meta {
+  name: Editar perfil
+  type: http
+  seq: 6
+}
+
+patch {
+  url: {{baseUrl}}/api/user/me
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{userToken}}
+}
+
+body:json {
+  {
+    "nickname": "usuario_{{sufijo}}"
+  }
+}
+
+script:pre-request {
+  bru.setVar("sufijo", Date.now());
+}
+
+assert {
+  res.status: eq 200
+}
+
+docs {
+  Edita el perfil de usuario (userToken), no el de la sesión activa. El nickname
+  lleva un sufijo para no chocar con corridas anteriores.
+}

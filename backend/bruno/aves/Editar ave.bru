@@ -1,0 +1,25 @@
+meta {
+  name: Editar ave
+  type: http
+  seq: 6
+}
+
+patch {
+  url: {{baseUrl}}/api/birds/{{nuevaAveId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{moderadorToken}}
+}
+
+body:json {
+  {
+    "description": "Descripción actualizada desde Bruno."
+  }
+}
+
+assert {
+  res.status: eq 200
+}

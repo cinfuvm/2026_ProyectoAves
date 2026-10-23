@@ -73,6 +73,10 @@ config :aves,
   generators: [timestamp_type: :utc_datetime],
   ash_domains: [Aves.Accounts, Aves.Catalog, Aves.Bitacora, Aves.Moderation]
 
+# Base URL prepended to stored photo paths in API responses. Override with
+# PUBLIC_BASE_URL, e.g. http://10.0.2.2:4000 for the Android emulator.
+config :aves, :public_base_url, System.get_env("PUBLIC_BASE_URL") || "http://127.0.0.1:4000"
+
 # Configure the endpoint
 config :aves, AvesWeb.Endpoint,
   url: [host: "localhost"],
