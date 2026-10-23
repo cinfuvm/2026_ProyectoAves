@@ -136,6 +136,7 @@ Compila con warnings como error, formatea y corre todos los tests. Necesita la b
 | El servidor responde 500 al arrancar | Mismo motivo que el anterior: `CheckCodegenStatus` | Igual que el anterior |
 | `has already been taken` al correr seeds | Los seeds ya se corrieron | No vuelvas a correrlos |
 | Bruno dice `Requests: 0` | Falta `-r` en el comando | Usar `run -r --env Local` |
-| Bruno responde 401 en medio de la corrida | Un `Login` no se ejecutó o `Cerrar sesion` corrió antes de tiempo | Ejecutar la colección completa, en orden |
+| Bruno responde 401 en requests de avistamientos, colección o reportes | Esas requests usan `userToken`, que solo llena `Login usuario`, y no se ejecutó | Ejecutar `Login usuario` antes, o la colección completa |
+| Bruno responde 401 en perfil, ranking o búsquedas después de iniciar sesión como admin o moderador | Ya no pasaba: estas requests usan la última sesión iniciada (`token`) | Si aún ocurre, revisar que el login se haya ejecutado con el entorno `Local` |
 | `ENOENT` en `Registrar avistamiento con foto` | La ruta del archivo no existe | Revisar `fixtures/ave.png` o la ruta en la request |
 | Puerto 4000 ocupado | Otro servidor de Phoenix sigue corriendo | `pkill -f phx.server` y volver a levantarlo |

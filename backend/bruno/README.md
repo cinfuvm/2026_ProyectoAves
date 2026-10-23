@@ -35,6 +35,19 @@ La colección se puede correr varias veces seguidas: cada corrida crea sus propi
 | `reportes` | Reportar, listar pendientes, aprobar y retirar (RF-13, RF-14) |
 | `sesion-final` | Cierra la sesión del usuario. Ejecutar al final |
 
+## Tokens: cuál usa cada request
+
+Cada login guarda su token en una variable:
+
+| Variable | Quién la llena | La usan |
+|---|---|---|
+| `token` | **Cualquier login**: la última sesión iniciada | Requests generales (perfil, ranking, búsquedas, fotos ajenas, categorías). Si inicias sesión como admin, estas requests van como admin. |
+| `userToken` | Solo `Login usuario` | Requests que dependen de quién creó el dato: avistamientos propios, colección, reportes, edición del perfil de usuario y `Cerrar sesion`. |
+| `moderadorToken` | `Login moderador` | Crear y editar aves y categorías, reportes pendientes, aprobar y retirar. |
+| `adminToken` | `Login admin` | Eliminar aves y crear la foto de otro usuario. |
+
+Por eso, si solo inicias sesión como admin, las requests generales funcionan. Las que dependen de `userToken` responden 401 hasta ejecutar `Login usuario`.
+
 ## Variables que se encadenan
 
 Los scripts de cada request guardan IDs para las siguientes:
@@ -49,7 +62,7 @@ Los nombres de los registros de prueba llevan un sufijo con la hora (`Date.now()
 
 ## Notas
 
-- **Registrar avistamiento con foto:** sube `fixtures/ave.png`, una imagen de 1×1 píxel. Para probar con otra foto, cambiar la ruta en `@file(...)`.
+- **Registrar avistamiento con foto:** sube `fixtures/ave.png`, una imagen de prueba.
 - **Registrar usuario:** responde 422 si `nuevo@aves.test` ya existe. La request acepta ambos casos.
 - **Eliminar categoria y Eliminar ave:** borran solo los registros que creó la colección. Una categoría con aves no se puede borrar (422), y tampoco un ave con avistamientos.
 - **Cerrar sesion:** revoca el token de `usuario`. Por eso va en la última carpeta.

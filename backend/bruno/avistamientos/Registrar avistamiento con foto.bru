@@ -19,7 +19,11 @@ body:multipart-form {
   place: Laguna Verde
   spotted_on: 2026-10-20
   comment: Foto subida desde Bruno
-  photo: @file(fixtures/ave.png)
+  photo: @file(fixtures/ave.png) @contentType(image/png)
+}
+
+assert {
+  res.status: eq 201
 }
 
 script:post-response {
@@ -27,10 +31,6 @@ script:post-response {
     bru.setVar("sightingId", res.body.sighting.id);
     bru.setVar("uploadedPhotoUrl", res.body.sighting.photo_url);
   }
-}
-
-assert {
-  res.status: eq 201
 }
 
 docs {

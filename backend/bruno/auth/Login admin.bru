@@ -19,6 +19,7 @@ body:json {
 
 script:post-response {
   bru.setVar("adminToken", res.body.token);
+  bru.setVar("token", res.body.token);
 }
 
 assert {

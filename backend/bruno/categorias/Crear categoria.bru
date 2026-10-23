@@ -16,8 +16,16 @@ auth:bearer {
 
 body:json {
   {
-    "name": "Categoria de prueba {{sufijo}}"
+    "name": "Poderosisimas Aves Mexicanas Chingonas"
   }
+}
+
+vars:pre-request {
+  sufijo: Poderosisimas aves mexicanas
+}
+
+assert {
+  res.status: eq 201
 }
 
 script:pre-request {
@@ -28,8 +36,4 @@ script:post-response {
   if (res.status === 201) {
     bru.setVar("nuevaCategoriaId", res.body.category.id);
   }
-}
-
-assert {
-  res.status: eq 201
 }

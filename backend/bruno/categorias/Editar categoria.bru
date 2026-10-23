@@ -16,14 +16,14 @@ auth:bearer {
 
 body:json {
   {
-    "name": "Categoria editada {{sufijo}}"
+    "name": "Aun mas poderosisimas Avez Mexicanas Chingonas"
   }
-}
-
-script:pre-request {
-  bru.setVar("sufijo", Date.now());
 }
 
 assert {
   res.status: eq 200
+}
+
+script:pre-request {
+  bru.setVar("sufijo", Date.now());
 }
