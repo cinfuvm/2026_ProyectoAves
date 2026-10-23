@@ -24,8 +24,6 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/landing"
 import topbar from "../vendor/topbar"
-import { InfiniteGallery3D } from "./gallery_3d"
-import "/priv/static/assets/js/propaganda.js"
 
 let Hooks = { ...colocatedHooks }
 

@@ -26,6 +26,9 @@ defmodule LandingWeb.Router do
     live "/moderator/", ModeratorLive.Index, :index
 
     live "/propaganda/", PropagandaLive.Index, :index
+
+    live "/login/", LoginLive.Index, :index
+    live "/signup/", SignupLive.Index, :index
   end
 
   # Other scopes may use custom stacks.

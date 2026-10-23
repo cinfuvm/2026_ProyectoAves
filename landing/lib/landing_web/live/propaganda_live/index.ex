@@ -26,13 +26,18 @@ defmodule LandingWeb.PropagandaLive.Index do
 
     <body class="visuals-on">
 
-    <div class="aura"></div>
     <div class="stars"></div>
+    <div class="aura"></div>
 
     <nav class="nav">
-      <div class="logo"><a href="#" class="logo">APP AVES <span>// UVM</span></a></div>
+      <!-- Logo -->
+      <a href="/propaganda" class="logo flex items-center gap-3">
+        <img src={~p"/images/isotipo-main-logo.png"} alt="Logo" class="h-12 w-auto">
+        <img src={~p"/images/coron-white.png"} alt="Logo Text" class="h-10 w-auto mt-1">
+      </a>
+
       <ul class="nav-links">
-        <li><a href="#launch">Iniciar Sesion</a></li>
+        <li><a href="login">Iniciar Sesion</a></li>
       </ul>
       <button class="menu-toggle" aria-label="Open menu" aria-expanded="false">
         <span></span><span></span><span></span>
@@ -40,9 +45,8 @@ defmodule LandingWeb.PropagandaLive.Index do
     </nav>
 
     <div class="mobile-menu">
-      <a href="#system">System</a>
       <a href="#capabilities">Capabilities</a>
-      <a href="#launch">Launch</a>
+      <a href="login">Iniciar Sesion</a>
     </div>
 
     <header class="hero">
@@ -64,17 +68,18 @@ defmodule LandingWeb.PropagandaLive.Index do
                     <!-- Aquí inyectamos la URL de la imagen en el atributo src -->
                     <img src={image_url} alt={"Imagen #{index + 1}"} loading="lazy">
                     <div class="panel-scrim"></div>
-                    <div class="panel-cap"><span class="p-num">0<%= index + 1 %></span></div>
                   </div>
                 </div>
               <% end %>
             </div>
           </div>
-          <div class="hero-text">
-            <div class="eyebrow">[APP AVES] UVM</div>
-            <h1>ENSEÑANOS TU VISION</h1>
-            <p>Una red social diseñada para compartir tu visión del mundo y tu amor por las aves en Chile.</p>
-          </div>
+            <div class="hero-text">
+              <div class="flex items-center justify-center gap-3 mb-4">
+                <img src={~p"/images/coron-black.png"} alt="Logo Text" class="h-15 w-auto mt-1">
+              </div>
+              <h1>ENSEÑANOS TU VISION</h1>
+              <p>Una red social diseñada para compartir tu visión del mundo y tu amor por las aves en Chile.</p>
+            </div>
         </div>
       </div>
       <div class="scroll-cue">
@@ -87,7 +92,7 @@ defmodule LandingWeb.PropagandaLive.Index do
       <div class="section-head reveal">
         <div class="eyebrow">// EL SISTEMA</div>
         <h2>Explora. Documenta. Conserva.</h2>
-        <p>[APP AVES] es una plataforma interactiva diseñada para amantes de la ornitología y la fotografía. Sube tus mejores capturas, explora avistamientos de otros usuarios y construye un registro visual de la biodiversidad de nuestro país.</p>
+        <p>CORON es una plataforma interactiva diseñada para amantes de la ornitología y la fotografía. Sube tus mejores capturas, explora avistamientos de otros usuarios y construye un registro visual de la biodiversidad de nuestro país.</p>
       </div>
       <div class="features" id="capabilities">
         <div class="feature reveal">
@@ -112,12 +117,16 @@ defmodule LandingWeb.PropagandaLive.Index do
       <div class="reveal">
         <h2>¿Listo para emprender el vuelo?</h2>
         <p>Únete a nuestra comunidad hoy mismo y empieza a compartir tu pasión por la vida silvestre con miles de observadores y fotógrafos.</p>
-        <a href="#" class="btn">CREAR MI CUENTA</a>
+        <a href="signup" class="btn">CREAR MI CUENTA</a>
       </div>
     </section>
 
     <footer class="footer">
-      <div class="logo"><a href="#" class="logo">APP AVES <span>// UVM</span></a></div>
+      <div class="logo">
+        <a href="#" class="logo">
+          <img src={~p"/images/coron-white.png"} alt="Logo Text" class="h-10 w-auto mt-1">
+        </a>
+      </div>
     </footer>
 
     <script src="/priv/static/assets/js/propaganda.js"></script>

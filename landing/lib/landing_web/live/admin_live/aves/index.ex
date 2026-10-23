@@ -29,9 +29,20 @@ defmodule LandingWeb.AdminLive.Aves.Index do
         <!-- BARRA LATERAL -->
         <aside class="hidden min-h-screen w-64 border-r border-slate-800 bg-slate-900 lg:block">
           <div class="p-6">
-            <h1 class="text-xl font-bold">Proyecto Aves</h1>
-            <p class="mt-1 text-sm text-slate-400">Administración</p>
+            <div class="flex flex-col items-center">
+              <!-- Logo Layer -->
+              <div class="flex items-center gap-3">
+                <img src={~p"/images/isotipo-main-logo.png"} alt="Logo" class="h-12 w-auto">
+                <img src={~p"/images/coron-white.png"} alt="Logo Text" class="h-10 w-auto mt-1">
+              </div>
+
+              <!-- Texto centrado debajo -->
+              <p class="mt-2 text-sm text-slate-400">Administración</p>
+            </div>
+
+            <div class="mt-6 h-px w-full bg-slate-700/50"></div>
           </div>
+
           <nav class="space-y-2 px-4">
             <.nav_item label="Dashboard" navigate={~p"/admin/"} />
             <.nav_item label="Aves" active navigate={~p"/admin/aves"} />

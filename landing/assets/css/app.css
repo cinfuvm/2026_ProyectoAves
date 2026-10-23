@@ -3,7 +3,6 @@
 
 @import "tailwindcss" source(none);
 @import "phoenix-colocated/landing/colocated.css";
-@import "./priv/static/assets/css/propaganda.css";
 @source "../css";
 @source "../js";
 @source "../../lib/landing_web";
