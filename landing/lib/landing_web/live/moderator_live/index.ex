@@ -4,224 +4,136 @@ defmodule LandingWeb.ModeratorLive.Index do
   @impl true
   def mount(_params, _session, socket) do
     reports = [
-      %{
-        id: 1,
-        type: "Contenido inapropiado",
-        reporter: "Juan Pérez",
-        target: "Publicación #132",
-        status: "Pendiente",
-        priority: "Alta"
-      },
-      %{
-        id: 2,
-        type: "Spam",
-        reporter: "Daniela Ruiz",
-        target: "Usuario #82",
-        status: "Pendiente",
-        priority: "Media"
-      },
-      %{
-        id: 3,
-        type: "Información falsa",
-        reporter: "Pedro Silva",
-        target: "Publicación #221",
-        status: "En revisión",
-        priority: "Baja"
-      }
+      %{id: 1, photo_id: 132, photo_url: nil, reason: "Contenido inapropiado", reporter: "Juan Pérez", date: "2026-10-20", priority: "Alta", status: "Pendiente", resolution: nil},
+      %{id: 2, photo_id: 221, photo_url: nil, reason: "Fotografía incorrecta", reporter: "Daniela Ruiz", date: "2026-10-21", priority: "Media", status: "Pendiente", resolution: nil},
+      %{id: 3, photo_id: 244, photo_url: nil, reason: "Posible spam", reporter: "Pedro Silva", date: "2026-10-22", priority: "Baja", status: "Pendiente", resolution: nil}
     ]
 
-    {:ok,
-     assign(socket,
-       page_title: "Moderación",
-       reports: reports,
-       selected_report: nil
-     )}
+    {:ok, assign(socket, page_title: "Moderación de fotografías", reports: reports, selected_report: nil, tab: "pending")}
   end
 
   @impl true
   def handle_event("select_report", %{"id" => id}, socket) do
-    id = String.to_integer(id)
-
-    report =
-      Enum.find(socket.assigns.reports, fn report ->
-        report.id == id
-      end)
-
+    report = Enum.find(socket.assigns.reports, &(&1.id == String.to_integer(id)))
     {:noreply, assign(socket, selected_report: report)}
   end
 
   @impl true
-  def handle_event("resolve", %{"id" => id}, socket) do
-    id = String.to_integer(id)
+  def handle_event("change_tab", %{"tab" => tab}, socket) when tab in ["pending", "history"] do
+    {:noreply, assign(socket, tab: tab, selected_report: nil)}
+  end
 
-    reports =
-      Enum.map(socket.assigns.reports, fn report ->
-        if report.id == id do
-          %{report | status: "Resuelto"}
-        else
-          report
+  @impl true
+  def handle_event("resolve", %{"id" => id, "action" => action}, socket)
+      when action in ["approve", "remove"] do
+    report_id = String.to_integer(id)
+    report = Enum.find(socket.assigns.reports, &(&1.id == report_id))
+
+    if report && report.status == "Pendiente" do
+      {resolution, notice} =
+        case action do
+          "approve" -> {"Aprobada", "Reporte resuelto: fotografía aprobada."}
+          "remove" -> {"Retirada", "Reporte resuelto: fotografía marcada como retirada."}
         end
-      end)
 
-    {:noreply,
-     socket
-     |> assign(:reports, reports)
-     |> assign(:selected_report, nil)}
+      reports =
+        Enum.map(socket.assigns.reports, fn item ->
+          if item.id == report_id, do: %{item | status: "Resuelto", resolution: resolution}, else: item
+        end)
+
+      {:noreply,
+       socket
+       |> assign(reports: reports, selected_report: nil)
+       |> put_flash(:info, notice)}
+    else
+      {:noreply, put_flash(socket, :error, "El reporte ya fue resuelto o no existe.")}
+    end
   end
 
   @impl true
   def render(assigns) do
+    assigns = assign(assigns, :visible_reports, Enum.filter(assigns.reports, fn report ->
+      if assigns.tab == "pending", do: report.status == "Pendiente", else: report.status == "Resuelto"
+    end))
+
     ~H"""
     <Layouts.app flash={@flash} wide={true}>
-    <div class="min-h-screen bg-slate-950 text-white">
-      <div class="flex">
-        <aside class="hidden min-h-screen w-64 border-r border-slate-800 bg-slate-900 lg:block">
-          <div class="p-6">
-            <div class="flex flex-col items-center">
-              <!-- Logo Layer -->
-              <div class="flex items-center gap-3">
-                <img src={~p"/images/isotipo-main-logo.png"} alt="Logo" class="h-12 w-auto">
-                <img src={~p"/images/coron-white.png"} alt="Logo Text" class="h-10 w-auto mt-1">
-              </div>
-
-              <!-- Texto centrado debajo -->
-              <p class="mt-2 text-sm text-slate-400">Moderacion</p>
-            </div>
-
-            <div class="mt-6 h-px w-full bg-slate-700/50"></div>
-          </div>
-
-          <nav class="space-y-2 px-4">
-            <a class="block rounded-lg bg-indigo-600 px-4 py-3 text-sm font-medium">
-              Reportes
-            </a>
-
-            <a class="block rounded-lg px-4 py-3 text-sm text-slate-400 hover:bg-slate-800">
-              Historial
-            </a>
-
-            <a class="block rounded-lg px-4 py-3 text-sm text-slate-400 hover:bg-slate-800">
-              Usuarios
-            </a>
-          </nav>
-        </aside>
-
-        <main class="flex-1">
-          <header class="border-b border-slate-800 bg-slate-900 px-6 py-4">
-            <h2 class="text-2xl font-semibold">Centro de Moderación</h2>
-            <p class="text-sm text-slate-400">
-              Revisión de reportes y contenido
-            </p>
+      <div class="min-h-screen bg-slate-950 text-white">
+        <div class="mx-auto max-w-6xl px-5 py-8">
+          <header class="mb-7">
+            <p class="text-sm font-medium text-indigo-400">RF-14 · Moderación de fotografías</p>
+            <h1 class="mt-1 text-3xl font-semibold">Cola de reportes</h1>
+            <p class="mt-2 text-slate-400">Revisa las fotografías reportadas y decide si se mantienen o se retiran.</p>
           </header>
 
-          <section class="p-6">
-            <div class="grid gap-6 lg:grid-cols-3">
-              <div class="lg:col-span-2">
-                <div class="rounded-xl border border-slate-800 bg-slate-900">
-                  <div class="border-b border-slate-800 p-5">
-                    <h3 class="font-semibold">Reportes pendientes</h3>
+          <div class="mb-6 flex gap-2">
+            <button type="button" phx-click="change_tab" phx-value-tab="pending"
+              class={["rounded-lg px-4 py-2 text-sm font-medium", @tab == "pending" && "bg-indigo-600 text-white" || "bg-slate-800 text-slate-300"]}>
+              Pendientes ({Enum.count(@reports, &(&1.status == "Pendiente"))})
+            </button>
+            <button type="button" phx-click="change_tab" phx-value-tab="history"
+              class={["rounded-lg px-4 py-2 text-sm font-medium", @tab == "history" && "bg-indigo-600 text-white" || "bg-slate-800 text-slate-300"]}>
+              Historial ({Enum.count(@reports, &(&1.status == "Resuelto"))})
+            </button>
+          </div>
+
+          <div class="grid gap-6 lg:grid-cols-3">
+            <section class="lg:col-span-2 overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
+              <h2 class="border-b border-slate-800 px-5 py-4 font-semibold">
+                {if @tab == "pending", do: "Reportes por revisar", else: "Reportes resueltos"}
+              </h2>
+              <div :if={@visible_reports == []} class="p-8 text-center text-slate-400">No hay reportes en esta sección.</div>
+              <div class="divide-y divide-slate-800">
+                <button :for={report <- @visible_reports} type="button"
+                  phx-click="select_report" phx-value-id={report.id}
+                  class="w-full p-5 text-left transition hover:bg-slate-800">
+                  <div class="flex items-start justify-between gap-4">
+                    <div>
+                      <div class="font-semibold">Foto #{report.photo_id} · {report.reason}</div>
+                      <div class="mt-2 text-sm text-slate-400">Reportado por {report.reporter} · {report.date}</div>
+                      <div class="mt-1 text-xs text-slate-500">Prioridad: {report.priority}</div>
+                    </div>
+                    <span class="rounded-full bg-slate-800 px-3 py-1 text-xs text-indigo-300">{report.resolution || report.status}</span>
                   </div>
-
-                  <div class="divide-y divide-slate-800">
-                    <%= for report <- @reports do %>
-                      <button
-                        phx-click="select_report"
-                        phx-value-id={report.id}
-                        class="w-full p-5 text-left transition hover:bg-slate-800/50"
-                      >
-                        <div class="flex items-start justify-between gap-4">
-                          <div>
-                            <div class="flex items-center gap-3">
-                              <p class="font-medium"><%= report.type %></p>
-
-                              <span class={[
-                                "rounded-full px-2 py-1 text-xs",
-                                report.priority == "Alta" &&
-                                  "bg-red-500/10 text-red-400",
-                                report.priority == "Media" &&
-                                  "bg-yellow-500/10 text-yellow-400",
-                                report.priority == "Baja" &&
-                                  "bg-slate-700 text-slate-300"
-                              ]}>
-                                <%= report.priority %>
-                              </span>
-                            </div>
-
-                            <p class="mt-2 text-sm text-slate-400">
-                              Reportado por <%= report.reporter %>
-                            </p>
-
-                            <p class="text-sm text-slate-500">
-                              <%= report.target %>
-                            </p>
-                          </div>
-
-                          <span class="text-sm text-indigo-400">
-                            <%= report.status %>
-                          </span>
-                        </div>
-                      </button>
-                    <% end %>
-                  </div>
-                </div>
+                </button>
               </div>
+            </section>
 
-              <div>
-                <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
-                  <%= if @selected_report do %>
-                    <h3 class="font-semibold">Detalle del reporte</h3>
-
-                    <div class="mt-5 space-y-4 text-sm">
-                      <div>
-                        <p class="text-slate-500">Tipo</p>
-                        <p><%= @selected_report.type %></p>
-                      </div>
-
-                      <div>
-                        <p class="text-slate-500">Reportado por</p>
-                        <p><%= @selected_report.reporter %></p>
-                      </div>
-
-                      <div>
-                        <p class="text-slate-500">Elemento</p>
-                        <p><%= @selected_report.target %></p>
-                      </div>
-
-                      <div>
-                        <p class="text-slate-500">Estado</p>
-                        <p><%= @selected_report.status %></p>
-                      </div>
-                    </div>
-
-                    <div class="mt-6 space-y-3">
-                      <button
-                        phx-click="resolve"
-                        phx-value-id={@selected_report.id}
-                        class="w-full rounded-lg bg-emerald-600 px-4 py-2 font-medium hover:bg-emerald-500"
-                      >
-                        Aprobar / Resolver
-                      </button>
-
-                      <button class="w-full rounded-lg bg-red-600 px-4 py-2 font-medium hover:bg-red-500">
-                        Eliminar contenido
-                      </button>
-
-                      <button class="w-full rounded-lg border border-slate-700 px-4 py-2 font-medium hover:bg-slate-800">
-                        Suspender usuario
-                      </button>
-                    </div>
+            <section class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+              <%= if @selected_report do %>
+                <h2 class="text-lg font-semibold">Detalle del reporte #{ @selected_report.id }</h2>
+                <div class="mt-4 flex min-h-40 items-center justify-center rounded-lg border border-dashed border-slate-700 bg-slate-800 text-center text-sm text-slate-400">
+                  <%= if @selected_report.photo_url do %>
+                    <img src={@selected_report.photo_url} alt={"Foto reportada ##{@selected_report.photo_id}"} class="max-h-72 w-full rounded-lg object-contain" />
                   <% else %>
-                    <div class="py-10 text-center text-slate-500">
-                      Selecciona un reporte para ver sus detalles.
-                    </div>
+                    Vista previa no disponible: falta conectar el almacenamiento de fotos.
                   <% end %>
                 </div>
-              </div>
-            </div>
-          </section>
-        </main>
+                <dl class="mt-5 space-y-3 text-sm">
+                  <div><dt class="text-slate-400">Fotografía</dt><dd>#{@selected_report.photo_id}</dd></div>
+                  <div><dt class="text-slate-400">Motivo</dt><dd>{@selected_report.reason}</dd></div>
+                  <div><dt class="text-slate-400">Reportante</dt><dd>{@selected_report.reporter}</dd></div>
+                  <div><dt class="text-slate-400">Estado</dt><dd>{@selected_report.resolution || @selected_report.status}</dd></div>
+                </dl>
+                <%= if @selected_report.status == "Pendiente" do %>
+                  <div class="mt-6 space-y-3">
+                    <button type="button" phx-click="resolve" phx-value-id={@selected_report.id} phx-value-action="approve"
+                      data-confirm="¿Aprobar esta fotografía y cerrar el reporte?"
+                      class="w-full rounded-lg bg-emerald-600 px-4 py-3 font-medium hover:bg-emerald-500">Aprobar fotografía</button>
+                    <button type="button" phx-click="resolve" phx-value-id={@selected_report.id} phx-value-action="remove"
+                      data-confirm="¿Marcar esta fotografía como retirada y cerrar el reporte?"
+                      class="w-full rounded-lg bg-red-600 px-4 py-3 font-medium hover:bg-red-500">Retirar fotografía</button>
+                  </div>
+                <% end %>
+              <% else %>
+                <h2 class="font-semibold">Detalle del reporte</h2>
+                <p class="mt-6 text-sm text-slate-400">Selecciona un reporte para revisar la fotografía y resolverlo.</p>
+              <% end %>
+            </section>
+          </div>
+          <p class="mt-6 text-xs text-amber-300">Versión demostrativa: las decisiones se guardan solo en memoria y no alteran fotografías reales. Se necesita integrar la API y la autenticación para completar RF-14.</p>
+        </div>
       </div>
-    </div>
     </Layouts.app>
     """
   end
