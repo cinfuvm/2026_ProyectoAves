@@ -105,7 +105,7 @@ El enunciado pedía las entidades USUARIO, AVE, PUBLICACION, LIKE y REPORTE, con
 
 | Observación | Estado |
 |---|---|
-| Login y registro usaban `user` | ✅ Login por email; `user` es alias. Nickname pendiente (decisión 5). |
+| Login y registro usaban `user` | ✅ Login por email o nickname; `user` es alias (decisión 5, resuelta). |
 | Typo `confirm_pasword` | ✅ `password_confirmation`, con alias `confirm_password`. |
 | Reportar como `PUT /images` | ✅ `POST /api/reports`. El OpenAPI móvil todavía usa `/images` (decisión 6). |
 | `POST /images` sin body | ✅ `POST /api/sightings` multipart con `photo`, `place`, `spotted_on`, `comment` y `bird_id`. |
@@ -237,11 +237,11 @@ Este bloque reemplaza a `sesion_20261022.md`, que se eliminó porque su contenid
 
 ### Pendientes por decidir (2026-10-22)
 
-1. **Vistas del ranking (RF-15):** ¿cada visita cuenta o solo una por usuario? Hoy cuenta cada visita. ¿Las búsquedas y listados también suman o solo la ficha?
-2. **Borrado de aves con avistamientos:** hoy responde 422. ¿Se bloquea siempre, se oculta con soft delete o se borra en cascada?
-3. **Borrado de categorías con aves:** la FK no tiene `on_delete`. No está probado qué responde hoy.
-4. **Estados del reporte:** el código usa `pendiente`, `aprobado` y `retirado`. El modelo original decía `pendiente`, `aceptado` y `rechazado`. Hay que elegir uno y alinear el contrato móvil.
-5. **Login:** hoy solo entra con email. El nickname queda como mejora posible.
+1. **Resuelto: vistas del ranking (RF-15):** cada visita cuenta, sin deduplicar por usuario. Las búsquedas y listados no suman; solo la ficha (`GET /api/birds/:id`) registra una vista, como está implementado.
+2. **Resuelto: borrar ave con avistamientos:** se mantiene la respuesta 422. Los avistamientos bloquean el borrado.
+3. **Pendiente: borrado de categorías con aves:** la FK no tiene `on_delete`. No está probado qué responde hoy.
+4. **Resuelto: estados del reporte:** se mantienen los valores del código: `pendiente`, `aprobado` y `retirado`. El modelo original (`aceptado` y `rechazado`) no se sigue.
+5. **Resuelto: login por nickname:** `POST /api/user/login` acepta email o nickname, en `email` o en el alias `user`. Si el valor no tiene `@`, se busca el usuario por nickname y se autentica con su email. Un nickname inexistente responde 401.
 6. **Contrato móvil:** el OpenAPI de móvil usa `/images` y `PUT /images` para reportar. El backend expone `/api/photos` y `/api/reports`. Hay que decidir cuál se mantiene y avisar al equipo.
 7. **Likes:** el modelo original los incluye y el enunciado no. Hay que decidir si se implementan.
 8. **Almacenamiento de fotos:** en desarrollo ya se guarda en disco local (`priv/static/uploads`). Falta decidir el destino en producción: volumen de Fly.io, S3 u otro proveedor.
@@ -510,7 +510,7 @@ mix aves.create_admin admin@example.com admin una-clave-segura
 ## 10. Decisiones de diseño
 
 - **PK UUID** en todo el modelo (consistencia con el scaffold; IDs no adivinables en la API pública).
-- **Login por `email`**; `nickname` es una segunda identidad única (login por cualquiera de los dos queda como mejora futura).
+- **Login por `email` o `nickname`**: AshAuthentication autentica por email; el controller resuelve el nickname a su email antes de llamar a la estrategia. Decisión 5 de la lista de pendientes.
 - **Tokens stateful/revocables** (permiten logout real y `log_out_everywhere`), a costa de una consulta a BD por request.
 - **Prefijo `/api`** para los endpoints REST.
 - **Opción A** para exponer auth: controlador Phoenix (control explícito del token en la respuesta) en lugar de rutas de AshJsonApi.

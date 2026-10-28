@@ -89,10 +89,26 @@ defmodule AvesWeb.API.UserController do
 
   defp sign_in_params(params) do
     %{
-      "email" => params["email"] || params["user"],
+      "email" => login_email(params["email"] || params["user"]),
       "password" => params["password"]
     }
   end
+
+  # The login field accepts an email or a nickname. A nickname is replaced by
+  # the email of that user, so AshAuthentication still signs in by email. An
+  # unknown nickname is left as is and fails the sign-in with 401.
+  defp login_email(identifier) when is_binary(identifier) do
+    if String.contains?(identifier, "@") do
+      identifier
+    else
+      case Ash.get(User, [nickname: identifier], authorize?: false) do
+        {:ok, %User{email: email}} -> to_string(email)
+        _ -> identifier
+      end
+    end
+  end
+
+  defp login_email(identifier), do: identifier
 
   # Solo se aceptan los campos editables del perfil; ignora `rol`, `password`,
   # etc. que el cliente pudiera enviar.

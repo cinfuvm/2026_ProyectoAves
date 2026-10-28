@@ -29,7 +29,7 @@ paths:
   /api/user/login:
     post:
       summary: Iniciar sesión
-      description: Autentica por email y devuelve un bearer token.
+      description: Autentica por email o nickname y devuelve un bearer token.
       tags:
         - API users
       requestBody:
@@ -248,7 +248,8 @@ components:
       properties:
         email:
           type: string
-          format: email
+          description: Email o nickname del usuario. El campo `user` es un alias.
+          example: ana@example.com
         password:
           type: string
           format: password

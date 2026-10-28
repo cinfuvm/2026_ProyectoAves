@@ -114,6 +114,40 @@ defmodule AvesWeb.API.UserControllerTest do
       assert is_binary(token)
     end
 
+    # El login también acepta el nickname en lugar del email.
+    test "inicia sesión con nickname y password", %{conn: conn} do
+      conn =
+        post(conn, ~p"/api/user/login", %{
+          "email" => "ana",
+          "password" => "supersecret123"
+        })
+
+      assert %{"user" => user, "token" => token} = json_response(conn, 200)
+      assert user["nickname"] == "ana"
+      assert is_binary(token)
+    end
+
+    test "acepta un nickname en el campo `user`", %{conn: conn} do
+      conn =
+        post(conn, ~p"/api/user/login", %{
+          "user" => "ana",
+          "password" => "supersecret123"
+        })
+
+      assert %{"token" => token} = json_response(conn, 200)
+      assert is_binary(token)
+    end
+
+    test "rechaza un nickname que no existe con 401", %{conn: conn} do
+      conn =
+        post(conn, ~p"/api/user/login", %{
+          "email" => "nadie",
+          "password" => "supersecret123"
+        })
+
+      assert %{"error" => _} = json_response(conn, 401)
+    end
+
     # Credenciales incorrectas no deben dar acceso.
     test "rechaza credenciales inválidas con 401", %{conn: conn} do
       conn =
