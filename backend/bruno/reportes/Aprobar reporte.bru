@@ -1,0 +1,23 @@
+meta {
+  name: Aprobar reporte
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/reports/{{reportId}}/approve
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{moderadorToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+docs {
+  La foto se mantiene visible.
+}

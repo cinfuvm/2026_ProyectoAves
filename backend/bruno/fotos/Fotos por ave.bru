@@ -1,0 +1,19 @@
+meta {
+  name: Fotos por ave
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/photos?bird_id={{birdId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}

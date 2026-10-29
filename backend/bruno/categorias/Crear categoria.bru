@@ -1,0 +1,39 @@
+meta {
+  name: Crear categoria
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/categories
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{moderadorToken}}
+}
+
+body:json {
+  {
+    "name": "Poderosisimas Aves Mexicanas Chingonas"
+  }
+}
+
+vars:pre-request {
+  sufijo: Poderosisimas aves mexicanas
+}
+
+assert {
+  res.status: eq 201
+}
+
+script:pre-request {
+  bru.setVar("sufijo", Date.now());
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setVar("nuevaCategoriaId", res.body.category.id);
+  }
+}

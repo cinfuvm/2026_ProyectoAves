@@ -1,0 +1,19 @@
+meta {
+  name: Quitar de coleccion
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{baseUrl}}/api/collection/{{collectionItemId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{userToken}}
+}
+
+assert {
+  res.status: eq 204
+}

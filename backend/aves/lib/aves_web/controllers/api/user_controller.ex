@@ -1,0 +1,143 @@
+defmodule AvesWeb.API.UserController do
+  @moduledoc """
+  Endpoints REST de autenticación para el cliente móvil.
+
+  No reimplementan la lógica de autenticación: delegan en las acciones
+  generadas por `AshAuthentication` (estrategia `:password` del recurso
+  `Aves.Accounts.User`), de modo que el dashboard web también pueda reutilizar
+  las mismas acciones.
+  """
+  use AvesWeb, :controller
+
+  alias AshAuthentication.{Info, Strategy}
+  alias Aves.Accounts.User
+
+  @doc "POST /api/user/signin - Registra un usuario y devuelve un bearer token."
+  def register(conn, params) do
+    case Strategy.action(strategy(), :register, register_params(params)) do
+      {:ok, user} ->
+        conn
+        |> put_status(:created)
+        |> json(auth_response(user))
+
+      {:error, error} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{errors: error_messages(error)})
+    end
+  end
+
+  @doc "POST /api/user/login - Inicia sesión y devuelve un bearer token."
+  def login(conn, params) do
+    case Strategy.action(strategy(), :sign_in, sign_in_params(params)) do
+      {:ok, user} ->
+        json(conn, auth_response(user))
+
+      {:error, _error} ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{error: "Credenciales inválidas"})
+    end
+  end
+
+  @doc "DELETE /api/user/logout - Revoca el bearer token enviado en el header."
+  def logout(conn, _params) do
+    conn
+    |> AshAuthentication.Plug.Helpers.revoke_bearer_tokens(:aves)
+    |> send_resp(:no_content, "")
+  end
+
+  @doc "GET /api/user/me - Devuelve el usuario autenticado (requiere bearer token)."
+  def me(conn, _params) do
+    user = Ash.PlugHelpers.get_actor(conn)
+    json(conn, %{user: user_json(user)})
+  end
+
+  @doc """
+  PATCH /api/user/me - Actualiza el perfil del usuario autenticado.
+
+  Acepta `nickname` y/o `email`; el resto de campos se ignora. Delega en la
+  acción `:update_profile` del recurso, por lo que las policies garantizan que
+  cada usuario solo edite su propio perfil.
+  """
+  def update_me(conn, params) do
+    actor = Ash.PlugHelpers.get_actor(conn)
+
+    case Ash.update(actor, profile_params(params), action: :update_profile, actor: actor) do
+      {:ok, user} ->
+        json(conn, %{user: user_json(user)})
+
+      {:error, error} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{errors: error_messages(error)})
+    end
+  end
+
+  defp strategy, do: Info.strategy!(User, :password)
+
+  # Acepta `user` como alias de `email` para mantener compatibilidad con el
+  # contrato inicial (birs_user_apis.yaml usaba el campo `user`).
+  defp register_params(params) do
+    %{
+      "email" => params["email"] || params["user"],
+      "nickname" => params["nickname"],
+      "password" => params["password"],
+      "password_confirmation" => params["password_confirmation"] || params["confirm_password"]
+    }
+  end
+
+  defp sign_in_params(params) do
+    %{
+      "email" => login_email(params["email"] || params["user"]),
+      "password" => params["password"]
+    }
+  end
+
+  # The login field accepts an email or a nickname. A nickname is replaced by
+  # the email of that user, so AshAuthentication still signs in by email. An
+  # unknown nickname is left as is and fails the sign-in with 401.
+  defp login_email(identifier) when is_binary(identifier) do
+    if String.contains?(identifier, "@") do
+      identifier
+    else
+      case Ash.get(User, [nickname: identifier], authorize?: false) do
+        {:ok, %User{email: email}} -> to_string(email)
+        _ -> identifier
+      end
+    end
+  end
+
+  defp login_email(identifier), do: identifier
+
+  # Solo se aceptan los campos editables del perfil; ignora `rol`, `password`,
+  # etc. que el cliente pudiera enviar.
+  defp profile_params(params) do
+    [nickname: params["nickname"], email: params["email"]]
+    |> Enum.reject(fn {_field, value} -> is_nil(value) end)
+    |> Map.new()
+  end
+
+  defp auth_response(user) do
+    %{
+      user: user_json(user),
+      token: user.__metadata__.token
+    }
+  end
+
+  defp user_json(user) do
+    %{
+      id: user.id,
+      email: to_string(user.email),
+      nickname: user.nickname,
+      rol: to_string(user.rol)
+    }
+  end
+
+  defp error_messages(error) do
+    case error do
+      %Ash.Error.Invalid{errors: errors} -> Enum.map(errors, &Exception.message/1)
+      _ -> [Exception.message(error)]
+    end
+  end
+end

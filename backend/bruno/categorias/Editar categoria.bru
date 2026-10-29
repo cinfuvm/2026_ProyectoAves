@@ -1,0 +1,29 @@
+meta {
+  name: Editar categoria
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{baseUrl}}/api/categories/{{nuevaCategoriaId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{moderadorToken}}
+}
+
+body:json {
+  {
+    "name": "Aun mas poderosisimas Avez Mexicanas Chingonas"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+script:pre-request {
+  bru.setVar("sufijo", Date.now());
+}
