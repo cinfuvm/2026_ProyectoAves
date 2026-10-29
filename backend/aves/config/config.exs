@@ -77,6 +77,16 @@ config :aves,
 # PUBLIC_BASE_URL, e.g. http://10.0.2.2:4000 for the Android emulator.
 config :aves, :public_base_url, System.get_env("PUBLIC_BASE_URL") || "http://127.0.0.1:4000"
 
+# PromEx serves its metrics through AvesWeb.MetricsController, not on its own port.
+config :aves, Aves.PromEx,
+  manual_metrics_start_delay: :no_delay,
+  metrics_server: :disabled
+
+# Basic auth for GET /metrics. Override with METRICS_USER and METRICS_PASSWORD.
+config :aves, :metrics_auth,
+  username: System.get_env("METRICS_USER", "prometheus"),
+  password: System.get_env("METRICS_PASSWORD", "prometheus")
+
 # Configure the endpoint
 config :aves, AvesWeb.Endpoint,
   url: [host: "localhost"],

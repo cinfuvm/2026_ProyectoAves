@@ -23,6 +23,10 @@ config :aves, AvesWeb.Endpoint,
   secret_key_base: "r3IWMdu8xKAr9TOVyb4EsVsxIHyanwu5G8YfjKXcOx/02x8yeWOEr5HeBMlJyM++",
   server: false
 
+# The PromEx poller reads the database on its own process, outside the SQL sandbox.
+# In tests it runs once an hour; the tests call Aves.Stats directly.
+config :aves, :stats_poll_rate, 3_600_000
+
 # Uploaded photos go to a temporary folder, never to the project's priv/
 config :aves, :uploads_dir, Path.join(System.tmp_dir!(), "aves_test_uploads")
 

@@ -1,0 +1,22 @@
+# Prometheus configuration for the local stack (docker-compose.yaml).
+#
+# Prometheus runs in Docker and the Phoenix backend runs on the host, so the
+# target is reached through host.docker.internal.
+#
+# The credentials must match config :aves, :metrics_auth. The values below are
+# the development defaults. In production, use the METRICS_USER and
+# METRICS_PASSWORD values and a password_file instead of a literal password.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: aves_backend
+    metrics_path: /metrics
+    basic_auth:
+      username: prometheus
+      password: prometheus
+    static_configs:
+      - targets: ["host.docker.internal:4000"]
+        labels:
+          service: aves-backend

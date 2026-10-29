@@ -15,6 +15,9 @@ defmodule AvesWeb.Endpoint do
     websocket: [connect_info: [session: @session_options]],
     longpoll: [connect_info: [session: @session_options]]
 
+  # Real-time admin channels (stats:admin). Authenticated in UserSocket.connect/3.
+  socket "/socket", AvesWeb.UserSocket, websocket: true, longpoll: false
+
   # Serve at "/" the static files from "priv/static" directory.
   #
   # When code reloading is disabled (e.g., in production),

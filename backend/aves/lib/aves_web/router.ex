@@ -19,6 +19,16 @@ defmodule AvesWeb.Router do
     plug AvesWeb.AuthPlug
   end
 
+  pipeline :metrics do
+    plug AvesWeb.MetricsAuth
+  end
+
+  scope "/", AvesWeb do
+    pipe_through :metrics
+
+    get "/metrics", MetricsController, :index
+  end
+
   scope "/api/json" do
     pipe_through [:api]
 
