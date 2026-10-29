@@ -93,7 +93,7 @@ El enunciado pedía las entidades USUARIO, AVE, PUBLICACION, LIKE y REPORTE, con
 | # | Ajuste pedido | Estado |
 |---|---|---|
 | 1 | PUBLICACION con lugar y fecha de avistamiento; `pie_de_foto` como comentario | ✅ `Sighting`: `place`, `spotted_on`, `comment`. |
-| 2 | COLECCION_ITEM distinta de LIKE, con gestión desde el panel | ✅ `CollectionItem`. Falta la gestión desde el panel (RF-17). |
+| 2 | COLECCION_ITEM distinta de LIKE, con gestión desde el panel | ✅ `CollectionItem`. La gestión desde el panel la hace el equipo del dashboard. |
 | 3 | AVE con descripción | ✅ `Bird.description` (y `scientific_name`). |
 | 4 | REPORTE con `id_moderador`, `fecha_resolucion` y estado enum (pendiente, aceptado, rechazado) | ⚠️ Estado enum ✅, pero con valores `aprobado` y `retirado`. **No tiene** `id_moderador` ni `fecha_resolucion`. |
 | 5 | USUARIO con `password_hash` y rol enum (usuario, moderador, admin) | ✅ |
@@ -127,6 +127,54 @@ Este bloque reemplaza a `sesion_20261022.md`, que se eliminó porque su contenid
 
 ---
 
+## Métricas y estadísticas (2026-10-29)
+
+Implementadas las golden signals con Prometheus y las estadísticas de admin por WebSocket. La vista (dashboard de Grafana y frontend) no es responsabilidad del backend, salvo la conexión de datos.
+
+### Golden signals
+
+- **Librería:** PromEx 1.12 (`Aves.PromEx`), aprobada. Sus plugins de Phoenix, Ecto, Beam y Application publican las métricas. El servidor HTTP de PromEx está desactivado; el endpoint vive en la app.
+- **Endpoint:** `GET /metrics`, en formato Prometheus, protegido con basic auth (`AvesWeb.MetricsAuth`). Las credenciales vienen de `config :aves, :metrics_auth`: `METRICS_USER` y `METRICS_PASSWORD` en producción; en desarrollo, `prometheus`/`prometheus`.
+
+| Señal | Métrica (prefijo `aves_prom_ex_`) |
+|---|---|
+| Latencia | `phoenix_http_request_duration_milliseconds` (histograma, por ruta y estado) |
+| Tráfico | `phoenix_http_requests_total` (por ruta, método y estado) |
+| Errores | la misma métrica, filtrando `status="5xx"` |
+| Saturación (VM) | `beam_stats_run_queue_count`, `beam_memory_*_bytes` |
+| Saturación (base de datos) | `ecto_repo_query_queue_time_milliseconds` (espera del pool de conexiones) |
+| Saturación (disco) | `aves_uploads_free_bytes` (espacio libre donde viven las fotos) |
+
+### Estadísticas de admin
+
+- **Módulo:** `Aves.Stats.snapshot/0` cuenta usuarios por rol, aves, avistamientos por estado (visible, oculto, eliminado), reportes por estado, colecciones, vistas, el top de 10 aves populares y el espacio libre del disco.
+- **Canal:** WebSocket `stats:admin` (`AvesWeb.StatsChannel`), conectado por `/socket/websocket`. El token es el mismo bearer que la API; `AvesWeb.UserSocket` lo valida con el mismo código que `AuthPlug`.
+  - Solo entra el rol `admin`. Un moderador o un usuario común recibe `{reason: "forbidden"}`.
+  - Al unirse, el servidor empuja un evento `snapshot`. Después empuja uno nuevo cada 30 segundos.
+  - El evento `refresh` pide un snapshot inmediato.
+- **Prometheus:** `Aves.PromEx.StatsPlugin` publica los mismos conteos como gauges (`aves_users_count{rol=…}`, `aves_sightings_count{state=…}`, `aves_reports_count{status=…}`, `aves_birds_count`, `aves_collection_items_count`, `aves_bird_views_count`, `aves_uploads_free_bytes`). Se actualizan cada 30 segundos.
+
+### Infraestructura local
+
+- `docker-compose.yaml` agrega **Prometheus** (puerto 9090) y **Grafana** (puerto 3000, usuario `admin`, contraseña `admin`).
+- `observability/prometheus/prometheus.yml` raspa `host.docker.internal:4000/metrics` con las credenciales de desarrollo.
+- `observability/grafana/provisioning/datasources/` define la fuente de datos Prometheus. Los dashboards viven solo en Grafana, no en el repo (decisión tomada).
+- Verificado: el target de Prometheus está `up`, los gauges de negocio llegan (`aves_users_count` con sus tres roles) y Grafana responde con la fuente de datos cargada.
+
+### Verificación
+
+- `mix precommit`: **110 tests** (7 nuevos del módulo de estadísticas, el canal y `/metrics`).
+- WebSocket real (cliente Node sobre el servidor de desarrollo): el admin recibe `snapshot`; el usuario común recibe `forbidden`; un token inválido no conecta.
+- `/metrics` sin credenciales responde 401, con credenciales correctas responde 200.
+- Advertencia conocida: en los tests del canal aparecen `Dropping aggregation for bad tag value … tag: :transport`. Viene de la metadata que simula `Phoenix.ChannelTest`; con el servidor real no aparece.
+
+### Decisiones tomadas
+
+- Estadísticas de admin por WebSocket, no por REST.
+- Dashboards de Grafana: solo en Grafana, sin JSON versionado en el repo.
+
+---
+
 ## 0. Estado general del backend (2026-10-22)
 
 **Rama:** `fix/backend/correccion_detalles`. Incluye el trabajo de jose, mauricio y marcelo, y las correcciones de la sesión del 22-oct (ver "Historial de la sesión del 22-oct").
@@ -145,8 +193,8 @@ Este bloque reemplaza a `sesion_20261022.md`, que se eliminó porque su contenid
 | RF-13 | Reportar foto | ✅ | `POST /api/reports` |
 | RF-14 | Cola de moderadores (aprobar / retirar) | ✅ | `POST /api/reports/:id/approve` y `/retire` |
 | RF-15 | Aves populares | ✅ | `GET /api/birds/ranking` ordena por `views_count`, contado desde `bird_views` (una fila por cada `GET /api/birds/:id`) |
-| RF-16 | Gestión de usuarios desde admin (ver, editar, suspender) | ❌ | Sin endpoints |
-| RF-17 | Dashboard de aves y colecciones | ⚠️ parcial | Solo API; falta la capa LiveView |
+| RF-16 | Gestión de usuarios desde admin (ver, editar, suspender) | 🔵 | Decisión: esta gestión se expone solo por WebSockets, no por REST. Sin endpoints REST. Las acciones `assign_role` y `destroy` ya existen con sus policies. |
+| RF-17 | Dashboard de aves y colecciones | 🔵 | Fuera de la responsabilidad del backend (la capa LiveView la hace otro equipo). |
 | RF-18 | Landing | 🔵 | Fuera del backend (`landing/`) |
 | RF-19 | OpenAPI completo | ⚠️ | Usuarios en `birs_user_apis.yaml`; resto del backend en `birs_apis.yaml` (`docs/modules/ROOT/attachments/openapi/`). Falta el contrato de `/images` (decisión 6) |
 | RF-20 | Colección Bruno | ✅ | `backend/bruno/`: 33 requests que cubren todos los endpoints. Pasan 33/33 en dos corridas seguidas contra el servidor de desarrollo (ver `backend/bruno/README.md`) |
@@ -220,12 +268,8 @@ Este bloque reemplaza a `sesion_20261022.md`, que se eliminó porque su contenid
 
 ### Pendientes por realizar (2026-10-22)
 
-- **RF-16, gestión de usuarios desde admin:** endpoints para listar, editar, suspender y asignar roles por REST. Las acciones `assign_role` y `destroy` ya existen con sus policies.
-- **RF-17, dashboard LiveView:** capa web para admins y moderadores, con login por sesión.
 - **RF-19, OpenAPI completo:** falta documentar `/images` (los stubs de `birs_user_apis.yaml`), que depende de la decisión 6. Los endpoints del backend ya están en `birs_apis.yaml`.
 - **Almacenamiento en producción:** la subida de fotos ya funciona en disco local (ver sección 0, "Subida de fotos"). Falta resolver dónde guardarlas en Fly.io, porque su disco es efímero (decisión 8).
-- **Métricas para admin:** pendiente desde #10.
-- **Grafana con golden signals (latencia, tráfico, errores y saturación):** requiere un exportador de métricas en Phoenix (PromEx o `telemetry_metrics_prometheus`), un endpoint `/metrics` protegido, Prometheus y Grafana, con los dashboards versionados en el repo. Hoy `AvesWeb.Telemetry` define métricas pero nada las expone. No está implementado.
 - **Despliegue:** GitHub Actions y Fly.io, según el enunciado. Todavía no hay configuración en el repo.
 - **Limpieza:**
   - Quitar o usar el router de AshJsonApi, que está vacío.
@@ -245,8 +289,7 @@ Este bloque reemplaza a `sesion_20261022.md`, que se eliminó porque su contenid
 6. **Contrato móvil:** el OpenAPI de móvil usa `/images` y `PUT /images` para reportar. El backend expone `/api/photos` y `/api/reports`. Hay que decidir cuál se mantiene y avisar al equipo.
 7. **Likes:** el modelo original los incluye y el enunciado no. Hay que decidir si se implementan.
 8. **Almacenamiento de fotos:** en desarrollo ya se guarda en disco local (`priv/static/uploads`). Falta decidir el destino en producción: volumen de Fly.io, S3 u otro proveedor.
-9. **Dashboard:** si admin y moderador comparten la misma vista o tienen permisos distintos.
-10. **URL base para el móvil:** ¿se mantiene `PUBLIC_BASE_URL` con la configuración del servidor? Para un teléfono físico hay que decidir si el servidor de desarrollo escucha en `0.0.0.0`.
+9. **URL base para el móvil:** ¿se mantiene `PUBLIC_BASE_URL` con la configuración del servidor? Para un teléfono físico hay que decidir si el servidor de desarrollo escucha en `0.0.0.0`.
 
 ---
 

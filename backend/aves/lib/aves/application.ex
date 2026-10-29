@@ -10,6 +10,7 @@ defmodule Aves.Application do
     children = [
       AvesWeb.Telemetry,
       Aves.Repo,
+      Aves.PromEx,
       {DNSCluster, query: Application.get_env(:aves, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Aves.PubSub},
       # Start a worker by calling: Aves.Worker.start_link(arg)

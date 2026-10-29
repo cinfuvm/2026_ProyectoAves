@@ -73,6 +73,11 @@ if config_env() == :prod do
 
   config :aves, :public_base_url, System.get_env("PUBLIC_BASE_URL") || "https://#{host}"
 
+  # In production the metrics credentials must be set; there is no default.
+  config :aves, :metrics_auth,
+    username: System.fetch_env!("METRICS_USER"),
+    password: System.fetch_env!("METRICS_PASSWORD")
+
   config :aves, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
   config :aves, AvesWeb.Endpoint,

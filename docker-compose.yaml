@@ -8,5 +8,31 @@
        volumes:
          - pgdata:/var/lib/postgresql/data
 
+     # Golden signals and admin statistics. Prometheus scrapes the backend's
+     # /metrics (the backend runs on the host, port 4000). Grafana reads Prometheus.
+     prometheus:
+       image: prom/prometheus:v3.5.0
+       extra_hosts:
+         - "host.docker.internal:host-gateway"
+       volumes:
+         - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+         - prometheusdata:/prometheus
+       ports:
+         - "9090:9090"
+
+     grafana:
+       image: grafana/grafana:12.2.0
+       environment:
+         GF_SECURITY_ADMIN_PASSWORD: admin
+       volumes:
+         - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+         - grafanadata:/var/lib/grafana
+       ports:
+         - "3000:3000"
+       depends_on:
+         - prometheus
+
    volumes:
      pgdata:
+     prometheusdata:
+     grafanadata:

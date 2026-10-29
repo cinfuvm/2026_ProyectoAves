@@ -127,6 +127,57 @@ mix precommit
 
 Compila con warnings como error, formatea y corre todos los tests. Necesita la base de datos encendida.
 
+## 7. Métricas y estadísticas de admin
+
+### Métricas (golden signals)
+
+Con el servidor corriendo, desde la raíz del repositorio:
+
+```bash
+docker compose up -d prometheus grafana
+```
+
+- Métricas crudas: `curl -u prometheus:prometheus http://127.0.0.1:4000/metrics` (sin credenciales responde 401).
+- Prometheus: `http://localhost:9090`. En **Status → Targets** el target `aves_backend` debe estar `UP`.
+- Grafana: `http://localhost:3000`, usuario `admin`, contraseña `admin`. La fuente de datos Prometheus ya está creada; los dashboards todavía no.
+
+Si el target aparece `DOWN`, revisa que el backend esté en el puerto 4000 y que las credenciales de `observability/prometheus/prometheus.yml` coincidan con `METRICS_USER` y `METRICS_PASSWORD`.
+
+### Estadísticas de admin por WebSocket
+
+Solo un usuario con rol `admin` puede unirse. El canal es `stats:admin`, conectado a:
+
+```
+ws://127.0.0.1:4000/socket/websocket?token=<token del admin>&vsn=2.0.0
+```
+
+El protocolo es el de Phoenix (vsn 2.0.0), con mensajes JSON de la forma `[join_ref, ref, topic, event, payload]`:
+
+```json
+["1", "1", "stats:admin", "phx_join", {}]
+```
+
+- Al unirse, el servidor responde `phx_reply` (`status: "ok"`) y empuja un evento `snapshot` con los números.
+- Cada 30 segundos llega otro `snapshot`.
+- Para pedir uno inmediato, envía `["1", "2", "stats:admin", "refresh", {}]`.
+- Un usuario sin rol admin recibe `phx_reply` con `status: "error"` y `reason: "forbidden"`.
+
+Un ejemplo de `snapshot`:
+
+```json
+{
+  "users": {"usuario": 5, "moderador": 1, "admin": 1},
+  "birds": 3,
+  "sightings": {"visible": 19, "hidden": 9, "deleted": 14},
+  "reports": {"retirado": 9},
+  "collection_items": 1,
+  "bird_views": 15,
+  "popular_birds": [{"id": "…", "name": "Flamenco chileno", "views": 9}],
+  "uploads_free_bytes": 45852413952,
+  "generated_at": "2026-10-29T18:00:00Z"
+}
+```
+
 ## Problemas frecuentes
 
 | Síntoma | Causa | Solución |
