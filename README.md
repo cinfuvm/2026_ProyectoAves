@@ -1,6 +1,15 @@
-# Bitácora de Aves
+# Bitácora de Aves (CORON)
 
-Sistema de administración de datos de aves de Chile y bitácora de avistamientos por usuario. Incluye una API REST (Elixir Phoenix), un dashboard web de administración (LiveView) y una aplicación móvil para Android e iOS.
+Sistema de administración de datos de aves de Chile y bitácora de avistamientos por usuario.
+
+El proyecto se compone de cuatro partes:
+
+| Componente | Tecnología | Carpeta |
+|---|---|---|
+| API REST | Elixir, Phoenix, Ash, PostgreSQL | [`backend/`](backend/) |
+| Sitio web y dashboard | Elixir, Phoenix LiveView | [`landing/`](landing/) |
+| Aplicación móvil | Flutter (Android e iOS) | [`mobile/`](mobile/) |
+| Documentación | Antora (AsciiDoc) | [`docs/`](docs/) |
 
 ## Requisitos funcionales
 
@@ -26,17 +35,66 @@ Cada issue del proyecto indica en su descripción el RF que cubre.
 | Móvil | Maximiliano Mateo | Justin Vidaure |
 | Gestión y documentación | Ignacio Latorre | Johan Cortés |
 
-## Documentación
+## Puesta en marcha
 
-La documentación se escribe con [Antora](https://antora.org/) en la carpeta `docs/`.
+### Backend (API REST)
 
-Para generarla en local (requiere Node.js 18 o superior):
+Requiere Docker Desktop, Elixir 1.20 y OTP 29.
 
+```bash
+docker compose up -d db
+
+cd backend/aves
+mix deps.get
+mix ecto.create
+mix ash.migrate
+mix run priv/repo/seeds.exs
+mix phx.server
 ```
+
+Queda en `http://127.0.0.1:4000`. Las instrucciones completas (permisos, seeds, colección de Bruno y pruebas) están en [`backend/readme.md`](backend/readme.md).
+
+### Landing y dashboard
+
+Requiere Elixir y la base de datos del backend en marcha. Ambos proyectos Phoenix usan el puerto 4000 por defecto, así que el landing se levanta con otro puerto:
+
+```bash
+cd landing
+mix deps.get
+mix ecto.create
+mix ecto.migrate
+PORT=4001 mix phx.server
+```
+
+Queda en `http://127.0.0.1:4001`. Ver [`landing/readme.md`](landing/readme.md).
+
+### Aplicación móvil
+
+Requiere Flutter y un emulador o dispositivo conectado.
+
+```bash
+cd mobile
+flutter pub get
+flutter run
+```
+
+Por defecto la app usa datos mock. Para conectarla al backend:
+
+```bash
+flutter run --dart-define=BFF_ACTIVO=true --dart-define=BFF_URL=http://10.0.2.2:4000
+```
+
+En el emulador de Android, `10.0.2.2` apunta al `localhost` de la computadora. El detalle de funcionalidades y estado está en [`mobile/readme.md`](mobile/readme.md).
+
+### Documentación
+
+La documentación general se escribe con [Antora](https://antora.org/) en `docs/` (requiere Node.js 18 o superior):
+
+```bash
 npm install
 npx antora antora-playbook.yml
 ```
 
-El sitio queda en `build/site/index.html`.
+El sitio queda en `build/site/index.html`. Para agregar una página, crea un archivo `.adoc` en `docs/modules/ROOT/pages/` y agrégalo a `docs/modules/ROOT/nav.adoc`.
 
-Para agregar una página, crea un archivo `.adoc` en `docs/modules/ROOT/pages/` y agrégalo a `docs/modules/ROOT/nav.adoc`.
+La documentación propia de la app móvil (PRD, arquitectura C4, UAT y changelog) vive en `mobile/docs/` y se genera desde `mobile/` con `npm ci && npm run docs`.
