@@ -16,15 +16,15 @@ El componente sigue la estructura Antora recomendada por https://github.com/Ninj
 
 == Compilación
 
-Este directorio es un componente Antora autocontenido dentro de `mobile/`. No tiene playbook ni dependencias propias: el playbook de la raíz lo declara con `start_path: mobile/docs` y es lo único que construye esta rama.
+Este directorio es un componente Antora autocontenido, y `mobile/` tiene su propio playbook (`mobile/antora-playbook.yml`) y sus dependencias (`mobile/package.json`).
 
-Desde la raíz del repositorio, ejecuta `npm ci` para instalar las herramientas y `npm run docs` para generar el sitio HTML en `build/site/`. Los diagramas C4 se renderizan como SVG con `npm run docs:diagrams`, que invoca a `mobile/docs/scripts/render-diagrams.mjs`.
+Desde `mobile/`, ejecuta `npm ci` para instalar las herramientas y `npm run docs` para generar el sitio HTML en `mobile/build/site/`. Los diagramas C4 se renderizan como SVG con `npm run docs:diagrams`, que invoca a `docs/scripts/render-diagrams.mjs`.
 
 También puedes abrir los archivos `.adoc` en VS Code y usar el comando `AsciiDoc: Open Preview` para leer cada documento.
 
 == Relación con el resto del sitio
 
-Los requisitos funcionales del proyecto los publica el equipo en su propio componente (`docs/`), que esta rama no construye. Este componente solo cubre lo móvil.
+Los requisitos funcionales del proyecto los publica el equipo en el componente Antora de la raíz (`docs/`), que se construye por separado con `npm run docs` desde la raíz del repositorio. Este componente solo cubre lo móvil.
 
 == Responsabilidad
 

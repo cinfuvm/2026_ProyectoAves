@@ -49,13 +49,13 @@ En el emulador de Android, `10.0.2.2` apunta al `localhost` de la máquina.
 
 ## Sitio Antora
 
-Este directorio (`mobile/docs/`) es un componente Antora autocontenido dentro de `mobile/`. No tiene playbook ni dependencias propias: el playbook de la raíz lo declara con `start_path: mobile/docs` y es lo único que construye esta rama.
+Este directorio (`mobile/docs/`) es un componente Antora autocontenido, y `mobile/` tiene su propio playbook (`mobile/antora-playbook.yml`) y sus dependencias (`mobile/package.json`).
 
-Desde la raíz del repositorio: `npm ci` y `npm run docs`. La salida queda en `build/site/`. Los diagramas C4 se renderizan como SVG con `npm run docs:diagrams`, que invoca a `mobile/docs/scripts/render-diagrams.mjs` (requiere Java o `JAVA_HOME`). También puedes abrir los `.adoc` en VS Code con `AsciiDoc: Open Preview`.
+Desde `mobile/`, ejecuta `npm ci` y `npm run docs`. La salida queda en `mobile/build/site/`. Los diagramas C4 se renderizan como SVG con `npm run docs:diagrams`, que invoca a `docs/scripts/render-diagrams.mjs` (requiere Java o `JAVA_HOME`). También puedes abrir los `.adoc` en VS Code con `AsciiDoc: Open Preview`.
 
 ## Relación con el resto del sitio
 
-Los requisitos funcionales del proyecto los publica el equipo en su propio componente (`docs/`), que esta rama no construye. Este componente solo cubre lo móvil.
+Los requisitos funcionales del proyecto los publica el equipo en el componente Antora de la raíz (`docs/`), que se construye por separado con `npm run docs` desde la raíz del repositorio. Este componente solo cubre lo móvil.
 
 ## Responsabilidad
 

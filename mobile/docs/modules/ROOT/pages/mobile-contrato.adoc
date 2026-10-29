@@ -114,6 +114,6 @@ El detalle de la UI se mapea en `motivosReporteContrato`
 
 == 8. Erratas en el esquema
 
-* `confirm_pasword` aparece escrito así en dos lugares
-  (`birds_apis.yaml:242` y `:257`); debería ser `confirm_password`.
-  Si se corrige, avisar al equipo mobile porque la app lo serializa.
+* ~~`confirm_pasword`~~ → `confirm_password`: el typo se corrigió en
+  `birds_apis.yaml` (campos `required` y `properties` de `CrearUsuario`).
+  El nombre coincide con el que serializa la app y con el que acepta el backend.

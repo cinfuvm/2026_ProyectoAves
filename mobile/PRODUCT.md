@@ -47,7 +47,7 @@ Catálogo de aves de Chile + bitácora personal de avistamientos + colección, c
 
 - `README.md` (requisitos RF-01–RF-20 y equipos), `mobile/README.md` (alcance y estado de la app).
 - `mobile/docs/modules/ROOT/pages/` con el PRD, la arquitectura, el plan UAT y el registro de cambios; los 20 requisitos funcionales los publica el equipo en su propio componente.
-- `birds_apis.yaml` (especificación OpenAPI). La carpeta `backend/` y el BFF fueron retirados del repositorio y están pendientes de reconstrucción; el cliente ya implementa los endpoints que consume.
+- `birds_apis.yaml` (especificación OpenAPI). El backend vive en `backend/aves` y expone la API que consume la app; el cliente ya implementa los endpoints de ese contrato.
 - Catálogo cargado desde Aves de Chile en tiempo de ejecución (la interfaz anuncia 216 especies).
 - Ausencias que el trabajo futuro no debe inventar: usuarios reales, métricas de uso, testimonios, contenido moderado o datos de lanzamiento.
 

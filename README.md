@@ -56,13 +56,11 @@ Queda en `http://127.0.0.1:4000`. Las instrucciones completas (permisos, seeds, 
 
 ### Landing y dashboard
 
-Requiere Elixir y la base de datos del backend en marcha. Ambos proyectos Phoenix usan el puerto 4000 por defecto, así que el landing se levanta con otro puerto:
+Requiere Elixir. El landing **no usa base de datos** (no depende de Ecto). Ambos proyectos Phoenix usan el puerto 4000 por defecto, así que el landing se levanta con otro puerto:
 
 ```bash
 cd landing
 mix deps.get
-mix ecto.create
-mix ecto.migrate
 PORT=4001 mix phx.server
 ```
 
@@ -91,10 +89,10 @@ En el emulador de Android, `10.0.2.2` apunta al `localhost` de la computadora. E
 La documentación general se escribe con [Antora](https://antora.org/) en `docs/` (requiere Node.js 18 o superior):
 
 ```bash
-npm install
-npx antora antora-playbook.yml
+npm ci
+npm run docs
 ```
 
 El sitio queda en `build/site/index.html`. Para agregar una página, crea un archivo `.adoc` en `docs/modules/ROOT/pages/` y agrégalo a `docs/modules/ROOT/nav.adoc`.
 
-La documentación propia de la app móvil (PRD, arquitectura C4, UAT y changelog) vive en `mobile/docs/` y se genera desde `mobile/` con `npm ci && npm run docs`.
+La documentación propia de la app móvil (PRD, arquitectura C4, UAT y changelog) vive en `mobile/docs/` y se genera desde `mobile/` con `npm ci && npm run docs`; también puedes construir ambas con `npm run docs:all` desde la raíz.

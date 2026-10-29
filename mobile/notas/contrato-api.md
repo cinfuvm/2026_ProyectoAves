@@ -84,7 +84,7 @@ El detalle de la UI se mapea en `motivosReporteContrato` (`mobile/lib/services/f
 
 ## 8. Erratas en el esquema
 
-- `confirm_pasword` aparece escrito así en dos lugares (`birds_apis.yaml:242` y `:257`); debería ser `confirm_password`. Si se corrige, avisar al equipo mobile porque la app lo serializa.
+- ~~`confirm_pasword`~~ → `confirm_password`: el typo se corrigió en `birds_apis.yaml` (campos `required` y `properties` de `CrearUsuario`). El nombre coincide con el que serializa la app y con el que acepta el backend.
 
 ## Registro con usuario + correo y login por correo *(aplicado al contrato)*
 
@@ -102,7 +102,7 @@ Actualizado en `birds_apis.yaml`; la app ya lo envía así. **Pendiente de imple
 Respuestas: `201` con la sesión inicial (`token` + `user`), `400/422` con `Error` de validación y `409` cuando ya existe el usuario (`usuario_duplicado`) o el correo (`email_duplicado`).
 
 > [!nota]
-> El esquema `CrearUsuario` del contrato llama a este último campo `confirm_pasword` (typo heredado; ver la errata de la sección 8), mientras la app envía `confirm_password`. Conviene acordar con backend cuál de los dos nombres queda y corregir el archivo.
+> El esquema `CrearUsuario` del contrato usa `confirm_password`, igual que la app y el backend. La errata anterior (`confirm_pasword`) ya quedó corregida.
 
 ### `POST /user/login` · Iniciar sesión
 

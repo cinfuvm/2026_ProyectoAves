@@ -234,12 +234,12 @@ components:
 
     CrearUsuario:
       type: object
-      description: Datos de registro de un usuario nuevo: nombre de usuario y correo.
+      description: "Datos de registro de un usuario nuevo: nombre de usuario y correo."
       required:
         - user
         - email
         - password
-        - confirm_pasword
+        - confirm_password
       properties:
         user:
           type: string
@@ -254,7 +254,7 @@ components:
           type: string
           format: password
           minLength: 8
-        confirm_pasword:
+        confirm_password:
           type: string
           format: password
           minLength: 8
