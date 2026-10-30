@@ -20,7 +20,7 @@ La app móvil corre en **mock local por defecto** (`ApiConfig.usarMock`); el BFF
 - Base de datos: `docker compose up -d db` (Postgres 16, puerto 5432, usuario/clave `postgres`).
 - Preparar: `cd backend/aves && mix deps.get && mix ecto.create && mix ash.migrate && mix run priv/repo/seeds.exs`
 - Servidor: `cd backend/aves && mix phx.server` (`http://127.0.0.1:4000`)
-- Pruebas + calidad: `cd backend/aves && mix precommit` (incluye `mix test`, 96 tests)
+- Pruebas + calidad: `cd backend/aves && mix precommit` (incluye `mix test`, 110 tests)
 - Un archivo: `cd backend/aves && mix test test/<ruta>_test.exs`
 
 ### Landing

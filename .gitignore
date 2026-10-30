@@ -1,33 +1,23 @@
-<<<<<<< HEAD
 # Dependencias
 node_modules/
+mobile/node_modules/
 deps/
 
 # Artefactos de build
 build/
+mobile/build/
 _build/
 cover/
-=======
-# Dependencias y artefactos generados
-node_modules/
-build/
-mobile/node_modules/
-mobile/build/
-
-# Sitio Antora y diagramas C4 móviles: los ignora mobile/docs/.gitignore
->>>>>>> origin/mobile_dev
 
 # Sistema
 .DS_Store
 Thumbs.db
 
-<<<<<<< HEAD
 # Entornos y secretos
 .env
 .env.*
 !.env.example
-=======
+
 # Configuración local de editores
 .obsidian/
 .idea/
->>>>>>> origin/mobile_dev
