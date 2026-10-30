@@ -1,0 +1,16 @@
+site:
+  title: 2026_ProyectoAves
+  start_page: 2026_ProyectoAves::indice.adoc
+
+content:
+  sources:
+    - url: ./
+      branches: HEAD
+
+ui:
+  bundle:
+    url: https://gitlab.com/antora/antora-ui-default/-/jobs/artifacts/HEAD/raw/build/ui-bundle.zip?job=bundle-stable
+    snapshot: true
+
+output:
+  dir: ./build/site
