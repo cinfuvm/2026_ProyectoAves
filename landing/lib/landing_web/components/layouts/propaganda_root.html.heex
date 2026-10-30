@@ -1,22 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="csrf-token" content={get_csrf_token()} />
-
     <!-- Fuentes de Google para Orbital -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
     <!-- Tu CSS aislado -->
-    <link rel="stylesheet" href="/assets/css/propaganda.css">
-    
+    <link rel="stylesheet" href="/assets/css/propaganda.css" />
     <!-- El JS de Phoenix (necesario para que los botones y LiveView funcionen) -->
-    <script defer phx-track-static type="text/javascript" src={~p"/assets/js/propaganda.js"}></script>
+    <script defer phx-track-static type="text/javascript" src={~p"/assets/js/propaganda.js"}>
+    </script>
   </head>
-  
   <!-- La clase visuals-on iba en el body según tu código original -->
   <body class="visuals-on">
     {@inner_content}

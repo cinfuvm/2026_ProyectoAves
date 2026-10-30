@@ -9,7 +9,12 @@ defmodule LandingWeb.AdminLive.Aves.Index do
   def mount(_params, _session, socket) do
     # Lista simulada inicial. (Más adelante, aquí consultarás tu base de datos Ecto)
     aves_mock = [
-      %{id: 1, nombre_comun: "Zorzal", nombre_cientifico: "Turdus falcklandii", familia: "Turdidae"},
+      %{
+        id: 1,
+        nombre_comun: "Zorzal",
+        nombre_cientifico: "Turdus falcklandii",
+        familia: "Turdidae"
+      },
       %{id: 2, nombre_comun: "Loica", nombre_cientifico: "Leistes loyca", familia: "Icteridae"}
     ]
 
@@ -25,15 +30,14 @@ defmodule LandingWeb.AdminLive.Aves.Index do
     ~H"""
     <Layouts.app flash={@flash} wide={true}>
       <div class="min-h-screen bg-slate-950 text-white flex">
-
         <!-- BARRA LATERAL -->
         <aside class="hidden min-h-screen w-64 border-r border-slate-800 bg-slate-900 lg:block">
           <div class="p-6">
             <div class="flex flex-col items-center">
               <!-- Logo Layer -->
               <div class="flex items-center gap-3">
-                <img src={~p"/images/isotipo-main-logo.png"} alt="Logo" class="h-12 w-auto">
-                <img src={~p"/images/coron-white.png"} alt="Logo Text" class="h-10 w-auto mt-1">
+                <img src={~p"/images/isotipo-main-logo.png"} alt="Logo" class="h-12 w-auto" />
+                <img src={~p"/images/coron-white.png"} alt="Logo Text" class="h-10 w-auto mt-1" />
               </div>
 
               <!-- Texto centrado debajo -->
@@ -58,15 +62,16 @@ defmodule LandingWeb.AdminLive.Aves.Index do
 
           <section class="p-6">
             <div class="rounded-xl border border-slate-800 bg-slate-900">
-
               <!-- ENCABEZADO DE LA TABLA Y BOTÓN NUEVO -->
               <div class="flex items-center justify-between border-b border-slate-800 p-5">
                 <div>
                   <h3 class="font-semibold">Catálogo de Especies</h3>
                 </div>
                 <!-- Botón Crear: Limpia el formulario (new) y abre el modal -->
-                <button class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
-                        phx-click={JS.push("new") |> show_modal("modal-nueva-ave")}>
+                <button
+                  class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+                  phx-click={JS.push("new") |> show_modal("modal-nueva-ave")}
+                >
                   Registrar Ave
                 </button>
               </div>
@@ -85,18 +90,30 @@ defmodule LandingWeb.AdminLive.Aves.Index do
                   <tbody>
                     <!-- Bucle para dibujar cada ave en la tabla -->
                     <%= for ave <- @aves do %>
-                      <tr class="border-b border-slate-800/70 hover:bg-slate-800/40" id={"ave-#{ave.id}"}>
-                        <td class="px-5 py-4 font-medium"><%= ave.nombre_comun %></td>
-                        <td class="px-5 py-4 text-slate-400 italic"><%= ave.nombre_cientifico %></td>
-                        <td class="px-5 py-4"><%= ave.familia %></td>
+                      <tr
+                        class="border-b border-slate-800/70 hover:bg-slate-800/40"
+                        id={"ave-#{ave.id}"}
+                      >
+                        <td class="px-5 py-4 font-medium">{ave.nombre_comun}</td>
+                        <td class="px-5 py-4 text-slate-400 italic">{ave.nombre_cientifico}</td>
+                        <td class="px-5 py-4">{ave.familia}</td>
                         <td class="px-5 py-4 text-right space-x-2">
                           <!-- Botón Editar: Carga los datos (edit) y abre el modal -->
-                          <button class="rounded-lg bg-slate-600 px-3 py-1 text-sm font-medium text-white hover:bg-slate-400"
-                                  phx-click={JS.push("edit", value: %{id: ave.id}) |> show_modal("modal-nueva-ave")}>
+                          <button
+                            class="rounded-lg bg-slate-600 px-3 py-1 text-sm font-medium text-white hover:bg-slate-400"
+                            phx-click={
+                              JS.push("edit", value: %{id: ave.id}) |> show_modal("modal-nueva-ave")
+                            }
+                          >
                             Editar
                           </button>
-                          <button class="rounded-lg bg-red-600 px-3 py-1 text-sm font-medium text-white hover:bg-red-500"
-                                  phx-click={JS.push("seleccionar_ave", value: %{id: ave.id}) |> show_modal("modal-confirmar-eliminar")}>
+                          <button
+                            class="rounded-lg bg-red-600 px-3 py-1 text-sm font-medium text-white hover:bg-red-500"
+                            phx-click={
+                              JS.push("seleccionar_ave", value: %{id: ave.id})
+                              |> show_modal("modal-confirmar-eliminar")
+                            }
+                          >
                             Eliminar
                           </button>
                         </td>
@@ -113,40 +130,87 @@ defmodule LandingWeb.AdminLive.Aves.Index do
                   <p class="text-slate-950">¿Estás seguro de que deseas eliminar esta ave?</p>
                   <p class="mb-5 text-tiny text-red-600">Esta acción no se puede deshacer.</p>
                   <div class="flex justify-center gap-4">
-                    <button type="button" phx-click={JS.exec("data-cancel", to: "#modal-confirmar-eliminar")} class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">Cancelar</button>
-                    <button type="button" phx-click={JS.push("delete", value: %{id: @ave && @ave.id}) |> JS.exec("data-cancel", to: "#modal-confirmar-eliminar")} class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-500">Eliminar</button>
+                    <button
+                      type="button"
+                      phx-click={JS.exec("data-cancel", to: "#modal-confirmar-eliminar")}
+                      class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
+                    >Cancelar</button>
+                    <button
+                      type="button"
+                      phx-click={
+                        JS.push("delete", value: %{id: @ave && @ave.id})
+                        |> JS.exec("data-cancel", to: "#modal-confirmar-eliminar")
+                      }
+                      class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-500"
+                    >Eliminar</button>
                   </div>
                 </div>
               </.modal>
 
               <!-- MODAL DEL FORMULARIO -->
               <.modal id="modal-nueva-ave">
-                <form class="modal-content" phx-submit={JS.push("save") |> JS.exec("data-cancel", to: "#modal-nueva-ave")} id="ave-form">
+                <form
+                  class="modal-content"
+                  phx-submit={JS.push("save") |> JS.exec("data-cancel", to: "#modal-nueva-ave")}
+                  id="ave-form"
+                >
                   <div class="container p-2 text-slate-800">
                     <h1 class="text-2xl font-bold mb-2">Registrar / Editar Ave</h1>
-                    <hr class="mb-4 border-gray-300">
+                    <hr class="mb-4 border-gray-300" />
 
                     <!-- ID Oculto (Vital para saber si estamos editando) -->
-                    <input type="hidden" id="ave-id-oculto" name="ave[id]" value={if @ave, do: @ave.id, else: ""} />
+                    <input
+                      type="hidden"
+                      id="ave-id-oculto"
+                      name="ave[id]"
+                      value={if @ave, do: @ave.id, else: ""}
+                    />
 
                     <!-- Campos de texto (Se llenan automáticamente si @ave existe) -->
                     <label class="block font-bold">Nombre Común</label>
-                    <input type="text" id="input-nombre-comun" name="ave[nombre_comun]" value={if @ave, do: @ave.nombre_comun, else: ""} required class="w-full mb-4 border p-2 rounded text-black">
+                    <input
+                      type="text"
+                      id="input-nombre-comun"
+                      name="ave[nombre_comun]"
+                      value={if @ave, do: @ave.nombre_comun, else: ""}
+                      required
+                      class="w-full mb-4 border p-2 rounded text-black"
+                    />
 
                     <label class="block font-bold">Nombre Científico</label>
-                    <input type="text" id="input-nombre-cientifico" name="ave[nombre_cientifico]" value={if @ave, do: @ave.nombre_cientifico, else: ""} required class="w-full mb-4 border p-2 rounded text-black">
+                    <input
+                      type="text"
+                      id="input-nombre-cientifico"
+                      name="ave[nombre_cientifico]"
+                      value={if @ave, do: @ave.nombre_cientifico, else: ""}
+                      required
+                      class="w-full mb-4 border p-2 rounded text-black"
+                    />
 
                     <label class="block font-bold">Familia</label>
-                    <input type="text" id="input-familia" name="ave[familia]" value={if @ave, do: @ave.familia, else: ""} required class="w-full mb-4 border p-2 rounded text-black">
+                    <input
+                      type="text"
+                      id="input-familia"
+                      name="ave[familia]"
+                      value={if @ave, do: @ave.familia, else: ""}
+                      required
+                      class="w-full mb-4 border p-2 rounded text-black"
+                    />
 
                     <div class="flex gap-4">
-                      <button type="button" phx-click={JS.exec("data-cancel", to: "#modal-nueva-ave")} class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">Cancelar</button>
-                      <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-500">Guardar Ave</button>
+                      <button
+                        type="button"
+                        phx-click={JS.exec("data-cancel", to: "#modal-nueva-ave")}
+                        class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
+                      >Cancelar</button>
+                      <button
+                        type="submit"
+                        class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-500"
+                      >Guardar Ave</button>
                     </div>
                   </div>
                 </form>
               </.modal>
-
             </div>
           </section>
         </main>
@@ -175,14 +239,17 @@ defmodule LandingWeb.AdminLive.Aves.Index do
   # Borra un ave de la lista
   @impl true
   def handle_event("delete", %{"id" => id}, socket) do
-    lista_actualizada = Enum.reject(socket.assigns.aves, fn a -> to_string(a.id) == to_string(id) end)
+    lista_actualizada =
+      Enum.reject(socket.assigns.aves, fn a -> to_string(a.id) == to_string(id) end)
+
     {:noreply, assign(socket, aves: lista_actualizada)}
   end
 
   @impl true
   def handle_event("seleccionar_ave", %{"id" => id}, socket) do
     # Encuentra el ave y la asigna al socket, pero NO la borra
-    ave_seleccionada = Enum.find(socket.assigns.aves, fn a -> to_string(a.id) == to_string(id) end)
+    ave_seleccionada =
+      Enum.find(socket.assigns.aves, fn a -> to_string(a.id) == to_string(id) end)
 
     {:noreply, assign(socket, :ave, ave_seleccionada)}
   end
@@ -196,21 +263,24 @@ defmodule LandingWeb.AdminLive.Aves.Index do
       # --- FLUJO: ACTUALIZAR AVE EXISTENTE ---
       id_int = String.to_integer(id)
 
-      lista_actualizada = Enum.map(socket.assigns.aves, fn a ->
-        if a.id == id_int do
-          %{a | nombre_comun: ave_params["nombre_comun"],
+      lista_actualizada =
+        Enum.map(socket.assigns.aves, fn a ->
+          if a.id == id_int do
+            %{
+              a
+              | nombre_comun: ave_params["nombre_comun"],
                 nombre_cientifico: ave_params["nombre_cientifico"],
-                familia: ave_params["familia"]}
-        else
-          a
-        end
-      end)
+                familia: ave_params["familia"]
+            }
+          else
+            a
+          end
+        end)
 
       {:noreply,
-        socket
-        |> assign(aves: lista_actualizada, ave: nil)
-        |> put_flash(:info, "Ave guardada correctamente")}
-
+       socket
+       |> assign(aves: lista_actualizada, ave: nil)
+       |> put_flash(:info, "Ave guardada correctamente")}
     else
       # --- FLUJO: CREAR AVE NUEVA ---
       nueva_ave = %{
@@ -229,5 +299,4 @@ defmodule LandingWeb.AdminLive.Aves.Index do
        |> push_event("js-exec", %{to: "#modal-nueva-ave", attr: "data-cancel"})}
     end
   end
-
 end

@@ -40,3 +40,23 @@ npx antora antora-playbook.yml
 El sitio queda en `build/site/index.html`.
 
 Para agregar una página, crea un archivo `.adoc` en `docs/modules/ROOT/pages/` y agrégalo a `docs/modules/ROOT/nav.adoc`.
+
+## Landing y API
+
+La landing usa la API del backend para registrar e iniciar sesión. En la primera ejecución, configura PostgreSQL y ejecuta `mix setup` en el backend. Inicia el backend en el puerto `4000` y luego la landing en otro puerto:
+
+```powershell
+cd backend\aves
+mix phx.server
+```
+
+En otra terminal:
+
+```powershell
+cd landing
+$env:PORT = "4001"
+$env:AVES_API_URL = "http://localhost:4000"
+mix phx.server
+```
+
+Abre `http://localhost:4001/propaganda/`. `AVES_API_URL` debe apuntar a la URL base del backend; la landing mantiene el token de autenticación en una cookie de sesión cifrada.

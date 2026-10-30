@@ -551,7 +551,7 @@ defmodule LandingWeb.CoreComponents do
                 </button>
               </div>
               <div id={"#{@id}-content"}>
-                <%= render_slot(@inner_block) %>
+                {render_slot(@inner_block)}
               </div>
             </.focus_wrap>
           </div>
@@ -599,9 +599,9 @@ defmodule LandingWeb.CoreComponents do
     ~H"""
     <.form :let={f} for={@for} as={@as} {@rest}>
       <div class="mt-10 space-y-8 bg-white">
-        <%= render_slot(@inner_block, f) %>
+        {render_slot(@inner_block, f)}
         <div :for={action <- @actions} class="mt-2 flex items-center justify-between gap-6">
-          <%= render_slot(action, f) %>
+          {render_slot(action, f)}
         </div>
       </div>
     </.form>
@@ -610,7 +610,8 @@ defmodule LandingWeb.CoreComponents do
 
   attr :label, :string, required: true
   attr :active, :boolean, default: false
-  attr :navigate, :string, default: "#" # Accepts the URL passed from above
+  # Accepts the URL passed from above
+  attr :navigate, :string, default: "#"
 
   def nav_item(assigns) do
     ~H"""
@@ -622,7 +623,7 @@ defmodule LandingWeb.CoreComponents do
         !@active && "text-slate-400 hover:bg-slate-800 hover:text-white"
       ]}
     >
-      <%= @label %>
+      {@label}
     </.link>
     """
   end

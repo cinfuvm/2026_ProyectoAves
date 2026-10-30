@@ -23,6 +23,8 @@ end
 config :landing, LandingWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
+config :landing, :aves_api_url, System.get_env("AVES_API_URL") || "http://localhost:4000"
+
 if config_env() == :dev do
   # Reload browser tabs when matching files change.
   config :landing, LandingWeb.Endpoint,

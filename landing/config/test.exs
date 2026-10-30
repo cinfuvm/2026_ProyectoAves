@@ -7,6 +7,10 @@ config :landing, LandingWeb.Endpoint,
   secret_key_base: "aZr82YpdnVNbCkCpjY/302Nbpwjh7SqgWVosyQoDp5Ot6IZ9dsoHvxYOHcJnxdBb",
   server: false
 
+config :landing,
+  aves_api_url: "http://aves.test",
+  aves_api_req_options: [plug: {Req.Test, :landing_aves_api}]
+
 # In test we don't send emails
 config :landing, Landing.Mailer, adapter: Swoosh.Adapters.Test
 

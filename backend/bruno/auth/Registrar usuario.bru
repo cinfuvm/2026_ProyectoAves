@@ -1,0 +1,24 @@
+meta {
+  name: Registrar usuario
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/user/signin
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "nuevo@aves.test",
+    "nickname": "nuevo_usuario",
+    "password": "{{password}}",
+    "password_confirmation": "{{password}}"
+  }
+}
+
+assert {
+  res.status: in [201, 422]
+}

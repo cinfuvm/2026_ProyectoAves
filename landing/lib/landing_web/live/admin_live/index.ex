@@ -12,9 +12,30 @@ defmodule LandingWeb.AdminLive.Index do
        page_title: "Panel Administrador",
        stats: %{users: 1248, moderators: 8, reports: 34, active_users: 921},
        users: [
-         %{id: 1, name: "Ana Pérez", email: "ana@email.com", password: "hash_secreto", role: "Usuario", status: "Activo"},
-         %{id: 2, name: "Carlos Soto", email: "carlos@email.com", password: "hash_secreto", role: "Moderador", status: "Activo"},
-         %{id: 3, name: "María Díaz", email: "maria@email.com", password: "hash_secreto", role: "Usuario", status: "Suspendido"}
+         %{
+           id: 1,
+           name: "Ana Pérez",
+           email: "ana@email.com",
+           password: "hash_secreto",
+           role: "Usuario",
+           status: "Activo"
+         },
+         %{
+           id: 2,
+           name: "Carlos Soto",
+           email: "carlos@email.com",
+           password: "hash_secreto",
+           role: "Moderador",
+           status: "Activo"
+         },
+         %{
+           id: 3,
+           name: "María Díaz",
+           email: "maria@email.com",
+           password: "hash_secreto",
+           role: "Usuario",
+           status: "Suspendido"
+         }
        ],
        user: nil
      )}
@@ -28,14 +49,13 @@ defmodule LandingWeb.AdminLive.Index do
     ~H"""
     <Layouts.app flash={@flash} wide={true}>
       <div class="min-h-screen bg-slate-950 text-white flex">
-
         <aside class="hidden min-h-screen w-64 border-r border-slate-800 bg-slate-900 lg:block">
           <div class="p-6">
             <div class="flex flex-col items-center">
               <!-- Logo Layer -->
               <div class="flex items-center gap-3">
-                <img src={~p"/images/isotipo-main-logo.png"} alt="Logo" class="h-12 w-auto">
-                <img src={~p"/images/coron-white.png"} alt="Logo Text" class="h-10 w-auto mt-1">
+                <img src={~p"/images/isotipo-main-logo.png"} alt="Logo" class="h-12 w-auto" />
+                <img src={~p"/images/coron-white.png"} alt="Logo Text" class="h-10 w-auto mt-1" />
               </div>
 
               <!-- Texto centrado debajo -->
@@ -67,7 +87,9 @@ defmodule LandingWeb.AdminLive.Index do
                   <p class="text-sm font-medium">Administrador</p>
                   <p class="text-xs text-slate-400">admin@aves.cl</p>
                 </div>
-                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 font-bold">A</div>
+                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 font-bold">
+                  A
+                </div>
               </div>
             </div>
           </header>
@@ -82,14 +104,15 @@ defmodule LandingWeb.AdminLive.Index do
 
             <div class="mt-8 grid gap-6 xl:grid-cols-3">
               <div class="rounded-xl border border-slate-800 bg-slate-900 xl:col-span-2">
-
                 <div class="flex items-center justify-between border-b border-slate-800 p-5">
                   <div>
                     <h3 class="font-semibold">Usuarios recientes</h3>
                     <p class="text-sm text-slate-400">Gestión de cuentas y permisos</p>
                   </div>
-                  <button class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
-                          phx-click={JS.push("new") |> show_modal("modal-usuario-nuevo")}>
+                  <button
+                    class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+                    phx-click={JS.push("new") |> show_modal("modal-usuario-nuevo")}
+                  >
                     Nuevo usuario
                   </button>
                 </div>
@@ -107,26 +130,39 @@ defmodule LandingWeb.AdminLive.Index do
                     </thead>
                     <tbody>
                       <%= for user <- @users do %>
-                        <tr class="border-b border-slate-800/70 hover:bg-slate-800/40" id={"user-#{user.id}"}>
-                          <td class="px-5 py-4 font-medium"><%= user.name %></td>
-                          <td class="px-5 py-4 text-slate-400"><%= user.email %></td>
-                          <td class="px-5 py-4"><%= user.role %></td>
+                        <tr
+                          class="border-b border-slate-800/70 hover:bg-slate-800/40"
+                          id={"user-#{user.id}"}
+                        >
+                          <td class="px-5 py-4 font-medium">{user.name}</td>
+                          <td class="px-5 py-4 text-slate-400">{user.email}</td>
+                          <td class="px-5 py-4">{user.role}</td>
                           <td class="px-5 py-4">
                             <span class={[
                               "rounded-full px-2 py-1 text-xs",
                               user.status == "Activo" && "bg-emerald-500/10 text-emerald-400",
                               user.status != "Activo" && "bg-red-500/10 text-red-400"
                             ]}>
-                              <%= user.status %>
+                              {user.status}
                             </span>
                           </td>
                           <td class="px-5 py-4 text-right space-x-2">
-                            <button class="rounded-lg bg-slate-600 px-3 py-1 text-sm font-medium text-white hover:bg-slate-400"
-                                    phx-click={JS.push("edit", value: %{id: user.id}) |> show_modal("modal-usuario-nuevo")}>
+                            <button
+                              class="rounded-lg bg-slate-600 px-3 py-1 text-sm font-medium text-white hover:bg-slate-400"
+                              phx-click={
+                                JS.push("edit", value: %{id: user.id})
+                                |> show_modal("modal-usuario-nuevo")
+                              }
+                            >
                               Editar
                             </button>
-                            <button class="rounded-lg bg-red-600 px-3 py-1 text-sm font-medium text-white hover:bg-red-500"
-                                    phx-click={JS.push("seleccionar_usuario", value: %{id: user.id}) |> show_modal("modal-confirmar-eliminar")}>
+                            <button
+                              class="rounded-lg bg-red-600 px-3 py-1 text-sm font-medium text-white hover:bg-red-500"
+                              phx-click={
+                                JS.push("seleccionar_usuario", value: %{id: user.id})
+                                |> show_modal("modal-confirmar-eliminar")
+                              }
+                            >
                               Eliminar
                             </button>
                           </td>
@@ -141,8 +177,14 @@ defmodule LandingWeb.AdminLive.Index do
                 <h3 class="font-semibold">Actividad del sistema</h3>
                 <p class="mt-1 text-sm text-slate-400">Resumen de acciones recientes</p>
                 <div class="mt-6 space-y-5">
-                  <.activity title="Nuevo moderador agregado" text="Carlos Soto fue asignado como moderador." />
-                  <.activity title="Usuario suspendido" text="Se suspendió una cuenta tras múltiples reportes." />
+                  <.activity
+                    title="Nuevo moderador agregado"
+                    text="Carlos Soto fue asignado como moderador."
+                  />
+                  <.activity
+                    title="Usuario suspendido"
+                    text="Se suspendió una cuenta tras múltiples reportes."
+                  />
                   <.activity title="Reportes revisados" text="12 reportes fueron cerrados hoy." />
                 </div>
               </div>
@@ -150,46 +192,112 @@ defmodule LandingWeb.AdminLive.Index do
 
             <!-- MODAL: CREAR/EDITAR USUARIO -->
             <.modal id="modal-usuario-nuevo">
-              <form class="modal-content" phx-submit={JS.push("save") |> JS.exec("data-cancel", to: "#modal-usuario-nuevo")} id="user-form-element">
+              <form
+                class="modal-content"
+                phx-submit={JS.push("save") |> JS.exec("data-cancel", to: "#modal-usuario-nuevo")}
+                id="user-form-element"
+              >
                 <div class="container p-2 text-slate-800">
-                  <h1 class="text-2xl font-bold mb-2"><%= if @user, do: "Editar Usuario", else: "Crear Usuario" %></h1>
-                  <hr class="mb-4 border-gray-300">
+                  <h1 class="text-2xl font-bold mb-2">
+                    {if @user, do: "Editar Usuario", else: "Crear Usuario"}
+                  </h1>
+                  <hr class="mb-4 border-gray-300" />
 
-                  <input type="hidden" id="hidden-user-id" name="usuario[id]" value={if @user, do: @user.id, else: ""} />
+                  <input
+                    type="hidden"
+                    id="hidden-user-id"
+                    name="usuario[id]"
+                    value={if @user, do: @user.id, else: ""}
+                  />
 
                   <label for="name" class="block font-bold">Nombre</label>
-                  <input type="text" id="input-user-name" name="usuario[name]" placeholder="Nombre" value={if @user, do: @user.name, else: ""} required class="w-full mb-4 border p-2 rounded text-black">
-                  <p class="text-xs text-gray-500 -mt-3 mb-4"><%= if @user, do: "Déjalo en blanco para mantener la actual", else: "" %></p>
+                  <input
+                    type="text"
+                    id="input-user-name"
+                    name="usuario[name]"
+                    placeholder="Nombre"
+                    value={if @user, do: @user.name, else: ""}
+                    required
+                    class="w-full mb-4 border p-2 rounded text-black"
+                  />
+                  <p class="text-xs text-gray-500 -mt-3 mb-4">
+                    {if @user, do: "Déjalo en blanco para mantener la actual", else: ""}
+                  </p>
 
                   <label for="email" class="block font-bold">Correo Electrónico</label>
-                  <input type="email" id="input-user-email" name="usuario[email]" placeholder="Correo Electrónico" value={if @user, do: @user.email, else: ""} required class="w-full mb-4 border p-2 rounded text-black">
+                  <input
+                    type="email"
+                    id="input-user-email"
+                    name="usuario[email]"
+                    placeholder="Correo Electrónico"
+                    value={if @user, do: @user.email, else: ""}
+                    required
+                    class="w-full mb-4 border p-2 rounded text-black"
+                  />
 
                   <!-- NUEVO CAMPO DE CONTRASEÑA -->
                   <label for="password" class="block font-bold">Contraseña</label>
-                  <input type="password" id="input-user-password" name="usuario[password]" placeholder="Contraseña" required={is_nil(@user)} class="w-full mb-4 border p-2 rounded text-black">
-                  <p class="text-xs text-gray-500 -mt-3 mb-4"><%= if @user, do: "Déjalo en blanco para mantener la actual", else: "" %></p>
+                  <input
+                    type="password"
+                    id="input-user-password"
+                    name="usuario[password]"
+                    placeholder="Contraseña"
+                    required={is_nil(@user)}
+                    class="w-full mb-4 border p-2 rounded text-black"
+                  />
+                  <p class="text-xs text-gray-500 -mt-3 mb-4">
+                    {if @user, do: "Déjalo en blanco para mantener la actual", else: ""}
+                  </p>
 
                   <div class="grid grid-cols-2 gap-4">
                     <div>
                       <label class="block font-bold">Rol</label>
-                      <select id="input-user-role" name="usuario[role]" class="w-full mb-4 border p-2 rounded text-black">
-                        <option value="Usuario" selected={@user && @user.role == "Usuario"}>Usuario</option>
-                        <option value="Moderador" selected={@user && @user.role == "Moderador"}>Moderador</option>
-                        <option value="Administrador" selected={@user && @user.role == "Administrador"}>Administrador</option>
+                      <select
+                        id="input-user-role"
+                        name="usuario[role]"
+                        class="w-full mb-4 border p-2 rounded text-black"
+                      >
+                        <option value="Usuario" selected={@user && @user.role == "Usuario"}>
+                          Usuario
+                        </option>
+                        <option value="Moderador" selected={@user && @user.role == "Moderador"}>
+                          Moderador
+                        </option>
+                        <option
+                          value="Administrador"
+                          selected={@user && @user.role == "Administrador"}
+                        >
+                          Administrador
+                        </option>
                       </select>
                     </div>
                     <div>
                       <label class="block font-bold">Estado</label>
-                      <select id="input-user-status" name="usuario[status]" class="w-full mb-4 border p-2 rounded text-black">
-                        <option value="Activo" selected={@user && @user.status == "Activo"}>Activo</option>
-                        <option value="Suspendido" selected={@user && @user.status == "Suspendido"}>Suspendido</option>
+                      <select
+                        id="input-user-status"
+                        name="usuario[status]"
+                        class="w-full mb-4 border p-2 rounded text-black"
+                      >
+                        <option value="Activo" selected={@user && @user.status == "Activo"}>
+                          Activo
+                        </option>
+                        <option value="Suspendido" selected={@user && @user.status == "Suspendido"}>
+                          Suspendido
+                        </option>
                       </select>
                     </div>
                   </div>
 
                   <div class="flex gap-4 mt-2">
-                    <button type="button" phx-click={JS.exec("data-cancel", to: "#modal-usuario-nuevo")} class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">Cancelar</button>
-                    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-500">Guardar Usuario</button>
+                    <button
+                      type="button"
+                      phx-click={JS.exec("data-cancel", to: "#modal-usuario-nuevo")}
+                      class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
+                    >Cancelar</button>
+                    <button
+                      type="submit"
+                      class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-500"
+                    >Guardar Usuario</button>
                   </div>
                 </div>
               </form>
@@ -199,16 +307,28 @@ defmodule LandingWeb.AdminLive.Index do
             <.modal id="modal-confirmar-eliminar">
               <div class="modal-content p-6 text-center text-slate-800">
                 <h2 class="text-xl font-bold mb-4">Confirmar Eliminación</h2>
-                <p>¿Estás seguro de que deseas eliminar al usuario <b><%= @user && @user.name %></b>?</p>
+                <p>
+                  ¿Estás seguro de que deseas eliminar al usuario <b><%= @user && @user.name %></b>?
+                </p>
                 <p class="mb-6 mt-2 text-sm text-red-600 block">Esta acción no se puede deshacer.</p>
 
                 <div class="flex justify-center gap-4">
-                  <button type="button" phx-click={JS.exec("data-cancel", to: "#modal-confirmar-eliminar")} class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">Cancelar</button>
-                  <button type="button" phx-click={JS.push("delete", value: %{id: @user && @user.id}) |> JS.exec("data-cancel", to: "#modal-confirmar-eliminar")} class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-500">Eliminar</button>
+                  <button
+                    type="button"
+                    phx-click={JS.exec("data-cancel", to: "#modal-confirmar-eliminar")}
+                    class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
+                  >Cancelar</button>
+                  <button
+                    type="button"
+                    phx-click={
+                      JS.push("delete", value: %{id: @user && @user.id})
+                      |> JS.exec("data-cancel", to: "#modal-confirmar-eliminar")
+                    }
+                    class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-500"
+                  >Eliminar</button>
                 </div>
               </div>
             </.modal>
-
           </section>
         </main>
       </div>
@@ -221,22 +341,24 @@ defmodule LandingWeb.AdminLive.Index do
   # -------------------------------------------------------------------
   attr :title, :string, required: true
   attr :value, :any, required: true
+
   defp stat_card(assigns) do
     ~H"""
     <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
-      <p class="text-sm text-slate-400"><%= @title %></p>
-      <p class="mt-2 text-3xl font-bold"><%= @value %></p>
+      <p class="text-sm text-slate-400">{@title}</p>
+      <p class="mt-2 text-3xl font-bold">{@value}</p>
     </div>
     """
   end
 
   attr :title, :string, required: true
   attr :text, :string, required: true
+
   defp activity(assigns) do
     ~H"""
     <div class="border-l-2 border-indigo-500 pl-4">
-      <p class="font-medium"><%= @title %></p>
-      <p class="mt-1 text-sm text-slate-400"><%= @text %></p>
+      <p class="font-medium">{@title}</p>
+      <p class="mt-1 text-sm text-slate-400">{@text}</p>
     </div>
     """
   end
@@ -257,13 +379,17 @@ defmodule LandingWeb.AdminLive.Index do
 
   @impl true
   def handle_event("seleccionar_usuario", %{"id" => id}, socket) do
-    user_seleccionado = Enum.find(socket.assigns.users, fn u -> to_string(u.id) == to_string(id) end)
+    user_seleccionado =
+      Enum.find(socket.assigns.users, fn u -> to_string(u.id) == to_string(id) end)
+
     {:noreply, assign(socket, :user, user_seleccionado)}
   end
 
   @impl true
   def handle_event("delete", %{"id" => id}, socket) do
-    lista_actualizada = Enum.reject(socket.assigns.users, fn u -> to_string(u.id) == to_string(id) end)
+    lista_actualizada =
+      Enum.reject(socket.assigns.users, fn u -> to_string(u.id) == to_string(id) end)
+
     nuevas_stats = %{socket.assigns.stats | users: socket.assigns.stats.users - 1}
     {:noreply, assign(socket, users: lista_actualizada, stats: nuevas_stats, user: nil)}
   end
@@ -276,16 +402,24 @@ defmodule LandingWeb.AdminLive.Index do
       # ACTUALIZAR USUARIO
       id_int = String.to_integer(id)
 
-      lista_actualizada = Enum.map(socket.assigns.users, fn u ->
-        if u.id == id_int do
-          # Si la contraseña viene en blanco, mantenemos la anterior
-          pass = if params["password"] == "", do: u.password, else: params["password"]
+      lista_actualizada =
+        Enum.map(socket.assigns.users, fn u ->
+          if u.id == id_int do
+            # Si la contraseña viene en blanco, mantenemos la anterior
+            pass = if params["password"] == "", do: u.password, else: params["password"]
 
-          %{u | name: params["name"], email: params["email"], password: pass, role: params["role"], status: params["status"]}
-        else
-          u
-        end
-      end)
+            %{
+              u
+              | name: params["name"],
+                email: params["email"],
+                password: pass,
+                role: params["role"],
+                status: params["status"]
+            }
+          else
+            u
+          end
+        end)
 
       {:noreply,
        socket

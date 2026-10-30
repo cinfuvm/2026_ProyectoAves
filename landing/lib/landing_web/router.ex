@@ -18,6 +18,9 @@ defmodule LandingWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+    post "/login/", AuthController, :login
+    post "/signup/", AuthController, :signup
+    post "/logout/", AuthController, :logout
     live "/admin/", AdminLive.Index, :index
     live "/admin/aves/", AdminLive.Aves.Index, :index
     live "/admin/aves/new/", AdminLive.Aves.Index, :new

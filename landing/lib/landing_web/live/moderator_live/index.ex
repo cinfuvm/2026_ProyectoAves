@@ -73,155 +73,155 @@ defmodule LandingWeb.ModeratorLive.Index do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} wide={true}>
-    <div class="min-h-screen bg-slate-950 text-white">
-      <div class="flex">
-        <aside class="hidden min-h-screen w-64 border-r border-slate-800 bg-slate-900 lg:block">
-          <div class="p-6">
-            <div class="flex flex-col items-center">
-              <!-- Logo Layer -->
-              <div class="flex items-center gap-3">
-                <img src={~p"/images/isotipo-main-logo.png"} alt="Logo" class="h-12 w-auto">
-                <img src={~p"/images/coron-white.png"} alt="Logo Text" class="h-10 w-auto mt-1">
+      <div class="min-h-screen bg-slate-950 text-white">
+        <div class="flex">
+          <aside class="hidden min-h-screen w-64 border-r border-slate-800 bg-slate-900 lg:block">
+            <div class="p-6">
+              <div class="flex flex-col items-center">
+                <!-- Logo Layer -->
+                <div class="flex items-center gap-3">
+                  <img src={~p"/images/isotipo-main-logo.png"} alt="Logo" class="h-12 w-auto" />
+                  <img src={~p"/images/coron-white.png"} alt="Logo Text" class="h-10 w-auto mt-1" />
+                </div>
+
+                <!-- Texto centrado debajo -->
+                <p class="mt-2 text-sm text-slate-400">Moderacion</p>
               </div>
 
-              <!-- Texto centrado debajo -->
-              <p class="mt-2 text-sm text-slate-400">Moderacion</p>
+              <div class="mt-6 h-px w-full bg-slate-700/50"></div>
             </div>
 
-            <div class="mt-6 h-px w-full bg-slate-700/50"></div>
-          </div>
+            <nav class="space-y-2 px-4">
+              <a class="block rounded-lg bg-indigo-600 px-4 py-3 text-sm font-medium">
+                Reportes
+              </a>
 
-          <nav class="space-y-2 px-4">
-            <a class="block rounded-lg bg-indigo-600 px-4 py-3 text-sm font-medium">
-              Reportes
-            </a>
+              <a class="block rounded-lg px-4 py-3 text-sm text-slate-400 hover:bg-slate-800">
+                Historial
+              </a>
 
-            <a class="block rounded-lg px-4 py-3 text-sm text-slate-400 hover:bg-slate-800">
-              Historial
-            </a>
+              <a class="block rounded-lg px-4 py-3 text-sm text-slate-400 hover:bg-slate-800">
+                Usuarios
+              </a>
+            </nav>
+          </aside>
 
-            <a class="block rounded-lg px-4 py-3 text-sm text-slate-400 hover:bg-slate-800">
-              Usuarios
-            </a>
-          </nav>
-        </aside>
+          <main class="flex-1">
+            <header class="border-b border-slate-800 bg-slate-900 px-6 py-4">
+              <h2 class="text-2xl font-semibold">Centro de Moderación</h2>
+              <p class="text-sm text-slate-400">
+                Revisión de reportes y contenido
+              </p>
+            </header>
 
-        <main class="flex-1">
-          <header class="border-b border-slate-800 bg-slate-900 px-6 py-4">
-            <h2 class="text-2xl font-semibold">Centro de Moderación</h2>
-            <p class="text-sm text-slate-400">
-              Revisión de reportes y contenido
-            </p>
-          </header>
+            <section class="p-6">
+              <div class="grid gap-6 lg:grid-cols-3">
+                <div class="lg:col-span-2">
+                  <div class="rounded-xl border border-slate-800 bg-slate-900">
+                    <div class="border-b border-slate-800 p-5">
+                      <h3 class="font-semibold">Reportes pendientes</h3>
+                    </div>
 
-          <section class="p-6">
-            <div class="grid gap-6 lg:grid-cols-3">
-              <div class="lg:col-span-2">
-                <div class="rounded-xl border border-slate-800 bg-slate-900">
-                  <div class="border-b border-slate-800 p-5">
-                    <h3 class="font-semibold">Reportes pendientes</h3>
-                  </div>
+                    <div class="divide-y divide-slate-800">
+                      <%= for report <- @reports do %>
+                        <button
+                          phx-click="select_report"
+                          phx-value-id={report.id}
+                          class="w-full p-5 text-left transition hover:bg-slate-800/50"
+                        >
+                          <div class="flex items-start justify-between gap-4">
+                            <div>
+                              <div class="flex items-center gap-3">
+                                <p class="font-medium">{report.type}</p>
 
-                  <div class="divide-y divide-slate-800">
-                    <%= for report <- @reports do %>
-                      <button
-                        phx-click="select_report"
-                        phx-value-id={report.id}
-                        class="w-full p-5 text-left transition hover:bg-slate-800/50"
-                      >
-                        <div class="flex items-start justify-between gap-4">
-                          <div>
-                            <div class="flex items-center gap-3">
-                              <p class="font-medium"><%= report.type %></p>
+                                <span class={[
+                                  "rounded-full px-2 py-1 text-xs",
+                                  report.priority == "Alta" &&
+                                    "bg-red-500/10 text-red-400",
+                                  report.priority == "Media" &&
+                                    "bg-yellow-500/10 text-yellow-400",
+                                  report.priority == "Baja" &&
+                                    "bg-slate-700 text-slate-300"
+                                ]}>
+                                  {report.priority}
+                                </span>
+                              </div>
 
-                              <span class={[
-                                "rounded-full px-2 py-1 text-xs",
-                                report.priority == "Alta" &&
-                                  "bg-red-500/10 text-red-400",
-                                report.priority == "Media" &&
-                                  "bg-yellow-500/10 text-yellow-400",
-                                report.priority == "Baja" &&
-                                  "bg-slate-700 text-slate-300"
-                              ]}>
-                                <%= report.priority %>
-                              </span>
+                              <p class="mt-2 text-sm text-slate-400">
+                                Reportado por {report.reporter}
+                              </p>
+
+                              <p class="text-sm text-slate-500">
+                                {report.target}
+                              </p>
                             </div>
 
-                            <p class="mt-2 text-sm text-slate-400">
-                              Reportado por <%= report.reporter %>
-                            </p>
-
-                            <p class="text-sm text-slate-500">
-                              <%= report.target %>
-                            </p>
+                            <span class="text-sm text-indigo-400">
+                              {report.status}
+                            </span>
                           </div>
+                        </button>
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
 
-                          <span class="text-sm text-indigo-400">
-                            <%= report.status %>
-                          </span>
+                <div>
+                  <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+                    <%= if @selected_report do %>
+                      <h3 class="font-semibold">Detalle del reporte</h3>
+
+                      <div class="mt-5 space-y-4 text-sm">
+                        <div>
+                          <p class="text-slate-500">Tipo</p>
+                          <p>{@selected_report.type}</p>
                         </div>
-                      </button>
+
+                        <div>
+                          <p class="text-slate-500">Reportado por</p>
+                          <p>{@selected_report.reporter}</p>
+                        </div>
+
+                        <div>
+                          <p class="text-slate-500">Elemento</p>
+                          <p>{@selected_report.target}</p>
+                        </div>
+
+                        <div>
+                          <p class="text-slate-500">Estado</p>
+                          <p>{@selected_report.status}</p>
+                        </div>
+                      </div>
+
+                      <div class="mt-6 space-y-3">
+                        <button
+                          phx-click="resolve"
+                          phx-value-id={@selected_report.id}
+                          class="w-full rounded-lg bg-emerald-600 px-4 py-2 font-medium hover:bg-emerald-500"
+                        >
+                          Aprobar / Resolver
+                        </button>
+
+                        <button class="w-full rounded-lg bg-red-600 px-4 py-2 font-medium hover:bg-red-500">
+                          Eliminar contenido
+                        </button>
+
+                        <button class="w-full rounded-lg border border-slate-700 px-4 py-2 font-medium hover:bg-slate-800">
+                          Suspender usuario
+                        </button>
+                      </div>
+                    <% else %>
+                      <div class="py-10 text-center text-slate-500">
+                        Selecciona un reporte para ver sus detalles.
+                      </div>
                     <% end %>
                   </div>
                 </div>
               </div>
-
-              <div>
-                <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
-                  <%= if @selected_report do %>
-                    <h3 class="font-semibold">Detalle del reporte</h3>
-
-                    <div class="mt-5 space-y-4 text-sm">
-                      <div>
-                        <p class="text-slate-500">Tipo</p>
-                        <p><%= @selected_report.type %></p>
-                      </div>
-
-                      <div>
-                        <p class="text-slate-500">Reportado por</p>
-                        <p><%= @selected_report.reporter %></p>
-                      </div>
-
-                      <div>
-                        <p class="text-slate-500">Elemento</p>
-                        <p><%= @selected_report.target %></p>
-                      </div>
-
-                      <div>
-                        <p class="text-slate-500">Estado</p>
-                        <p><%= @selected_report.status %></p>
-                      </div>
-                    </div>
-
-                    <div class="mt-6 space-y-3">
-                      <button
-                        phx-click="resolve"
-                        phx-value-id={@selected_report.id}
-                        class="w-full rounded-lg bg-emerald-600 px-4 py-2 font-medium hover:bg-emerald-500"
-                      >
-                        Aprobar / Resolver
-                      </button>
-
-                      <button class="w-full rounded-lg bg-red-600 px-4 py-2 font-medium hover:bg-red-500">
-                        Eliminar contenido
-                      </button>
-
-                      <button class="w-full rounded-lg border border-slate-700 px-4 py-2 font-medium hover:bg-slate-800">
-                        Suspender usuario
-                      </button>
-                    </div>
-                  <% else %>
-                    <div class="py-10 text-center text-slate-500">
-                      Selecciona un reporte para ver sus detalles.
-                    </div>
-                  <% end %>
-                </div>
-              </div>
-            </div>
-          </section>
-        </main>
+            </section>
+          </main>
+        </div>
       </div>
-    </div>
     </Layouts.app>
     """
   end

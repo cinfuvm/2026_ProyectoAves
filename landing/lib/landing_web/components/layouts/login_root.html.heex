@@ -1,22 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="csrf-token" content={get_csrf_token()} />
-
     <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
     <!-- CSS isolated with verified routes (~p) and cache tracking -->
-    <link phx-track-static rel="stylesheet" href={~p"/assets/css/login.css"}>
-    
+    <link phx-track-static rel="stylesheet" href={~p"/assets/css/login.css"} />
     <!-- JS with verified routes -->
-    <script defer phx-track-static type="text/javascript" src={~p"/assets/js/login.js"}></script>
+    <script defer phx-track-static type="text/javascript" src={~p"/assets/js/login.js"}>
+    </script>
   </head>
-  
+
   <body class="visuals-on">
     {@inner_content}
   </body>

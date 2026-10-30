@@ -8,6 +8,7 @@ defmodule LandingWeb.Endpoint do
     store: :cookie,
     key: "_landing_key",
     signing_salt: "T0VySPf8",
+    encryption_salt: "g8Q6m1Jz",
     same_site: "Lax"
   ]
 
@@ -24,7 +25,8 @@ defmodule LandingWeb.Endpoint do
     at: "/",
     from: :landing,
     gzip: not code_reloading?,
-    only: LandingWeb.static_paths() ++ ~w(assets fonts images favicon.ico robots.txt propaganda_files),
+    only:
+      LandingWeb.static_paths() ++ ~w(assets fonts images favicon.ico robots.txt propaganda_files),
     raise_on_missing_only: code_reloading?
 
   # Code reloading can be explicitly enabled under the

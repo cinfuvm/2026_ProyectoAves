@@ -1,0 +1,41 @@
+meta {
+  name: Crear foto de otro usuario
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/sightings
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "bird_id": "{{birdId}}",
+    "place": "Humedal de prueba",
+    "spotted_on": "2026-10-20",
+    "comment": "Foto de otro usuario para probar colección y reportes",
+    "photo_url": "https://example.com/foto-admin.jpg"
+  }
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setVar("photoId", res.body.sighting.id);
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+docs {
+  Crea un avistamiento con el admin, que es otro usuario distinto del usuario de la
+  colección. "Guardar en coleccion" y "Reportar foto" usan su photoId. Se necesita una
+  foto nueva en cada corrida porque "Retirar reporte" la oculta.
+}

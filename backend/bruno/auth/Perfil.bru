@@ -1,0 +1,19 @@
+meta {
+  name: Perfil
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/user/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+assert {
+  res.status: eq 200
+}
