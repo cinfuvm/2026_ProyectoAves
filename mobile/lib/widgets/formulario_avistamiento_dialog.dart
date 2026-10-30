@@ -144,6 +144,7 @@ class _FormularioAvistamientoDialogState
                 const SizedBox(height: 14),
                 DropdownButtonFormField<String>(
                   initialValue: _categoriaSeleccionada,
+                  isExpanded: true,
                   onChanged: (categoria) {
                     setState(() {
                       _categoriaSeleccionada = categoria;

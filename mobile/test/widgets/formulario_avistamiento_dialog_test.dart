@@ -5,19 +5,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as imagenes;
 
-Future<File> _crearFotoTemporal() async {
-  final directorio = await Directory.systemTemp.createTemp(
-    'bitacora-aves-test-',
-  );
-  addTearDown(() async {
-    if (await directorio.exists()) {
-      await directorio.delete(recursive: true);
-    }
+Future<File> _crearFotoTemporal(WidgetTester tester) async {
+  final directorio = (await tester.runAsync(
+    () => Directory.systemTemp.createTemp('bitacora-aves-test-'),
+  ))!;
+  addTearDown(() {
+    if (directorio.existsSync()) directorio.deleteSync(recursive: true);
   });
 
   final archivo = File('${directorio.path}${Platform.pathSeparator}ave.png');
-  await archivo.writeAsBytes(
-    imagenes.encodePng(imagenes.Image(width: 8, height: 5)),
+  await tester.runAsync(
+    () => archivo.writeAsBytes(
+      imagenes.encodePng(imagenes.Image(width: 8, height: 5)),
+    ),
   );
   return archivo;
 }
@@ -57,7 +57,7 @@ void main() {
   testWidgets('muestra la foto seleccionada y pide el nombre del ave', (
     tester,
   ) async {
-    final foto = await _crearFotoTemporal();
+    final foto = await _crearFotoTemporal(tester);
     await _abrirFormulario(tester, foto.path);
 
     final vistaPrevia = tester.widget<Image>(
@@ -71,7 +71,7 @@ void main() {
   testWidgets('no permite guardar sin indicar el nombre del ave', (
     tester,
   ) async {
-    final foto = await _crearFotoTemporal();
+    final foto = await _crearFotoTemporal(tester);
     await _abrirFormulario(tester, foto.path);
 
     await tester.tap(find.text('Guardar foto'));
