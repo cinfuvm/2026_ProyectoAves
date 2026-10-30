@@ -1,0 +1,129 @@
+defmodule Aves.Accounts.User do
+  use Ash.Resource,
+    otp_app: :aves,
+    domain: Aves.Accounts,
+    data_layer: AshPostgres.DataLayer,
+    authorizers: [Ash.Policy.Authorizer],
+    extensions: [AshAuthentication]
+
+  authentication do
+    strategies do
+      password :password do
+        identity_field :email
+        hashed_password_field :hashed_password
+        register_action_accept [:nickname]
+      end
+    end
+
+    add_ons do
+      log_out_everywhere do
+        apply_on_password_change? true
+      end
+    end
+
+    tokens do
+      enabled? true
+      token_resource Aves.Accounts.Token
+      signing_secret Aves.Secrets
+      store_all_tokens? true
+      require_token_presence_for_authentication? true
+    end
+  end
+
+  postgres do
+    table "users"
+    repo Aves.Repo
+  end
+
+  actions do
+    defaults [:read, :destroy]
+
+    read :get_by_subject do
+      description "Get a user by the subject claim in a JWT"
+      argument :subject, :string, allow_nil?: false
+      get? true
+      prepare AshAuthentication.Preparations.FilterBySubject
+    end
+
+    update :assign_role do
+      description "Asigna el rol de un usuario (solo administradores)."
+      accept [:rol]
+      require_atomic? false
+    end
+
+    update :update_profile do
+      description "Actualiza el perfil del propio usuario (nickname/email)."
+      accept [:nickname, :email]
+      require_atomic? false
+    end
+  end
+
+  policies do
+    bypass AshAuthentication.Checks.AshAuthenticationInteraction do
+      authorize_if always()
+    end
+
+    policy actor_attribute_equals(:rol, :admin) do
+      description "Los administradores tienen acceso total."
+      authorize_if always()
+    end
+
+    policy [action_type(:read), expr(id == ^actor(:id))] do
+      description "Un usuario autenticado puede leer su propio perfil."
+      authorize_if always()
+    end
+
+    policy [action(:update_profile), expr(id == ^actor(:id))] do
+      description "Un usuario autenticado puede editar su propio perfil."
+      authorize_if always()
+    end
+
+    policy [actor_attribute_equals(:rol, :moderador), action_type(:read)] do
+      description "Los moderadores pueden listar y leer usuarios."
+      authorize_if always()
+    end
+
+    policy [
+      actor_attribute_equals(:rol, :moderador),
+      action_type(:destroy),
+      expr(rol == :usuario)
+    ] do
+      description "Los moderadores pueden eliminar solo a usuarios con rol `usuario`."
+      authorize_if always()
+    end
+  end
+
+  attributes do
+    uuid_primary_key :id
+
+    attribute :email, :ci_string do
+      allow_nil? false
+      public? true
+    end
+
+    attribute :nickname, :string do
+      allow_nil? false
+      public? true
+    end
+
+    attribute :hashed_password, :string do
+      allow_nil? false
+      sensitive? true
+    end
+
+    attribute :rol, :atom do
+      constraints one_of: [:usuario, :moderador, :admin]
+      default :usuario
+      allow_nil? false
+      public? true
+    end
+
+    create_timestamp :inserted_at
+    update_timestamp :updated_at
+  end
+
+  identities do
+    identity :unique_email, [:email]
+    identity :unique_nickname, [:nickname]
+  end
+end

@@ -1,0 +1,92 @@
+= Registro de cambios mobile
+:description: Cambios funcionales y documentales de la aplicacion mobile CORON: Bitacora de Aves.
+:toc:
+:toclevels: 2
+
+Este registro resume los cambios de la solucion mobile y su documentacion que se encuentran en el repositorio. Para el alcance vigente, estados de implementacion y criterios de aceptacion, consultar el xref:mobile-prd.adoc[PRD] y el xref:mobile-uat.adoc[plan UAT].
+
+== Funcionalidad de la aplicacion
+
+=== Integracion con el BFF (nuevo)
+
+* Se creo una capa de red configurable (`config/api_config.dart`) con URL base por `--dart-define=BFF_URL=...` y modo mock por defecto (`MOCK_BFF`/`BFF_ACTIVO`).
+* `services/api_client.dart` encapsula HTTP con timeouts, manejo del schema `Error` y cabecera `Authorization: Bearer`.
+* `services/fotos_service.dart` define la interfaz `FotosService` (getFotos, subirFoto, reportarFoto) con implementacion BFF (`fotos_service_bff.dart`) y mock en memoria (`fotos_service_mock.dart`) con fotos de Aves de Chile por categoria.
+* `AuthService` ahora soporta autenticacion real contra `POST /user/login` y `POST /user/signin` (JWT guardado en sesion); el mock local se mantiene como modo por defecto.
+* El contrato actual solo envia `file` y `categoria` en `POST /images`; la app ya envia ademas lugar, fecha y comentario anticipando la extension documentada en `mobile-contrato.adoc`.
+* Los motivos de reporte de la UI se mapean al enum del contrato (`no_es_ave`, `contenido_ofensivo`, `imagen_enganosa`, `derechos_autor`, `otro`).
+
+=== Feed comunitario Explorar (nuevo)
+
+* Se agrego la pestaña Explorar (quinta seccion) con feed de fotos de otros usuarios paginado y filtrable por categoria general.
+* Cada tarjeta muestra autor, lugar y acciones de guardar en coleccion y reportar.
+* La foto se abre en el visor con transicion Hero; desde Explorar se puede guardar la foto ajena en la coleccion local (descarga y copia al almacenamiento privado) o reportarla enviandola al servidor con la cola local como respaldo.
+* La coleccion distingue las fotos de la comunidad con el flag `esDeComunidad`.
+
+=== Subida de avistamientos al BFF (nuevo)
+
+* Al registrar un avistamiento propio, la app ademas intenta subirlo al BFF (`POST /images` multipart con file, categoria, lugar, fecha y comentario) si hay sesion iniciada.
+* Si el servidor no responde, la subida queda encolada en `subidas_bff_pendientes_v1` y se reintenta al abrir la app; el guardado local sigue funcionando sin conexion.
+
+=== Reportes al servidor (nuevo)
+
+* Los reportes de fotos del feed intentan enviarse con `PUT /images?id=...` usando los motivos del contrato.
+* Si el envio falla, el reporte se conserva localmente y se informa al usuario que se enviara despues.
+
+=== Plataforma iOS (nueva)
+
+* Se genero el target `ios/` con `flutter create --platforms=ios` y se agregaron los usos de camara y galeria en `Info.plist`.
+
+=== Interfaz y navegacion
+
+* Se organizo la experiencia en Inicio, Buscar, Explorar, Coleccion y Perfil, accesibles desde la barra inferior y mediante deslizamientos horizontales.
+* La navegacion cambia de barra inferior a `NavigationRail` cuando la ventana tiene al menos 600 dp de ancho; el rail puede desplazarse cuando la altura disponible es reducida.
+* En apaisado, la cabecera del catalogo es mas compacta, las tarjetas presentan imagen y datos en paralelo, y Agregar foto pasa a la barra superior para no cubrir contenido.
+* El contenido de las secciones se centra y limita a 1100 dp en ventanas amplias para evitar bloques de texto y tarjetas excesivamente extendidos.
+* Se incorporaron los temas claro y oscuro y un estilo visual consistente para tarjetas y controles.
+* Se agregaron filtros de Coleccion en una fila horizontal. El filtro de tipo y el filtro de categoria se combinan; las fotos propias sin categoria se presentan como sin clasificar.
+* El catalogo agrupa las especies en categorias generales: Terrestres, Acuaticas, Rapaces, Marinas y Otras.
+
+=== Catalogo y coleccion local
+
+* Se integro el indice de 216 especies y sus fichas desde Aves de Chile, con busqueda y filtros por categorias generales.
+* Buscar muestra las especies y miniaturas del indice mientras se completan las fichas por lotes; las imagenes de la lista se solicitan al acercarse a pantalla.
+* Inicio es un panel de bienvenida y resumen, distinto de Buscar: presenta saludo con el nombre de la sesion, contadores de avistamientos y aves guardadas, los ultimos avistamientos propios, las fotos mas recientes de la comunidad y accesos rapidos a Buscar y Explorar.
+* Las descripciones y comentarios largos de las tarjetas aparecen contraidos y se pueden expandir o volver a contraer.
+* Se puede guardar y quitar un ave del catalogo desde la coleccion. La imagen se conserva como archivo privado de la app y los metadatos persisten en el dispositivo.
+* El estado de guardado se recupera despues de cerrar y volver a abrir la aplicacion.
+* Las observaciones propias pueden quitarse de la coleccion; al quitarlas, tambien se elimina su imagen local.
+* Coleccion presenta estados de carga, vacio, error y reintento para evitar que los fallos de lectura se confundan con una lista sin datos.
+
+=== Registro de observaciones y reportes
+
+* La seleccion de una foto propia desde camara o galeria abre un formulario para ingresar ave, lugar, fecha y comentario; nombre cientifico y categoria son opcionales.
+* El guardado copia el archivo seleccionado al almacenamiento privado en vez de cargar toda la imagen en memoria. Se muestra progreso durante la operacion.
+* Los controladores del formulario quedan asociados al ciclo de vida del dialogo para evitar errores al cerrarlo.
+* Los motivos de reporte se guardan localmente. El prototipo no los envia al backend ni a un equipo de moderacion.
+
+=== Fiabilidad de interaccion
+
+* Los mensajes de resultado comprueban que el widget siga montado y que exista un `ScaffoldMessenger` antes de mostrarse.
+* Los errores de red, persistencia y archivo se comunican como errores; no se presentan como guardados exitosos.
+* La coleccion local utiliza `shared_preferences` para metadatos y `path_provider` para localizar los directorios de imagenes.
+
+== Documentacion y build del sitio
+
+* Se agrego al sitio Antora del proyecto la seccion de documentacion mobile con PRD, arquitectura C4, plan UAT y este registro de cambios.
+* Los diagramas C4 se mantienen como fuentes PlantUML en `modules/ROOT/partials/`; el build genera SVG localmente con PlantUML y Java.
+* El build mobile se integro en el playbook y el package-lock de la raiz del repositorio; no hay un proyecto npm ni un sitio separados.
+* El contenido generado en `build/` y `docs/_build/`, las dependencias instaladas y los SVG producidos por el script de build no son fuentes y se excluyen de Git.
+* En VS Code se puede leer cada `.adoc` con la extension AsciiDoc. El sitio completo se compila con `npm ci` y `npm run docs` desde la raiz del repositorio.
+
+=== Autocontencion del dominio mobile (nuevo)
+
+* La documentacion AsciiDoc mobile dejo de vivir en `docs/modules/ROOT/pages/` y ahora esta en `mobile/docs/`, que es un componente Antora propio (`bitacora-aves-mobile`) contenido dentro de `mobile/`.
+* `docs/` queda como placeholder reservado para el equipo; esta rama solo construye `mobile/docs/` y el playbook apunta con `start_path: mobile/docs` al componente `bitacora-aves-mobile`.
+* Los archivos del equipo que habia en `docs/` (`antora.yml`, `nav.adoc`, `index.adoc` y `requisitos.adoc`) se retiran de esta rama: mobile deja de editarlos y por eso deja de chocar con las ramas del equipo.
+* `mobile/docs/` no lleva playbook ni dependencias npm propias: el build es el de la raiz y `npm run docs:diagrams` invoca a `mobile/docs/scripts/render-diagrams.mjs`.
+* Tambien se movieron a `mobile/` los archivos de dominio que estaban en la raiz: `PRODUCT.md`, `DESIGN.md`, `birds_apis.yaml` y `scripts/mock_backend.dart` (ahora en `mobile/scripts/`).
+
+== Limites confirmados
+
+La autenticacion real, la subida de fotos y los reportes dependen del BFF Phoenix que esta en desarrollo por el equipo backend; hasta entonces la app opera en modo mock. La app no implementa comentarios, chat, seguimiento de perfiles ni popularidad basada en vistas. Aves de Chile es una fuente externa del catalogo y no la fuente de contribuciones de la comunidad. Consultar xref:mobile-architecture.adoc[Arquitectura mobile] para limites de datos y privacidad, y xref:mobile-contrato.adoc[Extensiones al contrato] para los cambios pendientes en la API.

@@ -1,0 +1,308 @@
+openapi: 3.0.0
+info:
+  title: birs_user_apis
+  version: 1.2.0
+paths:
+  /api/user/signin:
+    post:
+      summary: Registrar usuario
+      description: Crea un usuario y devuelve un bearer token.
+      tags:
+        - API users
+      requestBody:
+        $ref: '#/components/requestBodies/register'
+      responses:
+        '201':
+          description: Usuario creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '422':
+          description: Datos inválidos (email/nickname duplicado, password, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      servers:
+        - url: http://127.0.0.1:4000
+  /api/user/login:
+    post:
+      summary: Iniciar sesión
+      description: Autentica por email o nickname y devuelve un bearer token.
+      tags:
+        - API users
+      requestBody:
+        $ref: '#/components/requestBodies/login'
+      responses:
+        '200':
+          description: Autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Credenciales inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      servers:
+        - url: http://127.0.0.1:4000
+  /api/user/logout:
+    delete:
+      summary: Cerrar sesión
+      description: Revoca el bearer token enviado en el header Authorization.
+      tags:
+        - API users
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Token revocado
+      servers:
+        - url: http://127.0.0.1:4000
+  /api/user/me:
+    get:
+      summary: Obtener perfil del usuario autenticado
+      description: Devuelve el usuario asociado al bearer token enviado.
+      tags:
+        - API users
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Usuario autenticado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      servers:
+        - url: http://127.0.0.1:4000
+    patch:
+      summary: Editar perfil del usuario autenticado
+      description: Actualiza el nickname y/o email del usuario asociado al bearer token.
+      tags:
+        - API users
+      security:
+        - bearerAuth: []
+      requestBody:
+        $ref: '#/components/requestBodies/updateProfile'
+      responses:
+        '200':
+          description: Perfil actualizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Datos inválidos (nickname/email duplicado, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      servers:
+        - url: http://127.0.0.1:4000
+  /images:
+    post:
+      summary: Subir fotos
+      description: ''
+      tags:
+        - API fotos
+      responses:
+        '200':
+          description: ''
+      security:
+        - bearerAuth: []
+      servers:
+        - url: http://127.0.0.1:4000
+    get:
+      summary: Filtrar fotos
+      description: ''
+      tags:
+        - API fotos
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              example: |-
+                {
+                  urls: [
+                    "www.ejemplourl1.jgp",
+                    "www.ejemplourl2.jpg",
+                    ...
+                    "www.ejemplourln.jpg"
+                  ],
+                  
+                  paginado: 0 / n,
+                }
+      parameters:
+        - name: categoria
+          in: query
+          description: ''
+          required: true
+          schema:
+            type: string
+      servers:
+        - url: http://127.0.0.1:4000
+    put:
+      summary: Reportar foto
+      description: ''
+      tags:
+        - API fotos
+      responses:
+        '200':
+          description: ''
+      parameters:
+        - name: id
+          in: query
+          description: ''
+          required: true
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
+      servers:
+        - url: http://127.0.0.1:4000
+servers: []
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        nickname:
+          type: string
+        rol:
+          type: string
+          enum:
+            - usuario
+            - moderador
+            - admin
+      required:
+        - id
+        - email
+        - nickname
+        - rol
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        token:
+          type: string
+          description: Bearer JWT para el header Authorization.
+      required:
+        - user
+        - token
+    RegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        nickname:
+          type: string
+        password:
+          type: string
+          format: password
+        password_confirmation:
+          type: string
+          format: password
+      required:
+        - email
+        - nickname
+        - password
+        - password_confirmation
+      example:
+        email: ana@example.com
+        nickname: ana
+        password: contraseña_generica1
+        password_confirmation: contraseña_generica1
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          description: Email o nickname del usuario. El campo `user` es un alias.
+          example: ana@example.com
+        password:
+          type: string
+          format: password
+      required:
+        - email
+        - password
+      example:
+        email: ana@example.com
+        password: contraseña_generica1
+    UpdateProfileRequest:
+      type: object
+      properties:
+        nickname:
+          type: string
+        email:
+          type: string
+          format: email
+      minProperties: 1
+      example:
+        nickname: ana_nueva
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        errors:
+          type: array
+          items:
+            type: string
+  requestBodies:
+    register:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/RegisterRequest'
+      description: Datos de registro
+      required: true
+    login:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/LoginRequest'
+      description: Credenciales de acceso
+      required: true
+    updateProfile:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UpdateProfileRequest'
+      description: Campos a actualizar del perfil
+      required: true
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

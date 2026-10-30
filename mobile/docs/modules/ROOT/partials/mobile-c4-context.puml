@@ -1,0 +1,18 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/release/v2.12.0/C4_Context.puml
+
+title CORON: Bitacora de Aves - Contexto actual
+
+Person(usuario, "Observador de aves", "Registra y consulta sus observaciones en el dispositivo.")
+System(mobile, "CORON: Bitacora de Aves", "Aplicacion Flutter para el catalogo externo de Aves de Chile, una bitacora local y un feed comunitario.")
+System(bff, "BFF de CORON", "API REST Elixir Phoenix: cuentas con JWT, publicacion de imagenes, feed paginado y reportes de moderacion.")
+System_Ext(aveschile, "Aves de Chile", "Catalogo externo en uvm.neocities.org/aves; no es el backend del producto.")
+System_Ext(so, "Servicios del dispositivo", "Camara, galeria y almacenamiento privado del sistema operativo.")
+
+Rel(usuario, mobile, "Registra fotos, explora el feed y administra su coleccion")
+Rel(mobile, bff, "Se autentica, publica imagenes, consulta el feed y envia reportes", "HTTPS / JSON + multipart")
+Rel(mobile, aveschile, "Consulta indice, fichas e imagenes del catalogo", "HTTPS / JSON")
+Rel(mobile, so, "Selecciona imagenes y accede a almacenamiento local", "Plugins Flutter")
+
+SHOW_LEGEND()
+@enduml

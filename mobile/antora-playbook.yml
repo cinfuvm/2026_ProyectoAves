@@ -1,0 +1,15 @@
+site:
+  title: "CORON: Bitǭcora de Aves"
+  start_page: bitacora-aves-mobile::index.adoc
+content:
+  sources:
+    - url: ..
+      branches: HEAD
+      # El repositorio git esta en la raiz; el componente movil vive en mobile/docs.
+      start_path: mobile/docs
+ui:
+  bundle:
+    url: https://gitlab.com/antora/antora-ui-default/-/jobs/artifacts/HEAD/raw/build/ui-bundle.zip?job=bundle-stable
+    snapshot: true
+output:
+  dir: build/site

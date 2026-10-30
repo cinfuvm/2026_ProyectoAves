@@ -1,2 +1,23 @@
-  node_modules/
-  build/
+# Dependencias
+node_modules/
+mobile/node_modules/
+deps/
+
+# Artefactos de build
+build/
+mobile/build/
+_build/
+cover/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Entornos y secretos
+.env
+.env.*
+!.env.example
+
+# Configuración local de editores
+.obsidian/
+.idea/

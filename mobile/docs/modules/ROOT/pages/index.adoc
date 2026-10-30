@@ -1,0 +1,31 @@
+= CORON: Bitácora de Aves — Móvil
+:description: Documentación del producto, arquitectura y aceptación de la aplicación móvil CORON: Bitácora de Aves.
+
+CORON: Bitácora de Aves es una aplicación Flutter para registrar observaciones de aves, conservar una colección personal en el dispositivo y compartir aportes con la comunidad.
+
+Esta documentación describe *la solución móvil y su estado actual*. La app habla con el BFF propio (Elixir Phoenix) para cuentas, feed y moderación, en modo local (mock, por defecto) o remoto (`--dart-define=BFF_ACTIVO=true`). Lo que sí queda fuera del alcance declarado es la sincronización entre dispositivos, el conteo de popularidad y el dashboard web; la moderación se atiende desde la propia app.
+
+El componente sigue la estructura Antora recomendada por https://github.com/NinjasCL/antora-docs-bootstrap[antora-docs-bootstrap]. El PRD y el plan UAT toman como referencia las guías de https://elixircl.github.io/elixir-fullstack/swe/prd.html[PRD] y https://elixircl.github.io/elixir-fullstack/swe/uat.html[UAT] del equipo.
+
+== Documentos
+
+* xref:mobile-prd.adoc[PRD móvil]: alcance, actores, requisitos, restricciones y criterios de aceptación.
+* xref:mobile-architecture.adoc[Arquitectura móvil]: diagramas C4 en PlantUML y límites de integración.
+* xref:mobile-uat.adoc[Plan de pruebas y UAT]: casos manuales, datos, evidencia y registro de resultados.
+* xref:mobile-changes.adoc[Registro de cambios]: resumen funcional y documental de los cambios móviles.
+
+== Compilación
+
+Este directorio es un componente Antora autocontenido, y `mobile/` tiene su propio playbook (`mobile/antora-playbook.yml`) y sus dependencias (`mobile/package.json`).
+
+Desde `mobile/`, ejecuta `npm ci` para instalar las herramientas y `npm run docs` para generar el sitio HTML en `mobile/build/site/`. Los diagramas C4 se renderizan como SVG con `npm run docs:diagrams`, que invoca a `docs/scripts/render-diagrams.mjs`.
+
+También puedes abrir los archivos `.adoc` en VS Code y usar el comando `AsciiDoc: Open Preview` para leer cada documento.
+
+== Relación con el resto del sitio
+
+Los requisitos funcionales del proyecto los publica el equipo en el componente Antora de la raíz (`docs/`), que se construye por separado con `npm run docs` desde la raíz del repositorio. Este componente solo cubre lo móvil.
+
+== Responsabilidad
+
+La documentación de esta carpeta cubre solo mobile. El liderazgo técnico móvil indicado para el proyecto es Maximiliano. El equipo mobile debe validar los requisitos y criterios con gestión, y acordar contratos de API con backend antes de presentar las funciones de red como disponibles.

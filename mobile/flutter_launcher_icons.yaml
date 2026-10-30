@@ -1,0 +1,10 @@
+flutter_launcher_icons:
+  # Isotipo de la marca Coron (loro con corona). El original
+  # `coron-logos/app-icon/app-icon.png` trae mucho aire blanco alrededor del
+  # arte, lo que deja el icono pequeño en el launcher tras la máscara del
+  # sistema. Por eso se usa este recorte encuadrado (fondo blanco 1024x1024).
+  image_path: assets/icono_app.png
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  min_sdk_android: 21

@@ -1,0 +1,23 @@
+meta {
+  name: Retirar reporte
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/reports/{{reportId}}/retire
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{moderadorToken}}
+}
+
+assert {
+  res.status: eq 200
+}
+
+docs {
+  Marca el reporte como retirado y oculta el avistamiento reportado.
+}
